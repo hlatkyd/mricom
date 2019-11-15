@@ -17,10 +17,11 @@
 #define MAX_ARG_LENGTH 128
 #define ARG_DELIM " \t\r\n\a"
 
-typedef struct status{
+typedef struct process{
     int nproc;      // number of live builtin shell processes
-    int procid[10]; // builtin shell process ids
-} status;
+    int procid[16]; // builtin shell process ids
+    char *name[32]
+} process;
 
 /* ----------------------*/
 /* function declarations */
@@ -72,10 +73,12 @@ int sh_exit(char **args){
  * ----------------------
  * prints available builtin commands
  */
+//TODO help description to builtins
 int sh_help(char **args){
     int i;
-    printf("mricom v%d.%d\n",VERSION_MAJOR,VERSION_MINOR);
+    printf("--- mricom v%d.%d ---\n\n",VERSION_MAJOR,VERSION_MINOR);
     printf("Available commands:\n");
+    printf("===================\n");
     for(i = 0; i<sh_num_builtins(); i++){
         printf("  %s\n",builtin_str[i]);
     }
