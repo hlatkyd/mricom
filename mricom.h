@@ -18,3 +18,8 @@
 #define NDCHAN 3 // number of digital input channels
 #define NDATA 1024 // sampled data buffer
 
+typedef struct processes{
+    int nproc;
+    int procid[16];
+    char *name[32];
+} processes;

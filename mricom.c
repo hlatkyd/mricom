@@ -8,6 +8,7 @@
 
 #include "mricom.h"
 #include "test.h"
+#include "util.h"
 
 /* ----------------------*/
 /*     shell constants   */
@@ -17,21 +18,16 @@
 #define MAX_ARG_LENGTH 128
 #define ARG_DELIM " \t\r\n\a"
 
-typedef struct process{
-    int nproc;      // number of live builtin shell processes
-    int procid[16]; // builtin shell process ids
-    char *name[32]
-} process;
-
 /* ----------------------*/
 /* function declarations */
 /* ----------------------*/
 
-void init();
+processes *init();
 char **shell_parse_cmd(char *line);
 char *shell_read_cmd();
+void shell_loop(processes *pt);
 int shell_launch(char **args);
-int shell_execute(char **args);
+int shell_execute(processes *procpt, char **args);
 
 /* ----------------------*/
 /*        builtins       */
@@ -40,20 +36,25 @@ int shell_execute(char **args);
 int sh_exit(char **args);
 int sh_help(char **args);
 int sh_test(char **args);
+int sh_getproc(char **args);
+int sh_killproc(char **args);
 
 /* command names */
-
+/* should be the same order as builtin command pointer list */
 char *builtin_str[] = {
     "exit",
     "help",
-    "test",
-    "startgen",
-    "stopgen"
+    "getproc",
+    "killproc",
+    "test"
 };
 /* functions for builtin commands*/
+/* should be same oreder as builtin_str list names*/
 int (*builtin_func[]) (char **) = {
     &sh_exit,
     &sh_help,
+    &sh_getproc,
+    &sh_killproc,
     &sh_test
 };
 int sh_num_builtins(){
@@ -85,7 +86,18 @@ int sh_help(char **args){
     return 1;
 }
 int sh_test(char **args){
-    test_print();
+    test_print(args);
+    test_fork();
+    return 1;
+}
+int sh_getproc(char **args){
+    getproc();
+    return 1;
+}
+int sh_killproc(char **args){
+    int procid;
+    procid = 10;
+    killproc(procid);
     return 1;
 }
 /*-----------------------------------------------------------------------------*/
@@ -94,11 +106,14 @@ int sh_test(char **args){
  * ---------------
  * print name, version
  */
-void init(){
+processes *init(){
 
     printf("mricom v%d.%d",VERSION_MAJOR,VERSION_MINOR);
     printf(" - MRI control software using comedi\n");
     printf("Type 'help' to list available commands.\n");
+    processes *pt;
+    pt = (processes*)malloc(sizeof(processes));
+    return pt;
 }
 
 /* Function: shell_parse_cmd
@@ -203,6 +218,7 @@ int shell_launch(char **args){
         perror("shell_launch");
     }
     else {
+        // parent process
         do {
             wpid = waitpid(pid, &status, WUNTRACED);
         } while (!WIFEXITED(status) && !WIFSIGNALED(status));
@@ -213,7 +229,7 @@ int shell_launch(char **args){
  * -----------------------
  * executes builtin command if name matches, othervise execute system command
  */
-int shell_execute(char **args){
+int shell_execute(processes *procpt, char **args){
     int i;
 
     if(args[0] == NULL) {
@@ -229,7 +245,7 @@ int shell_execute(char **args){
     return shell_launch(args);
 }
 
-void shell_loop(){
+void shell_loop(processes *procpt){
 
     char *line;
     char **args; 
@@ -241,7 +257,7 @@ void shell_loop(){
 
         args = shell_parse_cmd(line);
 
-        res = shell_execute(args);
+        res = shell_execute(procpt, args);
 
         free(line);
         free(args);
@@ -251,9 +267,12 @@ void shell_loop(){
 
 int main(int argc, char *argv[]){
 
-    init();
+    processes *procpt;
+    //proc = (processes*)malloc(sizeof(processes));
 
-    shell_loop();
+    procpt = init();
+
+    shell_loop(procpt);
 
     return EXIT_SUCCESS;
 }

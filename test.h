@@ -3,4 +3,5 @@
  *
  */
 
-void test_print();
+void test_print(char **args);
+void test_fork();
