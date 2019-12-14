@@ -7,9 +7,7 @@
  */
 
 #include "mricom.h"
-#include "test.h"
-#include "util.h"
-
+#include "func.h"
 /* ----------------------*/
 /*     shell constants   */
 /* ----------------------*/
@@ -22,13 +20,13 @@
 /* function declarations */
 /* ----------------------*/
 
-processes *init();
+/*main shell functions*/
+void init();
 char **shell_parse_cmd(char *line);
 char *shell_read_cmd();
-void shell_loop(processes *pt);
+void shell_loop();
 int shell_launch(char **args);
-int shell_execute(processes *procpt, char **args);
-
+int shell_execute(char **args);
 /* ----------------------*/
 /*        builtins       */
 /* ----------------------*/
@@ -36,16 +34,23 @@ int shell_execute(processes *procpt, char **args);
 int sh_exit(char **args);
 int sh_help(char **args);
 int sh_test(char **args);
-int sh_getproc(char **args);
-int sh_killproc(char **args);
+int sh_listh(char **args);
+int sh_listp(char **args);
+int sh_killp(char **args);
+
+/* init global process pointer */
+processes *procpt;
+/* init globla cmd history*/
+history *cmdhist;
 
 /* command names */
 /* should be the same order as builtin command pointer list */
 char *builtin_str[] = {
     "exit",
     "help",
-    "getproc",
-    "killproc",
+    "listh",
+    "listp",
+    "killp",
     "test"
 };
 /* functions for builtin commands*/
@@ -53,8 +58,9 @@ char *builtin_str[] = {
 int (*builtin_func[]) (char **) = {
     &sh_exit,
     &sh_help,
-    &sh_getproc,
-    &sh_killproc,
+    &sh_listh,
+    &sh_listp,
+    &sh_killp,
     &sh_test
 };
 int sh_num_builtins(){
@@ -88,32 +94,45 @@ int sh_help(char **args){
 int sh_test(char **args){
     test_print(args);
     test_fork();
+    //test_system();
     return 1;
 }
-int sh_getproc(char **args){
-    getproc();
+int sh_listh(char **args){
+    listh();
     return 1;
 }
-int sh_killproc(char **args){
+int sh_listp(char **args){
+    listp();
+    return 1;
+}
+int sh_killp(char **args){
+    char argin[10];
     int procid;
-    procid = 10;
-    killproc(procid);
+    printf("args : %s\n",args[1]);
+    strcpy(argin, args[1]);
+    procid = atoi(argin);
+    killp(procid);
     return 1;
 }
 /*-----------------------------------------------------------------------------*/
-
+/*                               OPAQUE PARTS                                  */
+/*-----------------------------------------------------------------------------*/
 /* Function: init
  * ---------------
- * print name, version
+ * print name, version, initialize process struct, init command history
  */
-processes *init(){
+void init(){
 
     printf("mricom v%d.%d",VERSION_MAJOR,VERSION_MINOR);
     printf(" - MRI control software using comedi\n");
     printf("Type 'help' to list available commands.\n");
-    processes *pt;
-    pt = (processes*)malloc(sizeof(processes));
-    return pt;
+    // malloc for process structure
+    procpt = (processes*)malloc(sizeof(processes));
+    procpt->nproc = 0;
+    // malloc for command history
+    cmdhist = (history*)malloc(sizeof(history));
+    cmdhist->n = 0;
+
 }
 
 /* Function: shell_parse_cmd
@@ -174,11 +193,15 @@ char *shell_read_cmd(){
         exit(EXIT_FAILURE);
     }
     
+    printf(">>> ");
     while (1) {
     
         c = getchar();
         if(c == EOF || c == '\n'){
             buffer[position] = '\0';
+            if (strlen(buffer) != 0){
+                append_to_history(buffer);
+            }
             return buffer;
         }
         else {
@@ -229,7 +252,7 @@ int shell_launch(char **args){
  * -----------------------
  * executes builtin command if name matches, othervise execute system command
  */
-int shell_execute(processes *procpt, char **args){
+int shell_execute(char **args){
     int i;
 
     if(args[0] == NULL) {
@@ -245,19 +268,18 @@ int shell_execute(processes *procpt, char **args){
     return shell_launch(args);
 }
 
-void shell_loop(processes *procpt){
+void shell_loop(){
 
     char *line;
     char **args; 
     int res;
 
     do {
-        printf(">>> ");
         line = shell_read_cmd();
 
         args = shell_parse_cmd(line);
 
-        res = shell_execute(procpt, args);
+        res = shell_execute(args);
 
         free(line);
         free(args);
@@ -267,12 +289,9 @@ void shell_loop(processes *procpt){
 
 int main(int argc, char *argv[]){
 
-    processes *procpt;
-    //proc = (processes*)malloc(sizeof(processes));
+    init();
 
-    procpt = init();
-
-    shell_loop(procpt);
+    shell_loop();
 
     return EXIT_SUCCESS;
 }

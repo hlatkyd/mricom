@@ -18,8 +18,28 @@
 #define NDCHAN 3 // number of digital input channels
 #define NDATA 1024 // sampled data buffer
 
+#define MAX_ID 16 // maximum number of processes
+#define MAX_NAME_LENGTH 32 // maximum process name length
+
+#define MAX_HISTORY_LENGTH 64 // command history elements
+#define MAX_CMD_LENGTH 128 // command length to story in history
+/* define global process struct */
+
+#ifndef MRICOM_H // header guard
+#define MRICOM_H
 typedef struct processes{
     int nproc;
-    int procid[16];
-    char *name[32];
+    int procid[MAX_ID];
+    char name[MAX_ID][MAX_NAME_LENGTH];
 } processes;
+
+typedef struct history{
+
+    int n;
+    char cmd[MAX_HISTORY_LENGTH][MAX_CMD_LENGTH];
+}history;
+
+extern processes *procpt;
+extern history *cmdhist;
+#endif
+//TODO define user functions here?
