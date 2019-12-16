@@ -7,6 +7,7 @@
 void test_print(char **args);
 void test_fork();
 void test_generate_data();
+void test_write_data();
 void test_system();
 /*util shell functions*/
 void addpid(int pid);

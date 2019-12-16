@@ -48,17 +48,24 @@ void test_fork(){
 }
 void test_generate_data(){
 
-    char testfile[] = "/home/david/dev/mricom/test/data.txt";
-    FILE *fp;
     int nchan = 4;
     int npoints = 2000;
-    double srate = 50;
+    int srate = 50;
     double **data;
 
-    // fill file with zeros
-    fopen(testfile, "W+");
-    fprintf(fp,"hello");
+    char testfile[] = "/home/david/dev/mricom/test/data.txt";
+    FILE *fp;
 
+    data = (double)malloc(srate * nchan * sizeof(double));
+
+
+
+}
+void test_write_data()P
+
+    char testfile[] = "/home/david/dev/mricom/test/data.txt";
+    FILE *fp;
+    return;
 }
 void test_system(){
     /*
