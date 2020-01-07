@@ -48,20 +48,23 @@ void test_fork(){
 }
 void test_generate_data(){
 
-    int nchan = 4;
-    int npoints = 2000;
-    int srate = 50;
+    int nachan = NACHAN;
+    int npoints = NDATA;
+    int srate = SAMPLING_RATE;
     double **data;
 
     char testfile[] = "/home/david/dev/mricom/test/data.txt";
     FILE *fp;
 
-    data = (double)malloc(srate * nchan * sizeof(double));
+    data = (double**)malloc(srate * nachan * sizeof(double));
 
-
+    free(data);
 
 }
-void test_write_data()P
+void test_write_data_init(){
+    /* zerofill*/
+}
+void test_write_data(){
 
     char testfile[] = "/home/david/dev/mricom/test/data.txt";
     FILE *fp;
@@ -76,6 +79,19 @@ void test_system(){
     */
     return;
 }
+/*-------------------------------------------------------------------*/
+/*                          daq functions                            */
+/*-------------------------------------------------------------------*/
+
+void daq_init_kstfile(){
+
+    FILE *fp;
+    fp = fopen(DAQ_FILE);
+    
+    fclose(fp)
+
+}
+
 /*-------------------------------------------------------------------*/
 /*                     util shell functions                          */
 /*-------------------------------------------------------------------*/

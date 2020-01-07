@@ -42,6 +42,8 @@ int sh_killp(char **args);
 processes *procpt;
 /* init globla cmd history*/
 history *cmdhist;
+/* init global acquisition data */
+acquisition_data *acqdata;
 
 /* command names */
 /* should be the same order as builtin command pointer list */
