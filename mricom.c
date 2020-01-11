@@ -1,6 +1,6 @@
 /* mricom:  Collect data with NI card via comedi and control MRI
  * 
- * mricom.c: responsible for the interactive shell
+ * mricom.c: responsible for the interactive shell and general setup
  *
  * shell code base: Stephen Brennan
  * https://github.com/brenns10/lsh
@@ -15,6 +15,14 @@
 #define CMD_BUFFER 256
 #define MAX_ARG_LENGTH 128
 #define ARG_DELIM " \t\r\n\a"
+
+/* ----------------------*/
+/* acquisition constants */
+/* ----------------------*/
+const int channel_count = 6;
+const char *channel_names[] = {"TIME","RESP", "PULSOX", "ECG", "TRIG", "GATE"};
+const char procpar[] = PROCPAR;
+const char daq_file[] = DAQ_FILE;
 
 /* ----------------------*/
 /* function declarations */
@@ -37,23 +45,31 @@ int sh_test(char **args);
 int sh_listh(char **args);
 int sh_listp(char **args);
 int sh_killp(char **args);
+int sh_start(char **args);
+int sh_stop(char **args);
 
 /* init global process pointer */
 processes *procpt;
 /* init globla cmd history*/
 history *cmdhist;
 /* init global acquisition data */
-acquisition_data *acqdata;
+acquisition_const *acqconst;
+double **data_window;
+double **data_buffer;
 
-/* command names */
-/* should be the same order as builtin command pointer list */
+
+/* command names
+ * 
+ * should be the same order as builtin command pointer list */
 char *builtin_str[] = {
     "exit",
     "help",
     "listh",
     "listp",
     "killp",
-    "test"
+    "test",
+    "start",
+    "stop"
 };
 /* functions for builtin commands*/
 /* should be same oreder as builtin_str list names*/
@@ -63,7 +79,9 @@ int (*builtin_func[]) (char **) = {
     &sh_listh,
     &sh_listp,
     &sh_killp,
-    &sh_test
+    &sh_test,
+    &sh_start,
+    &sh_stop
 };
 int sh_num_builtins(){
     return sizeof(builtin_str) / sizeof(char*);
@@ -73,9 +91,22 @@ int sh_num_builtins(){
 
 /* Shell function: sh_exit
  * -----------------------
- * exit program
+ * attempt to exit program gracefully
  */
 int sh_exit(char **args){
+    
+    int i,j,n;
+    n = procpt->nproc;
+
+    printf("Killing internal processes...\n");
+    for(i=n;i>=0;i--){
+
+    }
+    free(data_window);
+    free(data_buffer);
+    free(procpt);
+    free(cmdhist);
+    free(acqconst);
     return 0;
 }
 /* Shell function sh_help
@@ -96,6 +127,7 @@ int sh_help(char **args){
 int sh_test(char **args){
     test_print(args);
     test_fork();
+    //test_randfill_buffer(0.0);
     //test_system();
     return 1;
 }
@@ -116,6 +148,14 @@ int sh_killp(char **args){
     killp(procid);
     return 1;
 }
+int sh_start(char **args){
+
+    return 1;
+}
+int sh_stop(char **args){
+
+    return 1;
+}
 /*-----------------------------------------------------------------------------*/
 /*                               OPAQUE PARTS                                  */
 /*-----------------------------------------------------------------------------*/
@@ -125,9 +165,21 @@ int sh_killp(char **args){
  */
 void init(){
 
+    int i;
+    int r_dwindow, c_dwindow, l_dwindow;
+    int r_dbuffer, c_dbuffer, l_dbuffer;
+    /* rows: channels
+     * cols: data points
+     *
+     *
+     */
+
+    printf("-----------------------------------------------\n");
     printf("mricom v%d.%d",VERSION_MAJOR,VERSION_MINOR);
     printf(" - MRI control software using comedi\n");
+    printf("-----------------------------------------------\n");
     printf("Type 'help' to list available commands.\n");
+
     // malloc for process structure
     procpt = (processes*)malloc(sizeof(processes));
     procpt->nproc = 0;
@@ -135,6 +187,45 @@ void init(){
     cmdhist = (history*)malloc(sizeof(history));
     cmdhist->n = 0;
 
+    // malloc for real time data and data buffer
+    c_dwindow = SAMPLING_RATE * TIME_WINDOW;
+    l_dwindow = SAMPLING_RATE * TIME_WINDOW * channel_count;
+    r_dwindow = channel_count;
+    c_dbuffer = NDATA;
+    l_dbuffer = NDATA * channel_count;
+    r_dbuffer = channel_count;
+
+    // setup acquisition constants
+    acqconst = (acquisition_const*)malloc(sizeof(acquisition_const));
+    acqconst->chnum = channel_count;
+    acqconst->c_dwindow = c_dwindow;
+    acqconst->c_dbuffer = c_dbuffer;
+    acqconst->time_window = (double)TIME_WINDOW;
+    acqconst->sampling_rate = (double)SAMPLING_RATE;
+    strcpy(acqconst->acqfile, daq_file);
+    strcpy(acqconst->procpar_path, procpar);
+    for(i = 0; i<channel_count; i++){
+        strcpy(acqconst->chname[i], channel_names[i]);
+    }
+
+    //TODO malloc check
+    data_window = (double **)malloc(sizeof(double*) * channel_count);
+    for(i=0; i<r_dwindow; i++){
+        data_window[i] = (double*)malloc(c_dwindow * sizeof(double));
+    }
+    data_buffer = (double **)malloc(sizeof(double*) * channel_count);
+    for(i=0; i<r_dbuffer; i++){
+        data_buffer[i] = (double*)malloc(c_dbuffer * sizeof(double));
+    }
+    if(data_window == NULL){
+        printf("error: data_window malloc\n");
+    }
+    if(data_buffer == NULL){
+        printf("error: data_buffer malloc\n");
+    }
+
+    // init daq file
+    daq_init_kstfile();
 }
 
 /* Function: shell_parse_cmd
