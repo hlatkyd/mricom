@@ -96,11 +96,13 @@ int sh_num_builtins(){
 int sh_exit(char **args){
     
     int i,j,n;
+    int id;
     n = procpt->nproc;
 
     printf("Killing internal processes...\n");
-    for(i=n;i>=0;i--){
-
+    for(i=n;i>0;i--){
+        id = procpt->procid[i-1];
+        killp(id);
     }
     free(data_window);
     free(data_buffer);

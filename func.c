@@ -68,6 +68,7 @@ void test_generate_loop(){
 
         // child
         //system("kst2");
+        //test_randfill_buffer()
         //perror("execv");
         return;
     }
@@ -288,7 +289,7 @@ void listp(){
 }
 /* kill specified process */
 void killp(int procid){
-    printf("killing process: %d ...",procid);
+    printf("killing process: %d ... ",procid);
     /* search through local process tree for check*/
     kill(procid, SIGTERM);
     process_remove(procid);
@@ -307,7 +308,17 @@ void stop(){
 
     return;
 }
+/* Function: reset
+ * ---------------
+ * Kills internal processes, reinitializes acquisition settings
+ */
 void reset(){
-
+    int i, j;
+    printf("Resetting acquisition... ");
+    for(i=procpt->nproc; i>0; i--){
+        killp(procpt->procid[i-1]);
+    }
+    daq_init_kstfile();
+    printf("done\n");
     return;
 }
