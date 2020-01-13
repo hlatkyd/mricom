@@ -55,6 +55,7 @@ void test_generate_loop(){
     int chnum = acqconst->chnum;
     int npoints = acqconst->c_dbuffer;
     int srate = SAMPLING_RATE;
+    double duration = 30.0; // duration of data generation
     char process_name[] = "test_datagenerator";
     FILE *fp;
     pid_t pid;
@@ -68,7 +69,7 @@ void test_generate_loop(){
 
         // child
         //system("kst2");
-        //test_randfill_buffer()
+        test_randfill_buffer();
         //perror("execv");
         return;
     }
@@ -205,6 +206,39 @@ void daq_save_buffer(){
 
     fclose(fp);
 
+}
+/* Function: daq_start_kst
+ * -----------------------
+ * Starts kst with standard acquisition settings
+ */
+void daq_start_kst(){
+
+    char *kst_path;
+    char *kst_settings_file;
+
+    char process_name[] = "kst";
+    char kstpath[] = "/usr/bin/kst2";
+    //TODO make this better
+    char *args[] = {"/home/david/dev/mricom/mricomkst.kst", 0};
+    pid_t pid;
+    pid = fork();
+
+    if(pid == 0){
+        // child
+        //system("kst2");
+        execvp(kstpath, args);
+        //perror("execv");
+        return;
+    }
+    else if(pid < 0){
+        //error forking
+        perror("error forking");
+    }
+    else {
+        // parent
+        process_add(pid, process_name);
+    }
+    return;
 }
 /*-------------------------------------------------------------------*/
 /*                     util shell functions                          */

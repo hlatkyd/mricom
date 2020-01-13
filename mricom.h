@@ -13,7 +13,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include <termios.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 /* monitoring constants */
 #define PROCPAR "/mnt/ramdisk/test.procpar"

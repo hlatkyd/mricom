@@ -16,6 +16,7 @@ void test_system();
 void daq_init_kstfile();
 void daq_save_buffer();
 void daq_update_window();
+void daq_start_kst();
 /*util shell functions*/
 void addpid(int pid);
 void process_add(int pid, char *name);

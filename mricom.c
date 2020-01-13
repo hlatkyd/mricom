@@ -64,7 +64,6 @@ double **data_buffer;
 char *builtin_str[] = {
     "exit",
     "help",
-    "listh",
     "listp",
     "killp",
     "test",
@@ -76,7 +75,6 @@ char *builtin_str[] = {
 int (*builtin_func[]) (char **) = {
     &sh_exit,
     &sh_help,
-    &sh_listh,
     &sh_listp,
     &sh_killp,
     &sh_test,
@@ -116,6 +114,7 @@ int sh_exit(char **args){
  * prints available builtin commands
  */
 //TODO help description to builtins
+
 int sh_help(char **args){
     int i;
     printf("--- mricom v%d.%d ---\n\n",VERSION_MAJOR,VERSION_MINOR);
@@ -128,13 +127,10 @@ int sh_help(char **args){
 }
 int sh_test(char **args){
     test_print(args);
-    test_fork();
+    //test_fork();
+    daq_start_kst();
     //test_randfill_buffer(0.0);
     //test_system();
-    return 1;
-}
-int sh_listh(char **args){
-    listh();
     return 1;
 }
 int sh_listp(char **args){
@@ -152,6 +148,7 @@ int sh_killp(char **args){
 }
 int sh_start(char **args){
 
+    daq_start_kst();
     return 1;
 }
 int sh_stop(char **args){
@@ -271,48 +268,28 @@ char **shell_parse_cmd(char *line){
 
 /* Function: shell_read_command
  * ----------------------------
- * reads user input into command buffer
+ * reads user input into command buffer using readline lib
  *
- * returns: string, carrage return replaced by '\0'
+ * returns: command string
  */
 
 char *shell_read_cmd(){
 
-    int bufsize = CMD_BUFFER;
-    int position = 0;
-    char *buffer = malloc(sizeof(char) * bufsize);
-    int c;
-
-    if(!buffer) {
-        fprintf(stderr, "shell_read_line: allocation error\n");
-        exit(EXIT_FAILURE);
-    }
-    
-    printf(">>> ");
-    while (1) {
-    
-        c = getchar();
-        if(c == EOF || c == '\n'){
-            buffer[position] = '\0';
-            if (strlen(buffer) != 0){
-                append_to_history(buffer);
-            }
-            return buffer;
-        }
-        else {
-            buffer[position] = c;
-        }
-        position++;
-
-        if(position >= bufsize) {
-            bufsize += CMD_BUFFER;
-            buffer = realloc(buffer,bufsize);
-            if(!buffer) {
-                fprintf(stderr, "shell_read_line: allocation error\n");
-                exit(EXIT_FAILURE);
+    int i;
+    char *buffer; // no malloc needed if using readline lib
+    while(1){
+        if((buffer = readline(">>> ")) != NULL){
+            if(strlen(buffer) > 0){
+                add_history(buffer);
+                return buffer;
             }
         }
+        else{
+            fprintf(stderr, "shell_read_line: allocation error\n");
+            exit(EXIT_FAILURE);
+        }
     }
+
 }
 /* Function: shell_launch
  * ----------------------
@@ -326,8 +303,7 @@ int shell_launch(char **args){
     if (pid == 0){
         // child process
         if(execvp(args[0], args) == -1){
-            printf("args[0]: %s\n",args[0]);
-            perror("shell_launch");
+            printf("%s: No such command\n",args[0]);
         }
         exit(EXIT_FAILURE);
     }
