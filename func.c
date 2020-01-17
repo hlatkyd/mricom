@@ -24,8 +24,9 @@ void test_fork(){
     int i;
     int procnum;
     char testname[] = "test_process";
-    char kstpath[] = "/usr/bin/kst2";
-    char *args[] = {"/home/david/dev/mricom/test/kst_test.kst", NULL};
+    char *kstpath[] = {"kst2",
+                    "/home/david/dev/mricom/test/kst_test.kst",
+                    NULL};
     pid_t pid;
     pid = fork();
     printf("hello forks!\n");
@@ -34,7 +35,7 @@ void test_fork(){
 
         // child
         //system("kst2");
-        execvp(kstpath, args);
+        //execvp(kstpath[0], kstpath);
         //perror("execv");
         return;
     }
@@ -52,25 +53,28 @@ void test_fork(){
 /* fork a process and start random data generation */
 void test_generate_loop(){
 
-    int chnum = acqconst->chnum;
-    int npoints = acqconst->c_dbuffer;
-    int srate = SAMPLING_RATE;
     double duration = 30.0; // duration of data generation
+    int iter, max_iter;
+    double time, itertime, timestep;
     char process_name[] = "test_datagenerator";
     FILE *fp;
     pid_t pid;
 
-    /* setup loop */
-    double **data;
-    data = (double**)malloc(srate * chnum * sizeof(double));
-
+    timestep = 1 / acqconst->sampling_rate;
+    time = 0.0;
+    max_iter = 60;
+    itertime = (double)NDATA/SAMPLING_RATE;
     /* fork and run */
     if(pid == 0){
 
         // child
-        //system("kst2");
-        test_randfill_buffer();
-        //perror("execv");
+        for(iter=0; iter<max_iter; iter++){
+            time = time + itertime*iter;
+            test_randfill_buffer(time);
+            daq_save_buffer();
+            sleep(1);
+        }
+        //TODO process_remove something
         return;
     }
     else if(pid < 0){
@@ -82,8 +86,6 @@ void test_generate_loop(){
         process_add(pid, process_name);
     }
     return;
-
-    free(data);
 }
 /* generate one batch of test data into data_buffer*/
 void test_randfill_buffer(double start_time){
@@ -119,6 +121,14 @@ void test_system(){
 /*-------------------------------------------------------------------*/
 /*                          daq functions                            */
 /*-------------------------------------------------------------------*/
+
+/* Function: daq_start_acq()
+ * --------------------------
+ * Start acquisition on comedi device
+ */
+void daq_start_acq(){
+
+}
 
 /* Function: daq_init_kstfile
  * --------------------------
@@ -217,16 +227,17 @@ void daq_start_kst(){
     char *kst_settings_file;
 
     char process_name[] = "kst";
-    char kstpath[] = "/usr/bin/kst2";
     //TODO make this better
-    char *args[] = {"/home/david/dev/mricom/mricomkst.kst", 0};
+    char *kstpath[] = {"/usr/bin/kst2",
+                       "/home/david/dev/mricom/mricomkst.kst",
+                       NULL};
     pid_t pid;
     pid = fork();
 
     if(pid == 0){
         // child
         //system("kst2");
-        execvp(kstpath, args);
+        execvp(kstpath[0], kstpath);
         //perror("execv");
         return;
     }

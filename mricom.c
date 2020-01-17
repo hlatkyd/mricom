@@ -91,6 +91,7 @@ int sh_num_builtins(){
  * -----------------------
  * attempt to exit program gracefully
  */
+ //TODO check for unintended stop ps -ef, or something
 int sh_exit(char **args){
     
     int i,j,n;

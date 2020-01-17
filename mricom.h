@@ -1,6 +1,6 @@
 /* mricom.h
- *
- * 
+ * --------
+ * Device used: NiDAQ PCI-6035E
  *
  */
 
@@ -15,15 +15,18 @@
 #include <sys/wait.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+//TODO make this conditional for testing
+#include <comedi.h>
 
 /* monitoring constants */
 #define PROCPAR "/mnt/ramdisk/test.procpar"
 
 /* daq constants */
 #define DAQ_FILE "/mnt/ramdisk/mricomrt.dat"
+#define DEVICE "/dev/comedi0"
 #define NACHAN 5 // number of analog input channels
 #define NDCHAN 3 // number of digital input channels
-#define NDATA 1000 // sampled data buffer
+#define NDATA 200 // sampled data buffer
 #define SAMPLING_RATE 200 // daq sampling rate in samples/s
 #define TIME_WINDOW 20 // interval of time on charts in sec
 #define DELIMITER "\t"  // used in data file 
