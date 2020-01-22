@@ -7,7 +7,6 @@
 #include "func.h"
 
 extern processes *procpt;
-extern history *cmdhist;
 extern acquisition_const *acqconst;
 extern double **data_window;
 extern double **data_buffer;
@@ -128,6 +127,7 @@ void test_system(){
  */
 void daq_start_acq(){
 
+    return;
 }
 
 /* Function: daq_init_kstfile
@@ -293,31 +293,10 @@ void process_remove(int pid){
         procpt->nproc = n - 1;
     }
 }
-void append_to_history(char *buffer){
-
-    int num;
-    num = cmdhist->n;
-    strcpy(cmdhist->cmd[num], buffer);
-    cmdhist->n = num + 1;
-    return;
-}
 
 /*-------------------------------------------------------------------*/
 /*                     util user functions                           */
 /*-------------------------------------------------------------------*/
-void getproc(){
-    return;
-}
-/* list command history */
-void listh(){
-    
-    int i;
-    printf("Command history: \n");
-    for(i=0;i<cmdhist->n; i++){
-        printf("%s\n",cmdhist->cmd[i]);
-    }
-    return;
-}
 /* list current processes */
 void listp(){
 

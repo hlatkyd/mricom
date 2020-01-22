@@ -15,17 +15,21 @@
 #include <sys/wait.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-//TODO make this conditional for testing
-#include <comedi.h>
+// conditionally include comedilib
+#if defined(__has_include)
+    #if __has_include("comedilib.h")
+        #include <comedi.h>
+    #endif
+#endif
 
-/* monitoring constants */
+/* USER SETTINGS */
 #define PROCPAR "/mnt/ramdisk/test.procpar"
-
-/* daq constants */
 #define DAQ_FILE "/mnt/ramdisk/mricomrt.dat"
 #define DEVICE "/dev/comedi0"
-#define NACHAN 5 // number of analog input channels
-#define NDCHAN 3 // number of digital input channels
+
+/* daq constants */
+#define NACHAN 6 // number of analog input channels, + time
+#define NDCHAN 3 // number of digital input channels + time
 #define NDATA 200 // sampled data buffer
 #define SAMPLING_RATE 200 // daq sampling rate in samples/s
 #define TIME_WINDOW 20 // interval of time on charts in sec
@@ -41,17 +45,24 @@
 
 #ifndef MRICOM_H // header guard
 #define MRICOM_H
+
 typedef struct processes{
     int nproc;
     int procid[MAX_ID];
     char name[MAX_ID][MAX_NAME_LENGTH];
 } processes;
 
-typedef struct history{
-    int n;
-    char cmd[MAX_HISTORY_LENGTH][MAX_CMD_LENGTH];
-}history;
+typedef struct data{
+    double window[NACHAN][TIME_WINDOW * SAMPLING_RATE]; // data window in kst
+    double membuf[NACHAN][NDATA]; // full data buffer in memory
+    double daqbuf[NACHAN][NDATA]; // daq board data buffer
+} data;
 
+typedef struct settings{
+    
+}settings;
+
+//TODO render this obsolete
 /* acquisition constants, channels, monitor files, etc*/
 typedef struct acquisition_const{
     
@@ -67,7 +78,6 @@ typedef struct acquisition_const{
 } acquisition_const;
 
 extern processes *procpt;
-extern history *cmdhist;
 extern acquisition_const *acqconst;
 extern double **data_window; // this is what kst displays in realtime
 extern double **data_buffer; // this is where new samples go

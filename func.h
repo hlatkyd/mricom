@@ -17,16 +17,13 @@ void daq_init_kstfile();
 void daq_save_buffer();
 void daq_update_window();
 void daq_start_kst();
-void daq_start_acq()
+void daq_start_acq();
 /*util shell functions*/
 void addpid(int pid);
 void process_add(int pid, char *name);
 void process_remove(int pid);
-void append_to_history(char *cmd);
 
 /*util user interface funcs*/
-void getproc();
-void listh();
 void listp();
 void killp(int procid);
 

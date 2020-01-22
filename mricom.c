@@ -50,8 +50,6 @@ int sh_stop(char **args);
 
 /* init global process pointer */
 processes *procpt;
-/* init globla cmd history*/
-history *cmdhist;
 /* init global acquisition data */
 acquisition_const *acqconst;
 double **data_window;
@@ -106,7 +104,6 @@ int sh_exit(char **args){
     free(data_window);
     free(data_buffer);
     free(procpt);
-    free(cmdhist);
     free(acqconst);
     return 0;
 }
@@ -183,9 +180,6 @@ void init(){
     // malloc for process structure
     procpt = (processes*)malloc(sizeof(processes));
     procpt->nproc = 0;
-    // malloc for command history
-    cmdhist = (history*)malloc(sizeof(history));
-    cmdhist->n = 0;
 
     // malloc for real time data and data buffer
     c_dwindow = SAMPLING_RATE * TIME_WINDOW;
