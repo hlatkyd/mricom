@@ -53,10 +53,15 @@ int sh_killp(char **args);
 int sh_start(char **args);
 int sh_stop(char **args);
 
+/* init settings */
+daq_settings *settings;
+/* init data struct */
+daq_data *data;
 /* init global process pointer */
 processes *procpt;
 /* init global acquisition data */
 acquisition_const *acqconst;
+//TODO render obsolete
 double **data_window;
 double **data_buffer;
 
@@ -212,12 +217,12 @@ void init(){
     for(i=0; i<r_dwindow; i++){
         data_window[i] = (double*)malloc(c_dwindow * sizeof(double));
     }
+    if(data_window == NULL){
+        printf("error: data_window malloc\n");
+    }
     data_buffer = (double **)malloc(sizeof(double*) * channel_count);
     for(i=0; i<r_dbuffer; i++){
         data_buffer[i] = (double*)malloc(c_dbuffer * sizeof(double));
-    }
-    if(data_window == NULL){
-        printf("error: data_window malloc\n");
     }
     if(data_buffer == NULL){
         printf("error: data_buffer malloc\n");

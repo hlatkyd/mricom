@@ -52,15 +52,29 @@ typedef struct processes{
     char name[MAX_ID][MAX_NAME_LENGTH];
 } processes;
 
-typedef struct data{
+typedef struct daq_data{
     double window[NACHAN][TIME_WINDOW * SAMPLING_RATE]; // data window in kst
     double membuf[NACHAN][NDATA]; // full data buffer in memory
     double daqbuf[NACHAN][NDATA]; // daq board data buffer
-} data;
+} daq_data;
 
-typedef struct settings{
+typedef struct daq_settings{
+    int ndata;                  // number of data points in internal buffer
+    int nachan;                 // number of analog channels + time
+    int ndchan;                 // numver of digital channels + time
+    char achname[16][16];       // analog channel names
+    char dchname[16][16];       // digital channel names
+    int sampling_rate;          // samples per second
+    int time_window;            // time window for kst graphs in seconds
+    char kst_file[128];         // kst settings file
+    char data_window_file[128]; // kst data file
+    char daq_file[128];         // full data file
+    char procpar_file[128];     // vnmrj procpar file of curexp
+    char event_file[128];       // stimualtion event file
+    char event_file_dir[128];   // dir of stimulation event files
+    char sequence_file[128];    // file of mri sequence series and stimfiles
     
-}settings;
+}daq_settings;
 
 //TODO render this obsolete
 /* acquisition constants, channels, monitor files, etc*/
@@ -78,6 +92,9 @@ typedef struct acquisition_const{
 } acquisition_const;
 
 extern processes *procpt;
+extern daq_settings *settings;
+extern daq_data *data;
+// TODO render obsolete
 extern acquisition_const *acqconst;
 extern double **data_window; // this is what kst displays in realtime
 extern double **data_buffer; // this is where new samples go
