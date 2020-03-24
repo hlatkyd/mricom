@@ -162,7 +162,12 @@ void daq_init_kstfile(){
     /* start writing file */
     fp = fopen(filepath,"w");
     if(fp == NULL){
-        printf("error writing daq file on path %s\n",filepath);
+        //TODO check for this in init 
+        printf("\nerror writing daq file on path %s\n",filepath);
+        if(DEBUG > 0){
+            printf("Hint: check permissions, mounts...\n");
+        }
+        printf("Exiting...\n");
         exit(EXIT_FAILURE);
     }
     
@@ -291,6 +296,67 @@ void process_remove(int pid){
         strcpy(procpt->name[index],"");
         procpt->procid[index] = 0;
         procpt->nproc = n - 1;
+    }
+}
+/*-------------------------------------------------------------------*/
+/*                     util opaque functions                         */
+/*-------------------------------------------------------------------*/
+int is_kst_accessible(){
+
+    FILE *fp;
+    char path[1024];
+
+    fp = popen("which kst2","r");
+    if(fp == NULL){
+        printf("kst2 was not found in PATH.\n");
+    }
+    if(DEBUG > 0){
+        printf("Kst2 installed...\n");
+    }
+}
+int is_nicard_accessible(){
+    FILE *fp;
+    char path[1024];
+    int lines = 0;
+    int mlines = 5; // max lines to display when reading comedi_board_info
+
+    if(DEBUG > 0){
+        printf("Checking comedi device...\n"); 
+    }
+    //system("comedi_board_info");
+    fp = popen("comedi_board_info","r");
+    if(fp == NULL){
+        printf("command not found: 'comedi_board_info'");
+        return 1;
+    }
+
+    while((fgets(path, sizeof(path),fp) != NULL) && (lines != mlines)){
+        if(lines == 0){
+            lines += 1;
+            continue; // leave out the first line, no info there
+        }
+        printf("%s",path);
+        lines += 1;
+    }
+    if(lines == mlines){
+        if(DEBUG > 0){
+            printf("Comedi device OK...\n"); 
+        }
+        return 0;
+    } else {
+        printf("Comedi device not found...\n");
+        return 1;
+    }
+}
+int is_ramdisk_accessible(){
+    
+    if(access(RAMDISK, W_OK) == 0){
+        if(DEBUG > 0){
+            printf("Ramdisk mounted at %s...\n",RAMDISK);
+        }
+        return 0;
+    } else {
+        return 1;
     }
 }
 

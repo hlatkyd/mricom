@@ -124,12 +124,57 @@ int sh_exit(char **args){
 //TODO help description to builtins
 
 int sh_help(char **args){
-    int i;
-    printf("--- mricom v%d.%d ---\n\n",VERSION_MAJOR,VERSION_MINOR);
-    printf("Available commands:\n");
-    printf("===================\n");
-    for(i = 0; i<sh_num_builtins(); i++){
-        printf("  %s\n",builtin_str[i]);
+    int i, n;
+    char *cmdname;
+    cmdname = NULL;
+    if(args[1] == NULL){
+        printf("--- mricom v%d.%d ---\n\n",VERSION_MAJOR,VERSION_MINOR);
+        printf("Available commands:\n");
+        printf("===================\n");
+        for(i = 0; i<sh_num_builtins(); i++){
+            printf("  %s\n",builtin_str[i]);
+        }
+    }
+    else{
+        for(i=0; i<sh_num_builtins(); i++){
+            if(strcmp(builtin_str[i],args[1])==0){
+                cmdname = args[1];
+                n = i;
+            }
+        }
+        if(cmdname == NULL){
+            printf("No such command as '%s'\n",args[1]);
+            return 1;
+        }
+        printf("COMMAND: %s\n", cmdname);
+        printf("---------------\n");
+        switch (n)
+        {
+            case 0: // exit
+                printf("exit mricom gracefully\n");
+                break;
+            case 1: // help
+                printf("print available commands or get help for a command\n");
+                break;
+
+            case 2: // listp
+                printf("list mricom child processes\n");
+                break;
+            case 3: // killp
+                printf("kill mricom childprocess by id\n");
+                break;
+            case 4: // test
+                printf("test everything?\n");
+                break;
+            case 5: // start
+                printf("start data acquisition\n");
+                break;
+            case 6: // stop
+                printf("stop data acquisition\n");
+                break;
+        }
+        printf("\n");
+
     }
     return 1;
 }
@@ -181,11 +226,23 @@ void init(){
      *
      */
 
-    printf("-----------------------------------------------\n");
-    printf("mricom v%d.%d",VERSION_MAJOR,VERSION_MINOR);
-    printf(" - MRI control software using comedi\n");
-    printf("-----------------------------------------------\n");
-    printf("Type 'help' to list available commands.\n");
+
+    /* check for kst2 install and ramdisk mount and device */
+
+    if(DEBUG > 0){
+        printf("\nmricom startup check...\n");
+    }
+    if(is_ramdisk_accessible() != 0){
+        printf("Warning: ramdisk mount point not found....\n");
+    }
+    if(is_kst_accessible() != 0){
+        printf("\nWarning: installed Kst2 not found!\n");
+    }
+    if(is_nicard_accessible() != 0){
+        printf("\nWarning: NI card not found!\n");
+    }
+
+    //is_accessible(kstpath);
 
     // malloc for process structure
     procpt = (processes*)malloc(sizeof(processes));
@@ -230,6 +287,14 @@ void init(){
 
     // init daq file
     daq_init_kstfile();
+    if(DEBUG > 0){
+        printf("Everything OK...\n\n");
+    }
+    printf("-----------------------------------------------\n");
+    printf("mricom v%d.%d",VERSION_MAJOR,VERSION_MINOR);
+    printf(" - MRI control software using comedi\n");
+    printf("-----------------------------------------------\n");
+    printf("Type 'help' to list available commands.\n");
 }
 
 /* Function: shell_parse_cmd

@@ -22,6 +22,10 @@ void daq_start_acq();
 void addpid(int pid);
 void process_add(int pid, char *name);
 void process_remove(int pid);
+/* util opaqe functions */
+int is_kst_accessible();
+int is_ramdisk_accessible();
+int is_nicard_accessible();
 
 /*util user interface funcs*/
 void listp();

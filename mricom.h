@@ -7,6 +7,9 @@
 #define VERSION_MINOR 1
 #define VERSION_MAJOR 0
 
+// define debug
+#define DEBUG 1
+
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -23,6 +26,7 @@
 #endif
 
 /* USER SETTINGS */
+#define RAMDISK "/mnt/ramdisk/"
 #define PROCPAR "/mnt/ramdisk/test.procpar"
 #define DAQ_FILE "/mnt/ramdisk/mricomrt.dat"
 #define DEVICE "/dev/comedi0"
