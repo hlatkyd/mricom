@@ -1,6 +1,14 @@
 /* func.c
  *
  * mricom user function definitions
+ *
+ * contents:
+ *  - test functions
+ *  - util daq functions
+ *  - util shell functions
+ *  - util init
+ *  - util user functions
+ *  - main user functions 
  */
 
 #include "mricom.h"
@@ -8,8 +16,8 @@
 
 extern processes *procpt;
 extern acquisition_const *acqconst;
-extern double **data_window;
-extern double **data_buffer;
+extern daq_data *data;
+extern daq_settings *settings;
 
 /*-------------------------------------------------------------------*/
 /*                           test functions                          */
@@ -86,35 +94,12 @@ void test_generate_loop(){
     }
     return;
 }
-/* generate one batch of test data into data_buffer*/
+//TODO fix
 void test_randfill_buffer(double start_time){
 
-    /* generate times*/
-    int i, j;
-    double time, timestep;
-
-    time = start_time;
-    timestep = 1 / acqconst->sampling_rate; 
-    for(i=0; i<acqconst->c_dbuffer; i++){
-        time = timestep * i;
-        data_buffer[0][i] = time;
-    }
-    /* generate random data*/
-    for(i=0; i<acqconst->c_dbuffer; i++){
-        for(j=1; j<acqconst->chnum; j++){
-            data_buffer[j][i] = (double)rand()/(RAND_MAX);
-        }
-    }
-   
     return;
 }
 void test_system(){
-    /*
-    char kstpath[] = "/usr/bin/kst2";
-    char *args[] = {"/home/david/dev/mricom/kst_test.kst", NULL};
-    execvp(kstpath, args);
-    perror("execv");
-    */
     return;
 }
 /*-------------------------------------------------------------------*/
@@ -134,6 +119,7 @@ void daq_start_acq(){
  * --------------------------
  * Creates daq file read by kst. Fills initial data points with zeros
  */
+ //TODO fix data_buffer, make obsolete, REDO ALL
 void daq_init_kstfile(){
 
     int nchan = NACHAN + NDCHAN;
@@ -146,16 +132,16 @@ void daq_init_kstfile(){
     /* prepare data */
     for(i=0; i<acqconst->c_dwindow;i++){
         timestep = acqconst->time_window / acqconst->c_dwindow;
-        data_window[0][i] = -acqconst->time_window + timestep * i; 
+        //data->window[0][i] = -acqconst->time_window + timestep * i; 
     }
     for(i=0; i<acqconst->c_dwindow; i++){
         for(j=1; j<acqconst->chnum; j++){
-            data_window[j][i] = 0.0; 
+          //  data->window[j][i] = 0.0; 
         }
     }
     for(i=0; i<acqconst->c_dbuffer; i++){
         for(j=0; j<acqconst->chnum; j++){
-            data_buffer[j][i] = 0.0; 
+            //data_buffer[j][i] = 0.0; 
         }
     }
 
@@ -180,7 +166,7 @@ void daq_init_kstfile(){
 
     for(i=0; i<acqconst->c_dwindow; i++){
         for(j=0; j<acqconst->chnum; j++){
-            fprintf(fp,"%lf%s",data_window[j][i],dlt);
+            //fprintf(fp,"%lf%s",data->window[j][i],dlt);
         }
         fprintf(fp,"\n");
     }
@@ -214,7 +200,7 @@ void daq_save_buffer(){
     /* write data */
     for(i=0; i<acqconst->c_dbuffer; i++){
         for(j=0; j<acqconst->chnum; j++){
-            fprintf(fp,"%lf%s",data_buffer[j][i],dlt);
+            //fprintf(fp,"%lf%s",data_buffer[j][i],dlt);
         }
         fprintf(fp,"\n");
     }
@@ -232,7 +218,7 @@ void daq_start_kst(){
     char *kst_settings_file;
 
     char process_name[] = "kst";
-    //TODO make this better
+    //TODO make this better, use settings file
     char *kstpath[] = {"/usr/bin/kst2",
                        "/home/david/dev/mricom/mricomkst.kst",
                        NULL};
@@ -299,21 +285,60 @@ void process_remove(int pid){
     }
 }
 /*-------------------------------------------------------------------*/
-/*                     util opaque functions                         */
+/*                     util init functions                           */
 /*-------------------------------------------------------------------*/
+
+/* read settings.txt in parent directory and fill daq_settings struct*/
+void parse_settings_file(){
+
+    FILE *fp;
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    int n; // for counting position of '=' in settings line
+
+    fp = fopen("mricom_settings.txt","r");
+    if(fp == NULL){
+        printf("error on opening 'mricom_settings.txt'\n");
+        exit(EXIT_FAILURE);
+    }
+
+    while((read = getline(&line, &len, fp)) != -1){
+        if(line[0] == '#'){
+            continue; // leave out comments
+        }
+        printf("%s",line);
+
+    }
+
+
+    fclose(fp);
+    free(line);
+    return;
+}
+/* check for kst2 install */
 int is_kst_accessible(){
 
     FILE *fp;
     char path[1024];
-
+    char *s;
     fp = popen("which kst2","r");
+
     if(fp == NULL){
         printf("kst2 was not found in PATH.\n");
+        return 1;
+    }
+    s = fgets(path, sizeof(path),fp);
+    if(s == NULL){
+        printf("kst2 was not found in PATH.\n");
+        return 1;
     }
     if(DEBUG > 0){
-        printf("Kst2 installed...\n");
+        printf("kst2 found at %s",path);
     }
+    return 0;
 }
+/* as title...*/
 int is_nicard_accessible(){
     FILE *fp;
     char path[1024];
@@ -348,6 +373,7 @@ int is_nicard_accessible(){
         return 1;
     }
 }
+/* check for mounted ramdisk */
 int is_ramdisk_accessible(){
     
     if(access(RAMDISK, W_OK) == 0){

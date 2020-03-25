@@ -4,6 +4,13 @@
  *
  * shell code base: Stephen Brennan
  * https://github.com/brenns10/lsh
+ *
+ * contents:
+ * - 
+ *
+ *
+ *
+ *
  */
 
 #include "mricom.h"
@@ -24,6 +31,7 @@
 /* ----------------------*/
 /* acquisition constants */
 /* ----------------------*/
+//TODO move these into settings file and daq_settings struct
 const int channel_count = 6;
 const char *channel_names[] = {"TIME","RESP", "PULSOX", "ECG", "TRIG", "GATE"};
 const char procpar[] = PROCPAR;
@@ -61,9 +69,6 @@ daq_data *data;
 processes *procpt;
 /* init global acquisition data */
 acquisition_const *acqconst;
-//TODO render obsolete
-double **data_window;
-double **data_buffer;
 
 
 /* command names
@@ -111,8 +116,6 @@ int sh_exit(char **args){
         id = procpt->procid[i-1];
         killp(id);
     }
-    free(data_window);
-    free(data_buffer);
     free(procpt);
     free(acqconst);
     return 0;
@@ -193,7 +196,7 @@ int sh_listp(char **args){
 int sh_killp(char **args){
     char argin[10];
     int procid;
-    printf("args : %s\n",args[1]);
+    //printf("args : %s\n",args[1]);
     strcpy(argin, args[1]);
     procid = atoi(argin);
     killp(procid);
@@ -226,6 +229,7 @@ void init(){
      *
      */
 
+    parse_settings_file();
 
     /* check for kst2 install and ramdisk mount and device */
 
@@ -236,7 +240,7 @@ void init(){
         printf("Warning: ramdisk mount point not found....\n");
     }
     if(is_kst_accessible() != 0){
-        printf("\nWarning: installed Kst2 not found!\n");
+        printf("\nWarning: installed kst2 not found!\n");
     }
     if(is_nicard_accessible() != 0){
         printf("\nWarning: NI card not found!\n");
@@ -248,6 +252,8 @@ void init(){
     procpt = (processes*)malloc(sizeof(processes));
     procpt->nproc = 0;
 
+    //TODO make these obsolete, do it by parsing settings file and
+    // filling up the daq_settings struct
     // malloc for real time data and data buffer
     c_dwindow = SAMPLING_RATE * TIME_WINDOW;
     l_dwindow = SAMPLING_RATE * TIME_WINDOW * channel_count;
@@ -269,28 +275,9 @@ void init(){
         strcpy(acqconst->chname[i], channel_names[i]);
     }
 
-    //TODO malloc check
-    data_window = (double **)malloc(sizeof(double*) * channel_count);
-    for(i=0; i<r_dwindow; i++){
-        data_window[i] = (double*)malloc(c_dwindow * sizeof(double));
-    }
-    if(data_window == NULL){
-        printf("error: data_window malloc\n");
-    }
-    data_buffer = (double **)malloc(sizeof(double*) * channel_count);
-    for(i=0; i<r_dbuffer; i++){
-        data_buffer[i] = (double*)malloc(c_dbuffer * sizeof(double));
-    }
-    if(data_buffer == NULL){
-        printf("error: data_buffer malloc\n");
-    }
-
     // init daq file
     daq_init_kstfile();
-    if(DEBUG > 0){
-        printf("Everything OK...\n\n");
-    }
-    printf("-----------------------------------------------\n");
+    printf("\n-----------------------------------------------\n");
     printf("mricom v%d.%d",VERSION_MAJOR,VERSION_MINOR);
     printf(" - MRI control software using comedi\n");
     printf("-----------------------------------------------\n");
@@ -400,7 +387,16 @@ int shell_execute(char **args){
         //empty command
         return 1;
     }
-
+    /* prohibited shell commands*/
+    if(strcmp(args[0],"kill") == 0){
+        printf("did you mean 'killp [id]?'\n");
+        return 1;
+    }
+    if(strcmp(args[0],"rm") == 0){
+        printf("no 'rm' here!\n");
+        return 1;
+    }
+    /* starting builtins if found*/
     for(i=0; i<sh_num_builtins();i++){
         if(strcmp(args[0], builtin_str[i]) == 0){
             return (*builtin_func[i])(args);
