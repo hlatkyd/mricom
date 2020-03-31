@@ -287,7 +287,7 @@ void process_remove(int pid){
 /*-------------------------------------------------------------------*/
 /*                     util init functions                           */
 /*-------------------------------------------------------------------*/
-
+//TODO move this in another file
 /* read settings.txt in parent directory and fill daq_settings struct*/
 void parse_settings_file(){
 
@@ -297,7 +297,7 @@ void parse_settings_file(){
     ssize_t read;
     int n; // for counting position of '=' in settings line
 
-    fp = fopen("mricom_settings.txt","r");
+    fp = fopen("settings","r");
     if(fp == NULL){
         printf("error on opening 'mricom_settings.txt'\n");
         exit(EXIT_FAILURE);

@@ -25,12 +25,16 @@
     #endif
 #endif
 
+//TODO move to settings file
 /* USER SETTINGS */
 #define RAMDISK "/mnt/ramdisk/"
-#define PROCPAR "/mnt/ramdisk/test.procpar"
-#define DAQ_FILE "/mnt/ramdisk/mricomrt.dat"
+//#define PROCPAR "/mnt/ramdisk/test.procpar"
+//#define DAQ_FILE "/mnt/ramdisk/mricomrt.dat"
 #define DEVICE "/dev/comedi0"
+#define SETTINGS_FILE "settings"
 
+
+//TODO get this into settings file
 /* daq constants */
 #define NACHAN 6 // number of analog input channels, + time
 #define NDCHAN 3 // number of digital input channels + time
@@ -39,6 +43,7 @@
 #define TIME_WINDOW 20 // interval of time on charts in sec
 #define DELIMITER "\t"  // used in data file 
 
+// these are oK here
 /* constants for command history */
 #define MAX_ID 16 // maximum number of processes
 #define MAX_NAME_LENGTH 32 // maximum process name length
