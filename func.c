@@ -15,6 +15,7 @@
 #include "func.h"
 
 extern processes *procpt;
+//TODO make acqconst obsolete
 extern acquisition_const *acqconst;
 extern daq_data *data;
 extern daq_settings *settings;
@@ -245,6 +246,11 @@ void daq_start_kst(){
 /*-------------------------------------------------------------------*/
 /*                     util shell functions                          */
 /*-------------------------------------------------------------------*/
+
+/*
+ * Function: addpid
+ * -----------------
+ */
 void addpid(int pid){
     printf("adding pid: %d\n",pid);
     return;
@@ -287,36 +293,12 @@ void process_remove(int pid){
 /*-------------------------------------------------------------------*/
 /*                     util init functions                           */
 /*-------------------------------------------------------------------*/
-//TODO move this in another file
-/* read settings.txt in parent directory and fill daq_settings struct*/
-void parse_settings_file(){
 
-    FILE *fp;
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t read;
-    int n; // for counting position of '=' in settings line
-
-    fp = fopen("settings","r");
-    if(fp == NULL){
-        printf("error on opening 'mricom_settings.txt'\n");
-        exit(EXIT_FAILURE);
-    }
-
-    while((read = getline(&line, &len, fp)) != -1){
-        if(line[0] == '#'){
-            continue; // leave out comments
-        }
-        printf("%s",line);
-
-    }
-
-
-    fclose(fp);
-    free(line);
-    return;
-}
-/* check for kst2 install */
+/* Function: is_kst_accessible
+ * ---------------------------
+ *
+ * look for kst2 in PATH
+ */
 int is_kst_accessible(){
 
     FILE *fp;
@@ -338,7 +320,13 @@ int is_kst_accessible(){
     }
     return 0;
 }
-/* as title...*/
+/* Function: is_nicard_accessible
+ * ------------------------------
+ *
+ * calls comedi_board_info, checks if output corresponds with card
+ * TODO check for card version
+ */
+
 int is_nicard_accessible(){
     FILE *fp;
     char path[1024];
@@ -373,7 +361,12 @@ int is_nicard_accessible(){
         return 1;
     }
 }
-/* check for mounted ramdisk */
+/* Function: is_nicard_accessible
+ * ------------------------------
+ *
+ * checks if ramdisk is correctly mounted on path specified in settings
+ * TODO use daq_settings instead of hard define
+ */
 int is_ramdisk_accessible(){
     
     if(access(RAMDISK, W_OK) == 0){
@@ -389,7 +382,13 @@ int is_ramdisk_accessible(){
 /*-------------------------------------------------------------------*/
 /*                     util user functions                           */
 /*-------------------------------------------------------------------*/
-/* list current processes */
+
+/*
+ * Function: listp
+ * ---------------
+ * list current child processes of mricom
+ */
+
 void listp(){
 
     int i;
@@ -403,7 +402,16 @@ void listp(){
     }
     return;
 }
-/* kill specified process */
+/*
+ * Function: killp
+ * ---------------
+ * kill child processes of mricom corresponding to process id
+ * usage eg.:
+ *   killp 24685
+ *
+ * input:
+ *      procid
+ */
 void killp(int procid){
     printf("killing process: %d ... ",procid);
     /* search through local process tree for check*/

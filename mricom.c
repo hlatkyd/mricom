@@ -15,11 +15,8 @@
 
 #include "mricom.h"
 #include "func.h"
-#if defined(__has_include)
-    #if __has_include("comedilib.h")
-        #include "comedifunc.h"
-    #endif
-#endif
+#include "comedifunc.h"
+
 /* ----------------------*/
 /*     shell constants   */
 /* ----------------------*/

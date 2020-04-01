@@ -13,9 +13,13 @@ DAQ_FILE=/mnt/ramdisk/mricomrt.dat
 # procpar file includes the parameter "mricompar" to relay commands
 # TODO think this over
 PROCPAR=/mnt/vnmrserver/procpar
+# data file delimiter
+DELIMITER=\t
+# stimulation event file dir
+EVENT_DIR=events
 
 #------------------------------
-# NI CARD and kst2 related settings
+# NI CARD settings
 #------------------------------
 
 # number of analog input channels
@@ -28,8 +32,13 @@ N_DO_CHAN=1
 N_DATA=200
 # sampling rate in samples/sec
 SAMPLING_RATE=200
+
+#------------------------------
+# kst2 settings
+#------------------------------
+
 # kst2 displayed time window in sec
 TIME_WINDOW=20
-# data file delimiter
-DELIMITER=\t
+# kst2 layout settings file
+KST_FILE=mricomkst.kst
 

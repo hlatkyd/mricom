@@ -18,20 +18,15 @@
 #include <sys/wait.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-// conditionally include comedilib
-#if defined(__has_include)
-    #if __has_include("comedilib.h")
-        #include <comedi.h>
-    #endif
-#endif
+#include <comedilib.h>
+
 
 //TODO move to settings file
 /* USER SETTINGS */
 #define RAMDISK "/mnt/ramdisk/"
-//#define PROCPAR "/mnt/ramdisk/test.procpar"
-//#define DAQ_FILE "/mnt/ramdisk/mricomrt.dat"
+#define PROCPAR "/mnt/ramdisk/test.procpar"
+#define DAQ_FILE "/mnt/ramdisk/mricomrt.dat"
 #define DEVICE "/dev/comedi0"
-#define SETTINGS_FILE "settings"
 
 
 //TODO get this into settings file
@@ -43,7 +38,9 @@
 #define TIME_WINDOW 20 // interval of time on charts in sec
 #define DELIMITER "\t"  // used in data file 
 
-// these are oK here
+/* settings file containing user defined stuff */
+#define SETTINGS_FILE "settings"
+
 /* constants for command history */
 #define MAX_ID 16 // maximum number of processes
 #define MAX_NAME_LENGTH 32 // maximum process name length
@@ -68,20 +65,22 @@ typedef struct daq_data{
 } daq_data;
 
 typedef struct daq_settings{
-    int ndata;                  // number of data points in internal buffer
-    int nachan;                 // number of analog channels + time
-    int ndchan;                 // numver of digital channels + time
-    char achname[16][16];       // analog channel names
-    char dchname[16][16];       // digital channel names
-    int sampling_rate;          // samples per second
-    int time_window;            // time window for kst graphs in seconds
-    char kst_file[128];         // kst settings file
-    char data_window_file[128]; // kst data file
+    char device[32];
     char daq_file[128];         // full data file
     char procpar_file[128];     // vnmrj procpar file of curexp
     char event_file[128];       // stimualtion event file
     char event_file_dir[128];   // dir of stimulation event files
     char sequence_file[128];    // file of mri sequence series and stimfiles
+    char kst_file[128];         // kst settings file
+    char data_window_file[128]; // kst data file
+    int ndata;                  // number of data points in internal buffer
+    int n_ai_chan;              // number of analog channels
+    int n_di_chan;              // numver of digital input channels
+    int n_do_chan;              // numver of digital output channels
+    char achname[16][16];       // analog channel names
+    char dchname[16][16];       // digital channel names
+    int sampling_rate;          // samples per second
+    int time_window;            // time window for kst graphs in seconds
     
 }daq_settings;
 
