@@ -9,6 +9,11 @@
 
 extern daq_settings *settings;
 
+/*
+ * Function: parse_procpar
+ * -----------------------
+ */
+
 int parse_procpar(){
 
 }
@@ -74,6 +79,8 @@ int parse_settings(){
     char settings_file[] = SETTINGS_FILE;
     FILE *fp;
     char line[128];
+    char *token;
+    int int_val;
 
     fp = fopen(settings_file, "r");
     if(fp == NULL){
@@ -83,19 +90,74 @@ int parse_settings(){
     }
     while(fgets(line, 128, fp)){
         // ignore whitespace and comments
-        if(line[0] == ' ' || line[0] == '\t' || line[0] == '#'){
+        if(line[0] == '\n' || line[0] == '\t'
+           || line[0] == '#' || line[0] == ' '){
             continue;
         }
-        if(strncmp(line, "DEVICE", 6)){
-
+        // to future self: sorry about this...
+        /* general settings */
+        if(strncmp(line, "DEVICE", 6) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            strcpy(settings->device, token);
+        }
+        if(strncmp(line, "DAQ_FILE", 8) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            strcpy(settings->daq_file, token);
+        }
+        if(strncmp(line, "PROCPAR", 7) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            strcpy(settings->procpar, token);
+        }
+        if(strncmp(line, "DELIMITER", 9) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            strcpy(settings->delimiter, token);
+        }
+        if(strncmp(line, "EVENT_DIR", 9) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            strcpy(settings->event_dir, token);
+        }
+        /* ni card settings */
+        if(strncmp(line, "N_AI_CHAN", 9) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            settings->n_ai_chan = atoi(token);
+        }
+        if(strncmp(line, "N_DI_CHAN", 9) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            settings->n_di_chan = atoi(token);
+        }
+        if(strncmp(line, "N_DO_CHAN", 9) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            settings->n_do_chan = atoi(token);
+        }
+        if(strncmp(line, "N_DATA", 6) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            settings->n_data = atoi(token);
+        }
+        if(strncmp(line, "SAMPLING_RATE", 13) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            settings->sampling_rate = atoi(token);
+        }
+        /* kst2 settings */
+        if(strncmp(line, "KST_SETTINGS", 12) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            strcpy(settings->kst_settings, token);
+        }
+        if(strncmp(line, "TIME_WINDOW", 11) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            settings->time_window = atoi(token);
         }
     }
     return 0;
-}
-/*
- * Function: read_settings_line
- * ----------------------------
- */
-void read_settings_line(){
-
 }

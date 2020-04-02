@@ -67,13 +67,13 @@ typedef struct daq_data{
 typedef struct daq_settings{
     char device[32];
     char daq_file[128];         // full data file
-    char procpar_file[128];     // vnmrj procpar file of curexp
-    char event_file[128];       // stimualtion event file
-    char event_file_dir[128];   // dir of stimulation event files
+    char procpar[128];          // vnmrj procpar file of curexp
+    char event_dir[128];        // dir of stimulation event files
     char sequence_file[128];    // file of mri sequence series and stimfiles
-    char kst_file[128];         // kst settings file
+    char kst_settings[128];         // kst settings file
     char data_window_file[128]; // kst data file
-    int ndata;                  // number of data points in internal buffer
+    int n_data;                 // number of data points in internal buffer
+    char delimiter[1];
     int n_ai_chan;              // number of analog channels
     int n_di_chan;              // numver of digital input channels
     int n_do_chan;              // numver of digital output channels

@@ -1,5 +1,5 @@
-#config file for mricom
-
+# config file for mricom
+# Format, names are hardcoded into parser, do not change
 
 #------------------
 # GENERAL SETTINGS

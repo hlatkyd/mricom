@@ -18,12 +18,13 @@ void daq_save_buffer();
 void daq_update_window();
 void daq_start_kst();
 void daq_start_acq();
+
 /*util shell functions*/
 void addpid(int pid);
 void process_add(int pid, char *name);
 void process_remove(int pid);
+
 /* util opaqe functions */
-void parse_settings_file();
 int is_kst_accessible();
 int is_ramdisk_accessible();
 int is_nicard_accessible();

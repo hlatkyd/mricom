@@ -16,6 +16,7 @@
 #include "mricom.h"
 #include "func.h"
 #include "comedifunc.h"
+#include "parser.h"
 
 /* ----------------------*/
 /*     shell constants   */
@@ -226,7 +227,9 @@ void init(){
      *
      */
 
-    parse_settings_file();
+    // malloc for settings
+    settings = (daq_settings*)malloc(sizeof(daq_settings));
+    parse_settings();
 
     /* check for kst2 install and ramdisk mount and device */
 
