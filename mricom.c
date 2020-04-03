@@ -32,8 +32,6 @@
 //TODO move these into settings file and daq_settings struct
 const int channel_count = 6;
 const char *channel_names[] = {"TIME","RESP", "PULSOX", "ECG", "TRIG", "GATE"};
-const char procpar[] = PROCPAR;
-const char daq_file[] = DAQ_FILE;
 
 /* ----------------------*/
 /* function declarations */
@@ -218,6 +216,11 @@ int sh_stop(char **args){
  */
 void init(){
 
+    printf("\n-----------------------------------------------\n");
+    printf("mricom v%d.%d",VERSION_MAJOR,VERSION_MINOR);
+    printf(" - MRI control software using comedi\n");
+    printf("-----------------------------------------------\n");
+
     int i;
     int r_dwindow, c_dwindow, l_dwindow;
     int r_dbuffer, c_dbuffer, l_dbuffer;
@@ -258,8 +261,8 @@ void init(){
     c_dwindow = SAMPLING_RATE * TIME_WINDOW;
     l_dwindow = SAMPLING_RATE * TIME_WINDOW * channel_count;
     r_dwindow = channel_count;
-    c_dbuffer = NDATA;
-    l_dbuffer = NDATA * channel_count;
+    c_dbuffer = NBUFFER;
+    l_dbuffer = NBUFFER * channel_count;
     r_dbuffer = channel_count;
 
     // setup acquisition constants
@@ -269,19 +272,16 @@ void init(){
     acqconst->c_dbuffer = c_dbuffer;
     acqconst->time_window = (double)TIME_WINDOW;
     acqconst->sampling_rate = (double)SAMPLING_RATE;
-    strcpy(acqconst->acqfile, daq_file);
-    strcpy(acqconst->procpar_path, procpar);
+    strcpy(acqconst->acqfile, settings->daq_file);
+    strcpy(acqconst->procpar_path, settings->procpar);
     for(i = 0; i<channel_count; i++){
         strcpy(acqconst->chname[i], channel_names[i]);
     }
 
     // init daq file
     daq_init_kstfile();
-    printf("\n-----------------------------------------------\n");
-    printf("mricom v%d.%d",VERSION_MAJOR,VERSION_MINOR);
-    printf(" - MRI control software using comedi\n");
-    printf("-----------------------------------------------\n");
     printf("Type 'help' to list available commands.\n");
+    printf("-----------------------------------------------\n");
 }
 
 /* Function: shell_parse_cmd

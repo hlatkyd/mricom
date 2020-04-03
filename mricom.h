@@ -20,20 +20,12 @@
 #include <readline/history.h>
 #include <comedilib.h>
 
-
-//TODO move to settings file
-/* USER SETTINGS */
-#define RAMDISK "/mnt/ramdisk/"
-#define PROCPAR "/mnt/ramdisk/test.procpar"
-#define DAQ_FILE "/mnt/ramdisk/mricomrt.dat"
-#define DEVICE "/dev/comedi0"
-
-
-//TODO get this into settings file
 /* daq constants */
-#define NACHAN 6 // number of analog input channels, + time
-#define NDCHAN 3 // number of digital input channels + time
-#define NDATA 200 // sampled data buffer
+#define NAICHAN 6 // number of analog input channels
+#define NAOCHAN 0 // number of analog output channels
+#define NDICHAN 3 // number of digital input channels
+#define NDOCHAN 1 // number of digital output channels
+#define NBUFFER 200 // sampled data buffer
 #define SAMPLING_RATE 200 // daq sampling rate in samples/s
 #define TIME_WINDOW 20 // interval of time on charts in sec
 #define DELIMITER "\t"  // used in data file 
@@ -59,30 +51,28 @@ typedef struct processes{
 } processes;
 
 typedef struct daq_data{
-    double window[NACHAN][TIME_WINDOW * SAMPLING_RATE]; // data window in kst
-    double membuf[NACHAN][NDATA]; // full data buffer in memory
-    double daqbuf[NACHAN][NDATA]; // daq board data buffer
+    double window[NAICHAN][TIME_WINDOW * SAMPLING_RATE]; // data window in kst
+    double membuf[NAICHAN][NBUFFER]; // full data buffer in memory
+    double daqbuf[NAICHAN][NBUFFER]; // daq board data buffer
 } daq_data;
 
 typedef struct daq_settings{
     char device[32];
     char daq_file[128];         // full data file
+    char ramdisk[128];          // ramdisk for fast data logging
     char procpar[128];          // vnmrj procpar file of curexp
     char event_dir[128];        // dir of stimulation event files
+    //TODO is this needed?
     char sequence_file[128];    // file of mri sequence series and stimfiles
-    char kst_settings[128];         // kst settings file
+    char kst_settings[128];     // kst settings file
+    char kst_path[128];         // path to kst2, found while init
+    int channels;               // number of channels to save data from
+    char channel_names[16][16]; // channel names in kst and data file
     char data_window_file[128]; // kst data file
-    int n_data;                 // number of data points in internal buffer
-    char delimiter[1];
-    int n_ai_chan;              // number of analog channels
-    int n_di_chan;              // numver of digital input channels
-    int n_do_chan;              // numver of digital output channels
-    char achname[16][16];       // analog channel names
-    char dchname[16][16];       // digital channel names
-    int sampling_rate;          // samples per second
-    int time_window;            // time window for kst graphs in seconds
     
 }daq_settings;
+extern daq_settings *settings;
+
 
 //TODO render this obsolete
 /* acquisition constants, channels, monitor files, etc*/
@@ -100,7 +90,6 @@ typedef struct acquisition_const{
 } acquisition_const;
 
 extern processes *procpt;
-extern daq_settings *settings;
 extern daq_data *data;
 // TODO render obsolete
 extern acquisition_const *acqconst;

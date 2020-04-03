@@ -80,7 +80,8 @@ int parse_settings(){
     FILE *fp;
     char line[128];
     char *token;
-    int int_val;
+    char *buf;
+    int len;
 
     fp = fopen(settings_file, "r");
     if(fp == NULL){
@@ -94,7 +95,10 @@ int parse_settings(){
            || line[0] == '#' || line[0] == ' '){
             continue;
         }
-        // to future self: sorry about this...
+        //remove newline
+        len = strlen(line);
+        if(line[len-1] == '\n')
+            line[len-1] = 0;
         /* general settings */
         if(strncmp(line, "DEVICE", 6) == 0){
             token = strtok(line,"=");
@@ -111,41 +115,15 @@ int parse_settings(){
             token = strtok(NULL,"=");
             strcpy(settings->procpar, token);
         }
-        if(strncmp(line, "DELIMITER", 9) == 0){
-            token = strtok(line,"=");
-            token = strtok(NULL,"=");
-            strcpy(settings->delimiter, token);
-        }
         if(strncmp(line, "EVENT_DIR", 9) == 0){
             token = strtok(line,"=");
             token = strtok(NULL,"=");
             strcpy(settings->event_dir, token);
         }
-        /* ni card settings */
-        if(strncmp(line, "N_AI_CHAN", 9) == 0){
+        if(strncmp(line, "RAMDISK", 7) == 0){
             token = strtok(line,"=");
             token = strtok(NULL,"=");
-            settings->n_ai_chan = atoi(token);
-        }
-        if(strncmp(line, "N_DI_CHAN", 9) == 0){
-            token = strtok(line,"=");
-            token = strtok(NULL,"=");
-            settings->n_di_chan = atoi(token);
-        }
-        if(strncmp(line, "N_DO_CHAN", 9) == 0){
-            token = strtok(line,"=");
-            token = strtok(NULL,"=");
-            settings->n_do_chan = atoi(token);
-        }
-        if(strncmp(line, "N_DATA", 6) == 0){
-            token = strtok(line,"=");
-            token = strtok(NULL,"=");
-            settings->n_data = atoi(token);
-        }
-        if(strncmp(line, "SAMPLING_RATE", 13) == 0){
-            token = strtok(line,"=");
-            token = strtok(NULL,"=");
-            settings->sampling_rate = atoi(token);
+            strcpy(settings->ramdisk, token);
         }
         /* kst2 settings */
         if(strncmp(line, "KST_SETTINGS", 12) == 0){
@@ -153,10 +131,15 @@ int parse_settings(){
             token = strtok(NULL,"=");
             strcpy(settings->kst_settings, token);
         }
-        if(strncmp(line, "TIME_WINDOW", 11) == 0){
+        if(strncmp(line, "CHANNELS", 8) == 0){
             token = strtok(line,"=");
             token = strtok(NULL,"=");
-            settings->time_window = atoi(token);
+            settings->channels = atoi(token);
+        }
+        if(strncmp(line, "CHANNEL_NAMES", 8) == 0){
+            token = strtok(line,"=");
+            token = strtok(NULL,"=");
+            strcpy(buf, token);
         }
     }
     return 0;

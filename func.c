@@ -71,7 +71,7 @@ void test_generate_loop(){
     timestep = 1 / acqconst->sampling_rate;
     time = 0.0;
     max_iter = 60;
-    itertime = (double)NDATA/SAMPLING_RATE;
+    itertime = (double)NBUFFER/SAMPLING_RATE;
     /* fork and run */
     if(pid == 0){
 
@@ -123,12 +123,12 @@ void daq_start_acq(){
  //TODO fix data_buffer, make obsolete, REDO ALL
 void daq_init_kstfile(){
 
-    int nchan = NACHAN + NDCHAN;
+    int nchan = NAICHAN + NDICHAN + NDOCHAN;
     int samples = SAMPLING_RATE * TIME_WINDOW;
     int i,j;
     double timestep;
     char *dlt = DELIMITER;
-    char *filepath = DAQ_FILE;
+    char *filepath = settings->daq_file;
     FILE *fp;
     /* prepare data */
     for(i=0; i<acqconst->c_dwindow;i++){
@@ -215,10 +215,9 @@ void daq_save_buffer(){
  */
 void daq_start_kst(){
 
-    char *kst_path;
-    char *kst_settings_file;
-
-    char process_name[] = "kst";
+    char *kst_path = settings->kst_path;
+    char *kst_settings_file = settings->kst_settings;
+    char process_name[] = "kst"; // local process name
     //TODO make this better, use settings file
     char *kstpath[] = {"/usr/bin/kst2",
                        "/home/david/dev/mricom/mricomkst.kst",
@@ -318,6 +317,7 @@ int is_kst_accessible(){
     if(DEBUG > 0){
         printf("kst2 found at %s",path);
     }
+    strcpy(settings->kst_path, path);
     return 0;
 }
 /* Function: is_nicard_accessible
@@ -369,9 +369,9 @@ int is_nicard_accessible(){
  */
 int is_ramdisk_accessible(){
     
-    if(access(RAMDISK, W_OK) == 0){
+    if(access(settings->ramdisk, W_OK) == 0){
         if(DEBUG > 0){
-            printf("Ramdisk mounted at %s...\n",RAMDISK);
+            printf("Ramdisk mounted at %s...\n",settings->ramdisk);
         }
         return 0;
     } else {
