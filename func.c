@@ -119,38 +119,43 @@ void daq_start_acq(){
 /* Function: daq_init_kstfile
  * --------------------------
  * Creates daq file read by kst. Fills initial data points with zeros
+ *
+ * kst data file format
+ *
+ * # TIME   CHANNEL_1  CHANNEL_2    .... 
+ * time_1   data_1     data_2       ..
+ *
+ * channels go from analog input_1-n, analog output, digital in, digital out etc
  */
  //TODO fix data_buffer, make obsolete, REDO ALL
 void daq_init_kstfile(){
 
-    int nchan = NAICHAN + NDICHAN + NDOCHAN;
+    int nchan = NCHAN;
     int samples = SAMPLING_RATE * TIME_WINDOW;
-    int i,j;
-    double timestep;
+    double time_window = (double) TIME_WINDOW;
+    double timestep = (double) 1 / SAMPLING_RATE;
     char *dlt = DELIMITER;
-    char *filepath = settings->daq_file;
     FILE *fp;
+    int i,j; // i is channel; j is timepoint index
     /* prepare data */
-    for(i=0; i<acqconst->c_dwindow;i++){
-        timestep = acqconst->time_window / acqconst->c_dwindow;
-        //data->window[0][i] = -acqconst->time_window + timestep * i; 
-    }
-    for(i=0; i<acqconst->c_dwindow; i++){
-        for(j=1; j<acqconst->chnum; j++){
-          //  data->window[j][i] = 0.0; 
-        }
-    }
-    for(i=0; i<acqconst->c_dbuffer; i++){
-        for(j=0; j<acqconst->chnum; j++){
-            //data_buffer[j][i] = 0.0; 
+    for(i=0; i<nchan;i++){
+        for(j=0; j<samples; j++){
+            // [channel][datapoint]
+            printf("i, j %d, %d\n",i,j);
+            if(i == 0){
+                //data->window[0][j] = -time_window + timestep * j; 
+            } else {
+                data->window[i][j] = 0.0; 
+            }
         }
     }
 
-    /* start writing file */
-    fp = fopen(filepath,"w");
+    /*
+    //start writing file /
+    fp = fopen(settings->daq_file,"w");
     if(fp == NULL){
         //TODO check for this in init 
-        printf("\nerror writing daq file on path %s\n",filepath);
+        printf("\nerror writing daq file on path %s\n",settings->daq_file);
         if(DEBUG > 0){
             printf("Hint: check permissions, mounts...\n");
         }
@@ -158,21 +163,21 @@ void daq_init_kstfile(){
         exit(EXIT_FAILURE);
     }
     
-    /* write header */
-    for(i=0; i<acqconst->chnum; i++){
-        fprintf(fp,"%s%s",acqconst->chname[i],dlt);
+    // write header
+    for(i=0; i<nchan; i++){
+        fprintf(fp,"%s%s",settings->channel_names[i],dlt);
     }
     fprintf(fp,"\n");
-    /* write data */
+    // write data
 
-    for(i=0; i<acqconst->c_dwindow; i++){
-        for(j=0; j<acqconst->chnum; j++){
-            //fprintf(fp,"%lf%s",data->window[j][i],dlt);
+    for(i=0; i<nchan; i++){
+        for(j=0; j<samples; j++){
+            fprintf(fp,"%lf%s",data->window[j][i],dlt);
         }
         fprintf(fp,"\n");
     }
-
     fclose(fp);
+    */
 
 }
 /* Function: daq_update_window
@@ -218,17 +223,26 @@ void daq_start_kst(){
     char *kst_path = settings->kst_path;
     char *kst_settings_file = settings->kst_settings;
     char process_name[] = "kst"; // local process name
-    //TODO make this better, use settings file
-    char *kstpath[] = {"/usr/bin/kst2",
-                       "/home/david/dev/mricom/mricomkst.kst",
-                       NULL};
+    struct stat s= {0};
+    // check if kst settings is in current dir
+    if(!(stat(settings->kst_settings,&s))){
+        if(ENOENT == errno)
+            perror("can't find kst settings file in current dir\n");
+    }
+    char *kstcall[3];
+    kstcall[0] = settings->kst_path;
+    kstcall[1] = settings->kst_settings;
+    kstcall[2] = NULL;
+    printf("kst settings %s\n",settings->kst_settings);
+    printf("%s %s %s\n",kstcall[0],kstcall[1],kstcall[2]);
+
     pid_t pid;
     pid = fork();
 
     if(pid == 0){
         // child
         //system("kst2");
-        execvp(kstpath[0], kstpath);
+        execvp(kstcall[0], kstcall);
         //perror("execv");
         return;
     }
@@ -302,7 +316,7 @@ int is_kst_accessible(){
 
     FILE *fp;
     char path[1024];
-    char *s;
+    char *s, *pos;
     fp = popen("which kst2","r");
 
     if(fp == NULL){
@@ -316,6 +330,12 @@ int is_kst_accessible(){
     }
     if(DEBUG > 0){
         printf("kst2 found at %s",path);
+    }
+    // strip eol
+    if((pos = strchr(path, '\n')) != NULL){
+        *pos = '\0';
+    } else{
+        printf("oops, something wrong in 'is_kst_accessible'\n");
     }
     strcpy(settings->kst_path, path);
     return 0;
@@ -442,6 +462,7 @@ void reset(){
     for(i=procpt->nproc; i>0; i--){
         killp(procpt->procid[i-1]);
     }
+    //TODO redo this
     daq_init_kstfile();
     printf("done\n");
     return;

@@ -79,9 +79,11 @@ int parse_settings(){
     char settings_file[] = SETTINGS_FILE;
     FILE *fp;
     char line[128];
+    char buf[128];
     char *token;
-    char *buf;
     int len;
+    int i = 0;
+    int nchan = NCHAN; // for comparing number of channel to channel names
 
     fp = fopen(settings_file, "r");
     if(fp == NULL){
@@ -134,12 +136,28 @@ int parse_settings(){
         if(strncmp(line, "CHANNELS", 8) == 0){
             token = strtok(line,"=");
             token = strtok(NULL,"=");
-            settings->channels = atoi(token);
+            // so far 'default' only...
+            if(strcmp(token,"default") == 0){
+                settings->channels = NCHAN;
+            } else {
+                printf("settings error, channels only 'default'\n");
+                settings->channels = NCHAN;
+            }
+
         }
         if(strncmp(line, "CHANNEL_NAMES", 8) == 0){
             token = strtok(line,"=");
             token = strtok(NULL,"=");
             strcpy(buf, token);
+            token = strtok(buf, ",");
+            while(token != NULL){
+                strcpy(settings->channel_names[i], token);
+                i++;
+                token = strtok(NULL,",");
+            }
+            if(i != nchan){
+                printf("warning: more channels than channel names\n");
+            }
         }
     }
     return 0;

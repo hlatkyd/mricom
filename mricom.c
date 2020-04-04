@@ -279,6 +279,7 @@ void init(){
     }
 
     // init daq file
+    // TODO redo
     daq_init_kstfile();
     printf("Type 'help' to list available commands.\n");
     printf("-----------------------------------------------\n");

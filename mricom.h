@@ -15,16 +15,19 @@
 #include <time.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <comedilib.h>
 
 /* daq constants */
-#define NAICHAN 6 // number of analog input channels
+#define NAICHAN 3 // number of analog input channels
 #define NAOCHAN 0 // number of analog output channels
-#define NDICHAN 3 // number of digital input channels
+#define NDICHAN 1 // number of digital input channels
 #define NDOCHAN 1 // number of digital output channels
+#define NCHAN  (NAICHAN+NAOCHAN+NDICHAN+NDOCHAN + 1) // +time
 #define NBUFFER 200 // sampled data buffer
 #define SAMPLING_RATE 200 // daq sampling rate in samples/s
 #define TIME_WINDOW 20 // interval of time on charts in sec
@@ -44,14 +47,17 @@
 #ifndef MRICOM_H // header guard
 #define MRICOM_H
 
+/* procerss struct to keep track of local child processes*/
 typedef struct processes{
     int nproc;
     int procid[MAX_ID];
     char name[MAX_ID][MAX_NAME_LENGTH];
 } processes;
 
+/* struct mainly for daq board data acquisition*/
 typedef struct daq_data{
-    double window[NAICHAN][TIME_WINDOW * SAMPLING_RATE]; // data window in kst
+    double window[NCHAN][TIME_WINDOW * SAMPLING_RATE]; // data window in kst
+    double kst[NCHAN][TIME_WINDOW * SAMPLING_RATE]; // all channels + time
     double membuf[NAICHAN][NBUFFER]; // full data buffer in memory
     double daqbuf[NAICHAN][NBUFFER]; // daq board data buffer
 } daq_data;
@@ -59,6 +65,8 @@ typedef struct daq_data{
 typedef struct daq_settings{
     char device[32];
     char daq_file[128];         // full data file
+    //TODO make this separate or not?
+    char kst_file[128];         // only contain data for kst display window
     char ramdisk[128];          // ramdisk for fast data logging
     char procpar[128];          // vnmrj procpar file of curexp
     char event_dir[128];        // dir of stimulation event files
@@ -68,7 +76,6 @@ typedef struct daq_settings{
     char kst_path[128];         // path to kst2, found while init
     int channels;               // number of channels to save data from
     char channel_names[16][16]; // channel names in kst and data file
-    char data_window_file[128]; // kst data file
     
 }daq_settings;
 extern daq_settings *settings;
@@ -96,4 +103,3 @@ extern acquisition_const *acqconst;
 extern double **data_window; // this is what kst displays in realtime
 extern double **data_buffer; // this is where new samples go
 #endif
-//TODO define user functions here?
