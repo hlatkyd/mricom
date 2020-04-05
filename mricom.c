@@ -27,13 +27,6 @@
 #define ARG_DELIM " \t\r\n\a"
 
 /* ----------------------*/
-/* acquisition constants */
-/* ----------------------*/
-//TODO move these into settings file and daq_settings struct
-const int channel_count = 6;
-const char *channel_names[] = {"TIME","RESP", "PULSOX", "ECG", "TRIG", "GATE"};
-
-/* ----------------------*/
 /* function declarations */
 /* ----------------------*/
 
@@ -56,6 +49,7 @@ int sh_listp(char **args);
 int sh_killp(char **args);
 int sh_start(char **args);
 int sh_stop(char **args);
+int sh_listset(char **args);
 
 /* init settings */
 daq_settings *settings;
@@ -63,8 +57,6 @@ daq_settings *settings;
 daq_data *data;
 /* init global process pointer */
 processes *procpt;
-/* init global acquisition data */
-acquisition_const *acqconst;
 
 
 /* command names
@@ -77,7 +69,8 @@ char *builtin_str[] = {
     "killp",
     "test",
     "start",
-    "stop"
+    "stop",
+    "listset"
 };
 /* functions for builtin commands*/
 /* should be same oreder as builtin_str list names*/
@@ -88,7 +81,8 @@ int (*builtin_func[]) (char **) = {
     &sh_killp,
     &sh_test,
     &sh_start,
-    &sh_stop
+    &sh_stop,
+    &sh_listset
 };
 int sh_num_builtins(){
     return sizeof(builtin_str) / sizeof(char*);
@@ -113,14 +107,14 @@ int sh_exit(char **args){
         killp(id);
     }
     free(procpt);
-    free(acqconst);
+    free(data);
+    free(settings);
     return 0;
 }
 /* Shell function sh_help
  * ----------------------
  * prints available builtin commands
  */
-//TODO help description to builtins
 
 int sh_help(char **args){
     int i, n;
@@ -155,7 +149,6 @@ int sh_help(char **args){
             case 1: // help
                 printf("print available commands or get help for a command\n");
                 break;
-
             case 2: // listp
                 printf("list mricom child processes\n");
                 break;
@@ -171,6 +164,9 @@ int sh_help(char **args){
             case 6: // stop
                 printf("stop data acquisition\n");
                 break;
+            case 7: // listset
+                printf("print settings struct\n");
+                break;
         }
         printf("\n");
 
@@ -178,10 +174,23 @@ int sh_help(char **args){
     return 1;
 }
 int sh_test(char **args){
+    //TODO implement usage by specific arguments
+    // start, stop, stim etc
+    clock_t time;
+    if(settings->is_daq_on == 1){
+        printf("acquisition is ON, testing prohibited\n");
+        return 1;
+    }
     test_print(args);
+    if(strcmp(args[1],"gen") == 0){
+        time = clock();
+        test_randfill_buffer(0.0);
+        time = clock() - time;
+        double ttime = ((double)time)/CLOCKS_PER_SEC;
+        printf(" buffer fill exec time: %f\n",ttime);
+    }
     //test_fork();
-    daq_start_kst();
-    //test_randfill_buffer(0.0);
+    //daq_start_kst();
     //test_system();
     return 1;
 }
@@ -199,12 +208,23 @@ int sh_killp(char **args){
     return 1;
 }
 int sh_start(char **args){
+    //TODO make arguments useful, eg kst start
 
-    daq_start_kst();
+    start();
     return 1;
 }
 int sh_stop(char **args){
-
+    // TODO make arguments as well, eg kst stop
+    stop();
+    return 1;
+}
+int sh_listset(char **args){
+    //TODO maybe arguments here as well such as list [args, eg set]??
+    double elapsed_time;
+    listsettings();
+    printf("\n");
+    elapsed_time = daq_timer_elapsed();
+    printf("elapsed time = %lf\n",elapsed_time);
     return 1;
 }
 /*-----------------------------------------------------------------------------*/
@@ -221,18 +241,10 @@ void init(){
     printf(" - MRI control software using comedi\n");
     printf("-----------------------------------------------\n");
 
-    int i;
-    int r_dwindow, c_dwindow, l_dwindow;
-    int r_dbuffer, c_dbuffer, l_dbuffer;
-    /* rows: channels
-     * cols: data points
-     *
-     *
-     */
-
     // malloc for settings
     settings = (daq_settings*)malloc(sizeof(daq_settings));
     parse_settings();
+    settings->is_daq_on = 0;
 
     /* check for kst2 install and ramdisk mount and device */
 
@@ -255,32 +267,12 @@ void init(){
     procpt = (processes*)malloc(sizeof(processes));
     procpt->nproc = 0;
 
-    //TODO make these obsolete, do it by parsing settings file and
-    // filling up the daq_settings struct
-    // malloc for real time data and data buffer
-    c_dwindow = SAMPLING_RATE * TIME_WINDOW;
-    l_dwindow = SAMPLING_RATE * TIME_WINDOW * channel_count;
-    r_dwindow = channel_count;
-    c_dbuffer = NBUFFER;
-    l_dbuffer = NBUFFER * channel_count;
-    r_dbuffer = channel_count;
-
-    // setup acquisition constants
-    acqconst = (acquisition_const*)malloc(sizeof(acquisition_const));
-    acqconst->chnum = channel_count;
-    acqconst->c_dwindow = c_dwindow;
-    acqconst->c_dbuffer = c_dbuffer;
-    acqconst->time_window = (double)TIME_WINDOW;
-    acqconst->sampling_rate = (double)SAMPLING_RATE;
-    strcpy(acqconst->acqfile, settings->daq_file);
-    strcpy(acqconst->procpar_path, settings->procpar);
-    for(i = 0; i<channel_count; i++){
-        strcpy(acqconst->chname[i], channel_names[i]);
-    }
+    // malloc for daq_data
+    data = (daq_data*)malloc(sizeof(daq_data));
 
     // init daq file
-    // TODO redo
     daq_init_kstfile();
+    daq_timer_start();
     printf("Type 'help' to list available commands.\n");
     printf("-----------------------------------------------\n");
 }

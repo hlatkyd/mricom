@@ -7,12 +7,15 @@
 void test_print(char **args);
 void test_fork();
 void test_randfill_buffer();
-void test_generate_loop();
+void test_generate();
 void test_write_data();
 void test_write_data_init();
 void test_system();
 
 /* daq functions */
+void daq_timer_start();
+double daq_timer_elapsed();
+void daq_timer_stop();
 void daq_init_kstfile();
 void daq_save_buffer();
 void daq_update_window();
@@ -30,10 +33,12 @@ int is_ramdisk_accessible();
 int is_nicard_accessible();
 
 /*util user interface funcs*/
+void listsettings();
+void catdata();
 void listp();
 void killp(int procid);
 
 /*main user interface funcs*/
 void start();
-void stpo();
+void stop();
 void reset();

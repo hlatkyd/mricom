@@ -11,13 +11,14 @@
 #define DEBUG 1
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <comedilib.h>
@@ -56,9 +57,10 @@ typedef struct processes{
 
 /* struct mainly for daq board data acquisition*/
 typedef struct daq_data{
+
+    struct timeval clock;
     double window[NCHAN][TIME_WINDOW * SAMPLING_RATE]; // data window in kst
-    double kst[NCHAN][TIME_WINDOW * SAMPLING_RATE]; // all channels + time
-    double membuf[NAICHAN][NBUFFER]; // full data buffer in memory
+    double membuf[NCHAN][SAMPLING_RATE]; // full data buffer in memory
     double daqbuf[NAICHAN][NBUFFER]; // daq board data buffer
 } daq_data;
 
@@ -76,30 +78,13 @@ typedef struct daq_settings{
     char kst_path[128];         // path to kst2, found while init
     int channels;               // number of channels to save data from
     char channel_names[16][16]; // channel names in kst and data file
+    // 0 or 1 to signal if acquisition is ongoing and prohibit some functions
+    // for example test data generation, etc...
+    int is_daq_on;
     
 }daq_settings;
+
 extern daq_settings *settings;
-
-
-//TODO render this obsolete
-/* acquisition constants, channels, monitor files, etc*/
-typedef struct acquisition_const{
-    
-    int chnum;
-    int c_dwindow;
-    int c_dbuffer;
-    double sampling_rate;
-    double time_window;
-    char acqfile[128];
-    char procpar_path[128];
-    char chname[16][16];
-
-} acquisition_const;
-
 extern processes *procpt;
 extern daq_data *data;
-// TODO render obsolete
-extern acquisition_const *acqconst;
-extern double **data_window; // this is what kst displays in realtime
-extern double **data_buffer; // this is where new samples go
 #endif

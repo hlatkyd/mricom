@@ -15,8 +15,6 @@
 #include "func.h"
 
 extern processes *procpt;
-//TODO make acqconst obsolete
-extern acquisition_const *acqconst;
 extern daq_data *data;
 extern daq_settings *settings;
 
@@ -24,9 +22,11 @@ extern daq_settings *settings;
 /*                           test functions                          */
 /*-------------------------------------------------------------------*/
 void test_print(char **args){
-    printf("test_print says hello\n");
+
+    printf("test_print says: %s\n",args[1]);
     return;
 }
+//TODO make obsolete
 void test_fork(){
 
     int i;
@@ -58,17 +58,25 @@ void test_fork(){
     return;
 
 }
-/* fork a process and start random data generation */
-void test_generate_loop(){
+//TODO
+// not as important as daq_analog_start or something
+/*
+ * Function: test_generate_loop()
+ * ------------------------------
+ * generate random data and append to daq_file
+ * use the standard daq settings defined at compile time or settings file
+ */
+ //TODO shell command be 'test start' and 'test stop'
+void test_generate(){
 
-    double duration = 30.0; // duration of data generation
+    int duration = 30;
     int iter, max_iter;
     double time, itertime, timestep;
     char process_name[] = "test_datagenerator";
     FILE *fp;
     pid_t pid;
 
-    timestep = 1 / acqconst->sampling_rate;
+    //timestep = 1 / acqconst->sampling_rate;
     time = 0.0;
     max_iter = 60;
     itertime = (double)NBUFFER/SAMPLING_RATE;
@@ -78,6 +86,7 @@ void test_generate_loop(){
         // child
         for(iter=0; iter<max_iter; iter++){
             time = time + itertime*iter;
+            //TODO make a timer function here
             test_randfill_buffer(time);
             daq_save_buffer();
             sleep(1);
@@ -95,9 +104,32 @@ void test_generate_loop(){
     }
     return;
 }
-//TODO fix
+/*
+ * Function test_randfill_buffer
+ * -----------------------------
+ * Fill data->membuf with random values and progress time
+ * 
+ * INPUT:
+ *      double start_time -- time at the start of buffer in sec
+ *                           with usec accuracy
+ */
+ //TODO test execution time of this
 void test_randfill_buffer(double start_time){
 
+    int i, j;
+    int nchan = NCHAN;
+    int samples = SAMPLING_RATE;
+    double timestep = (double) 1 / SAMPLING_RATE;
+    for(j=0;j<samples;j++){
+        for(i=0;i<nchan;i++){
+            if(i == 0){
+                data->membuf[0][j] = start_time + timestep * j;
+            } else {
+                srand(time(NULL));
+                data->membuf[i][j] = (double)rand()/RAND_MAX;
+            }
+        }
+    }
     return;
 }
 void test_system(){
@@ -107,10 +139,43 @@ void test_system(){
 /*                    util  daq functions                            */
 /*-------------------------------------------------------------------*/
 
+/*
+ * Function: daq_timer_start
+ * -------------------------
+ * Start software timer used to merge analog and digital data. Also
+ * used for digital stimulation timing. Called on init as well.
+ */
+
+void daq_timer_start(){
+
+    gettimeofday(&data->clock,NULL);
+    return;
+}
+
+/*
+ * Function: daq_timer_elapsed
+ * -------------------------
+ * elapsed time in sec, with usec accuracy from program start
+ *
+ * Return
+ *      double [elapsed time]
+ */
+
+double daq_timer_elapsed(){
+
+    struct timeval cur,start;
+    start = data->clock;
+    gettimeofday(&cur,NULL);
+    double elapsed = (cur.tv_sec - start.tv_sec);
+    elapsed += (cur.tv_usec - start.tv_usec) / 1000000.0; //usec to sec
+    return elapsed;
+
+}
 /* Function: daq_start_acq()
  * --------------------------
  * Start acquisition on comedi device
  */
+
 void daq_start_acq(){
 
     return;
@@ -127,7 +192,7 @@ void daq_start_acq(){
  *
  * channels go from analog input_1-n, analog output, digital in, digital out etc
  */
- //TODO fix data_buffer, make obsolete, REDO ALL
+
 void daq_init_kstfile(){
 
     int nchan = NCHAN;
@@ -141,20 +206,17 @@ void daq_init_kstfile(){
     for(i=0; i<nchan;i++){
         for(j=0; j<samples; j++){
             // [channel][datapoint]
-            printf("i, j %d, %d\n",i,j);
             if(i == 0){
-                //data->window[0][j] = -time_window + timestep * j; 
+                data->window[0][j] = -time_window + timestep * (j+1); 
             } else {
                 data->window[i][j] = 0.0; 
             }
         }
     }
 
-    /*
     //start writing file /
     fp = fopen(settings->daq_file,"w");
     if(fp == NULL){
-        //TODO check for this in init 
         printf("\nerror writing daq file on path %s\n",settings->daq_file);
         if(DEBUG > 0){
             printf("Hint: check permissions, mounts...\n");
@@ -170,14 +232,13 @@ void daq_init_kstfile(){
     fprintf(fp,"\n");
     // write data
 
-    for(i=0; i<nchan; i++){
-        for(j=0; j<samples; j++){
-            fprintf(fp,"%lf%s",data->window[j][i],dlt);
+    for(j=0; j<samples; j++){
+        for(i=0; i<nchan; i++){
+            fprintf(fp,"%lf%s",data->window[i][j],dlt);
         }
         fprintf(fp,"\n");
     }
     fclose(fp);
-    */
 
 }
 /* Function: daq_update_window
@@ -190,23 +251,25 @@ void daq_update_window(){
 
 /* Function: daq_save_buffer
  * ---------------------------
- * Append buffer data to end of daq file
+ * Append full buffer data (analog and digital) to end of daq file
  */
 void daq_save_buffer(){
 
     FILE *fp;
     char *dlt = DELIMITER;
+    int samples = SAMPLING_RATE;
+    int nchan = NCHAN;
     int i, j;
 
-    fp = fopen(acqconst->acqfile, "a+");
+    fp = fopen(settings->daq_file, "a+");
     if(fp == NULL){
-        printf("error writing daq file on path %s\n",acqconst->acqfile);
+        printf("error writing daq file on path %s\n",settings->daq_file);
         exit(EXIT_FAILURE);
     }
     /* write data */
-    for(i=0; i<acqconst->c_dbuffer; i++){
-        for(j=0; j<acqconst->chnum; j++){
-            //fprintf(fp,"%lf%s",data_buffer[j][i],dlt);
+    for(j=0; j<samples; j++){
+        for(i=0; i<nchan; i++){
+            fprintf(fp,"%lf%s",data->membuf[i][j],dlt);
         }
         fprintf(fp,"\n");
     }
@@ -233,8 +296,6 @@ void daq_start_kst(){
     kstcall[0] = settings->kst_path;
     kstcall[1] = settings->kst_settings;
     kstcall[2] = NULL;
-    printf("kst settings %s\n",settings->kst_settings);
-    printf("%s %s %s\n",kstcall[0],kstcall[1],kstcall[2]);
 
     pid_t pid;
     pid = fork();
@@ -385,7 +446,6 @@ int is_nicard_accessible(){
  * ------------------------------
  *
  * checks if ramdisk is correctly mounted on path specified in settings
- * TODO use daq_settings instead of hard define
  */
 int is_ramdisk_accessible(){
     
@@ -402,6 +462,55 @@ int is_ramdisk_accessible(){
 /*-------------------------------------------------------------------*/
 /*                     util user functions                           */
 /*-------------------------------------------------------------------*/
+
+/*
+ * Function: gettime
+ * -----------------
+ * print elapsed time from start of daq clock
+ */
+
+void gettime(){
+
+    return;
+}
+
+/*
+ * Function: lsitsettings
+ * -----------------
+ * list settings acquired from settings file
+ */
+
+void listsettings(){
+
+    int i = 0;
+    // have to do it manually..
+    printf("daq_settings struct:\n");
+    printf("--------------------\n");
+    printf("device : %s\n",settings->device);
+    printf("daq_file : %s\n",settings->daq_file);
+    printf("kst_file : %s\n",settings->kst_file);
+    printf("ramdisk: %s\n",settings->ramdisk);
+    printf("procpar: %s\n",settings->procpar);
+    printf("event_dir: %s\n",settings->event_dir);
+    printf("kst_settings: %s\n",settings->kst_settings);
+    printf("kst_path: %s\n",settings->kst_path);
+    printf("channels: %d\n",settings->channels);
+    printf("channel_names: ");
+    for(i= 0; i<settings->channels;i++){
+        printf("%s,",settings->channel_names[i]);
+    }
+    printf("\n");
+    
+}
+/*
+ * Function: catdata
+ * -----------------
+ * list contents of data file, same as 'cat [path_to_daq_datafile]'
+ */
+
+void catdata(){
+
+}
 
 /*
  * Function: listp
@@ -445,6 +554,8 @@ void killp(int procid){
 /*-------------------------------------------------------------------*/
 void start(){
 
+    daq_start_kst();
+    daq_timer_start();
     return;
 }
 
@@ -462,7 +573,6 @@ void reset(){
     for(i=procpt->nproc; i>0; i--){
         killp(procpt->procid[i-1]);
     }
-    //TODO redo this
     daq_init_kstfile();
     printf("done\n");
     return;

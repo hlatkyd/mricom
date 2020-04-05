@@ -76,13 +76,22 @@ int search_procpar(char *parameter_name, char *command){
  */
 int parse_settings(){
 
+    void remove_spaces(char* s) {
+        const char* d = s;
+        do {
+            while (*d == ' ') {
+                ++d;
+            }
+        } while (*s++ = *d++);
+    }
+
     char settings_file[] = SETTINGS_FILE;
     FILE *fp;
     char line[128];
     char buf[128];
     char *token;
     int len;
-    int i = 0;
+    int i = 0; int j = 0;
     int nchan = NCHAN; // for comparing number of channel to channel names
 
     fp = fopen(settings_file, "r");
@@ -97,44 +106,48 @@ int parse_settings(){
            || line[0] == '#' || line[0] == ' '){
             continue;
         }
+        //remove whitespace
+        remove_spaces(line);
         //remove newline
         len = strlen(line);
         if(line[len-1] == '\n')
-            line[len-1] = 0;
+            line[len-1] = '\0';
         /* general settings */
-        if(strncmp(line, "DEVICE", 6) == 0){
-            token = strtok(line,"=");
+        
+        token = strtok(line,"=");
+
+        if(strcmp(token,"DEVICE") == 0){
             token = strtok(NULL,"=");
             strcpy(settings->device, token);
+            continue;
         }
-        if(strncmp(line, "DAQ_FILE", 8) == 0){
-            token = strtok(line,"=");
+        if(strcmp(token, "DAQ_FILE") == 0){
             token = strtok(NULL,"=");
             strcpy(settings->daq_file, token);
+            continue;
         }
-        if(strncmp(line, "PROCPAR", 7) == 0){
-            token = strtok(line,"=");
+        if(strcmp(line, "PROCPAR") == 0){
             token = strtok(NULL,"=");
             strcpy(settings->procpar, token);
+            continue;
         }
-        if(strncmp(line, "EVENT_DIR", 9) == 0){
-            token = strtok(line,"=");
+        if(strcmp(line, "EVENT_DIR") == 0){
             token = strtok(NULL,"=");
             strcpy(settings->event_dir, token);
+            continue;
         }
-        if(strncmp(line, "RAMDISK", 7) == 0){
-            token = strtok(line,"=");
+        if(strcmp(line, "RAMDISK") == 0){
             token = strtok(NULL,"=");
             strcpy(settings->ramdisk, token);
+            continue;
         }
         /* kst2 settings */
-        if(strncmp(line, "KST_SETTINGS", 12) == 0){
-            token = strtok(line,"=");
+        if(strcmp(line, "KST_SETTINGS") == 0){
             token = strtok(NULL,"=");
             strcpy(settings->kst_settings, token);
+            continue;
         }
-        if(strncmp(line, "CHANNELS", 8) == 0){
-            token = strtok(line,"=");
+        if(strcmp(line, "CHANNELS") == 0){
             token = strtok(NULL,"=");
             // so far 'default' only...
             if(strcmp(token,"default") == 0){
@@ -143,10 +156,10 @@ int parse_settings(){
                 printf("settings error, channels only 'default'\n");
                 settings->channels = NCHAN;
             }
+            continue;
 
         }
-        if(strncmp(line, "CHANNEL_NAMES", 8) == 0){
-            token = strtok(line,"=");
+        if(strcmp(line, "CHANNEL_NAMES") == 0){
             token = strtok(NULL,"=");
             strcpy(buf, token);
             token = strtok(buf, ",");
@@ -158,6 +171,7 @@ int parse_settings(){
             if(i != nchan){
                 printf("warning: more channels than channel names\n");
             }
+            continue;
         }
     }
     return 0;
