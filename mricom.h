@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
+#include <math.h>
 #include <unistd.h>
 #include <errno.h>
 #include <sys/wait.h>
@@ -84,7 +86,17 @@ typedef struct daq_settings{
     
 }daq_settings;
 
+//comedi device setup struct
+typedef struct dev_settings{
+
+    comedi_t *dev;              // comedi device pointer
+    //TODO what is this for again??
+    double timing_buffer[1024];
+
+} dev_settings;
+
 extern daq_settings *settings;
+extern dev_settings *devsettings;
 extern processes *procpt;
 extern daq_data *data;
 #endif

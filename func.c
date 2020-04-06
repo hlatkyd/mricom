@@ -17,6 +17,7 @@
 extern processes *procpt;
 extern daq_data *data;
 extern daq_settings *settings;
+extern dev_settings *devsettings;
 
 /*-------------------------------------------------------------------*/
 /*                           test functions                          */

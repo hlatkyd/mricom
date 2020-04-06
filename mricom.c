@@ -49,7 +49,7 @@ int sh_listp(char **args);
 int sh_killp(char **args);
 int sh_start(char **args);
 int sh_stop(char **args);
-int sh_listset(char **args);
+int sh_list(char **args);
 
 /* init settings */
 daq_settings *settings;
@@ -57,6 +57,8 @@ daq_settings *settings;
 daq_data *data;
 /* init global process pointer */
 processes *procpt;
+/* init device settings struct*/
+dev_settings *devsettings;
 
 
 /* command names
@@ -70,7 +72,7 @@ char *builtin_str[] = {
     "test",
     "start",
     "stop",
-    "listset"
+    "list"
 };
 /* functions for builtin commands*/
 /* should be same oreder as builtin_str list names*/
@@ -82,7 +84,7 @@ int (*builtin_func[]) (char **) = {
     &sh_test,
     &sh_start,
     &sh_stop,
-    &sh_listset
+    &sh_list
 };
 int sh_num_builtins(){
     return sizeof(builtin_str) / sizeof(char*);
@@ -106,6 +108,8 @@ int sh_exit(char **args){
         id = procpt->procid[i-1];
         killp(id);
     }
+    comedi_device_close();
+    printf("freeing memory...\n");
     free(procpt);
     free(data);
     free(settings);
@@ -189,6 +193,9 @@ int sh_test(char **args){
         double ttime = ((double)time)/CLOCKS_PER_SEC;
         printf(" buffer fill exec time: %f\n",ttime);
     }
+    if(strcmp(args[1],"trig") == 0){
+        comedi_digital_trig();
+    }
     //test_fork();
     //daq_start_kst();
     //test_system();
@@ -218,14 +225,22 @@ int sh_stop(char **args){
     stop();
     return 1;
 }
-int sh_listset(char **args){
+int sh_list(char **args){
     //TODO maybe arguments here as well such as list [args, eg set]??
-    double elapsed_time;
-    listsettings();
-    printf("\n");
-    elapsed_time = daq_timer_elapsed();
-    printf("elapsed time = %lf\n",elapsed_time);
-    return 1;
+    if(strcmp(args[1],"settings")==0){
+        double elapsed_time;
+        listsettings();
+        printf("\n");
+        elapsed_time = daq_timer_elapsed();
+        printf("elapsed time = %lf\n",elapsed_time);
+        return 1;
+    } else if (strcmp(args[1],"process")==0){
+        listp();
+        return 1;
+    } else {
+        printf("unknown argument %s\n",args[1]);
+        return 1;
+    }
 }
 /*-----------------------------------------------------------------------------*/
 /*                               OPAQUE PARTS                                  */
@@ -235,6 +250,8 @@ int sh_listset(char **args){
  * print name, version, initialize process struct, init command history
  */
 void init(){
+
+    int is_dev_ok, ret;
 
     printf("\n-----------------------------------------------\n");
     printf("mricom v%d.%d",VERSION_MAJOR,VERSION_MINOR);
@@ -252,13 +269,16 @@ void init(){
         printf("\nmricom startup check...\n");
     }
     if(is_ramdisk_accessible() != 0){
-        printf("Warning: ramdisk mount point not found....\n");
+        printf("\n\tWarning: ramdisk mount point not found!\n");
     }
     if(is_kst_accessible() != 0){
-        printf("\nWarning: installed kst2 not found!\n");
+        printf("\n\tWarning: installed kst2 not found!\n");
     }
     if(is_nicard_accessible() != 0){
-        printf("\nWarning: NI card not found!\n");
+        printf("\n\tWarning: NI card not found!\n");
+        is_dev_ok = 0;
+    } else {
+        is_dev_ok = 1;
     }
 
     //is_accessible(kstpath);
@@ -270,10 +290,19 @@ void init(){
     // malloc for daq_data
     data = (daq_data*)malloc(sizeof(daq_data));
 
+    // malloc for device settings
+    devsettings = (dev_settings*)malloc(sizeof(dev_settings));
+
     // init daq file
     daq_init_kstfile();
     daq_timer_start();
-    printf("Type 'help' to list available commands.\n");
+    // init device
+    if(is_dev_ok == 1)
+        ret = comedi_device_setup();
+        if(ret != 0)
+            printf("\twarning: unable to set up comedi device\n");
+
+    printf("\nType 'help' to list available commands.\n");
     printf("-----------------------------------------------\n");
 }
 
@@ -323,6 +352,7 @@ char **shell_parse_cmd(char *line){
  * returns: command string
  */
 
+//TODO tab completion in readline
 char *shell_read_cmd(){
 
     int i;
