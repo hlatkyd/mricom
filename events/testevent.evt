@@ -1,0 +1,16 @@
+# time_values represent the times a TTL should be given in seconds
+# ttl duration is the width of the TTL signal in seconds
+
+ttl_duration=0.03
+time_start
+1.0
+2.0
+3.0
+5.0
+6.0
+7.0
+10.0
+11.0
+12.0
+15.0
+time_end

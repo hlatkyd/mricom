@@ -8,6 +8,7 @@
 #include "mricom.h"
 
 extern daq_settings *settings;
+extern dev_settings *devsettings;
 
 /*
  * Function: parse_procpar
@@ -171,6 +172,27 @@ int parse_settings(){
             if(i != nchan){
                 printf("warning: more channels than channel names\n");
             }
+            continue;
+        }
+        /* device settings */
+        if(strcmp(line, "IS_ANALOG_DIFFERENTIAL") == 0){
+            token = strtok(NULL,"=");
+            devsettings->is_analog_differential = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "ANALOG_IN_SUBDEV") == 0){
+            token = strtok(NULL,"=");
+            devsettings->analog_in_subdev = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "STIM_TRIG_SUBDEV") == 0){
+            token = strtok(NULL,"=");
+            devsettings->stim_trig_subdev = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "STIM_TRIG_CHAN") == 0){
+            token = strtok(NULL,"=");
+            devsettings->stim_trig_chan = atoi(token);
             continue;
         }
     }

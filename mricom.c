@@ -113,6 +113,7 @@ int sh_exit(char **args){
     free(procpt);
     free(data);
     free(settings);
+    free(devsettings);
     return 0;
 }
 /* Shell function sh_help
@@ -185,16 +186,23 @@ int sh_test(char **args){
         printf("acquisition is ON, testing prohibited\n");
         return 1;
     }
-    test_print(args);
     if(strcmp(args[1],"gen") == 0){
         time = clock();
         test_randfill_buffer(0.0);
         time = clock() - time;
         double ttime = ((double)time)/CLOCKS_PER_SEC;
         printf(" buffer fill exec time: %f\n",ttime);
-    }
-    if(strcmp(args[1],"trig") == 0){
-        comedi_digital_trig();
+    } else if(strcmp(args[1],"trig") == 0){
+            comedi_digital_trig("events/testevent.evt");
+    } else if(strcmp(args[1],"analog") == 0){
+        printf("testing analog setup\n");
+        comedi_setup_analog_acq();
+    } else if(strcmp(args[1],"digital") == 0){
+        printf("testing digital setup and exec\n");
+        comedi_setup_digital_sequence("test");
+        comedi_execute_digital_sequence();
+    } else {
+        test_print(args);
     }
     //test_fork();
     //daq_start_kst();
@@ -229,7 +237,9 @@ int sh_list(char **args){
     //TODO maybe arguments here as well such as list [args, eg set]??
     if(strcmp(args[1],"settings")==0){
         double elapsed_time;
+        printf("\n");
         listsettings();
+        listdevsettings();
         printf("\n");
         elapsed_time = daq_timer_elapsed();
         printf("elapsed time = %lf\n",elapsed_time);
@@ -260,6 +270,8 @@ void init(){
 
     // malloc for settings
     settings = (daq_settings*)malloc(sizeof(daq_settings));
+    // malloc for device settings
+    devsettings = (dev_settings*)malloc(sizeof(dev_settings));
     parse_settings();
     settings->is_daq_on = 0;
 
@@ -290,8 +302,6 @@ void init(){
     // malloc for daq_data
     data = (daq_data*)malloc(sizeof(daq_data));
 
-    // malloc for device settings
-    devsettings = (dev_settings*)malloc(sizeof(dev_settings));
 
     // init daq file
     daq_init_kstfile();

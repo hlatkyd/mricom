@@ -31,3 +31,20 @@ CHANNELS=default
 # channel naming start with analog in, then out, digital in, then out
 # channel names, number must equal to channel count
 CHANNEL_NAMES=TIME,RESP,PULSOX,ECG,TRIG,GATE
+
+#--------------------------
+#     DEVICE SETTINGS
+#--------------------------
+
+# analog wiring setup
+IS_ANALOG_DIFFERENTIAL=1
+# analog subdevice number
+ANALOG_IN_SUBDEV=0
+# analog input channels
+ANALOG_IN_CHAN=0,1,2,3
+
+# digital subdev for stimulus TTL
+STIM_TRIG_SUBDEV=2
+# digital channel for stimulus TTL
+STIM_TRIG_CHAN=0
+

@@ -1,0 +1,13 @@
+# values mean seconds
+# wait_before n sec; cycle m times; wait_after k sec
+# cycle is on/off time each i, j sec
+# freq is TTL frequency during "on"
+# ttl_duration is the width of TTL signal in sec
+
+wait_before=10.0
+cycle=5
+on=30
+off=30
+freq=1
+ttl_duration=0.03
+wait_after=0.0

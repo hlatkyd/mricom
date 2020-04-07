@@ -52,7 +52,7 @@ int comedi_device_close(){
  * send a TTL signal to digital out
  */
 
-int comedi_digital_trig(){
+int comedi_digital_trig(char *eventfile){
 
     unsigned int subdev = 2;
     unsigned int chan = 0;
@@ -88,11 +88,27 @@ int comedi_digital_trig(){
     return 0;
 }
 
-int comedi_analog_in(){
+/*
+ * Function: comedi_setup_analog_acq:
+ * ------------------------------------------
+ * read event file for digital trigger generation
+ */
+int comedi_setup_analog_acq(){
+
+    return 0;
+}
+
+/*
+ * Function: comedi_start_analog_acq:
+ * ------------------------------------------
+ * read event file for digital trigger generation
+ */
+int comedi_start_analog_acq(){
 
     comedi_t *device;
 
     device = devsettings->dev;
+    return 0;
 
 }
 
@@ -113,6 +129,8 @@ int comedi_setup_digital_sequence(char *filename){
  */
 //TODO
 // execute instruction list
+// test timing
 int comedi_execute_digital_sequence(){
+
 
 }

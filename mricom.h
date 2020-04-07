@@ -31,6 +31,7 @@
 #define NDICHAN 1 // number of digital input channels
 #define NDOCHAN 1 // number of digital output channels
 #define NCHAN  (NAICHAN+NAOCHAN+NDICHAN+NDOCHAN + 1) // +time
+//NOTE: fifo is 512 samples on NI-6035E
 #define NBUFFER 200 // sampled data buffer
 #define SAMPLING_RATE 200 // daq sampling rate in samples/s
 #define TIME_WINDOW 20 // interval of time on charts in sec
@@ -86,10 +87,22 @@ typedef struct daq_settings{
     
 }daq_settings;
 
-//comedi device setup struct
+// comedi device setup struct, most values can be set in settings
+// depends on actual wiring setup, careful when settings these
 typedef struct dev_settings{
 
-    comedi_t *dev;              // comedi device pointer
+    // comedi device pointer
+    comedi_t *dev;              
+    // 1 if analog wiring is differential, 0 otherwise
+    int is_analog_differential;
+    // analog subdevice number (0 on ni-6035e)
+    unsigned int analog_in_subdev;
+    // analog channels, usually 0,1,2,....
+    unsigned int analog_in_chan[8];
+    // subdevice where digital stimulation channel is located (2)
+    unsigned int stim_trig_subdev;
+    // digital stim channel (0 in settings)
+    unsigned int stim_trig_chan; 
     //TODO what is this for again??
     double timing_buffer[1024];
 

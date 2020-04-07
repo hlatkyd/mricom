@@ -34,6 +34,7 @@ int is_nicard_accessible();
 
 /*util user interface funcs*/
 void listsettings();
+void listdevsettings();
 void catdata();
 void listp();
 void killp(int procid);

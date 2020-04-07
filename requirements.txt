@@ -1,0 +1,5 @@
+# for fresh Ubuntu 18.04 LTS
+
+libcomedi-dev
+libreadline-dev
+kst

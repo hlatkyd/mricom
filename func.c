@@ -476,6 +476,15 @@ void gettime(){
 }
 
 /*
+ * Function: listdevsettings
+ * -----------------
+ * list device settings acquired from settings file
+ */
+
+void listdevsettings(){
+
+}
+/*
  * Function: lsitsettings
  * -----------------
  * list settings acquired from settings file

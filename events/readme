@@ -1,0 +1,3 @@
+# This directory contains design files for TTL signal generation.
+# There are 2 types: .des and .evt, see each example on proper
+# format. Mricom recognizes these automatically.
