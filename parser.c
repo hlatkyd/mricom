@@ -127,6 +127,16 @@ int parse_settings(){
             strcpy(settings->daq_file, token);
             continue;
         }
+        if(strcmp(token, "KST_FILE") == 0){
+            token = strtok(NULL,"=");
+            strcpy(settings->kst_file, token);
+            continue;
+        }
+        if(strcmp(token, "PRECISION") == 0){
+            token = strtok(NULL,"=");
+            settings->precision = atoi(token);
+            continue;
+        }
         if(strcmp(line, "PROCPAR") == 0){
             token = strtok(NULL,"=");
             strcpy(settings->procpar, token);
@@ -161,6 +171,7 @@ int parse_settings(){
 
         }
         if(strcmp(line, "CHANNEL_NAMES") == 0){
+            i = 0;
             token = strtok(NULL,"=");
             strcpy(buf, token);
             token = strtok(buf, ",");
@@ -172,6 +183,7 @@ int parse_settings(){
             if(i != nchan){
                 printf("warning: more channels than channel names\n");
             }
+            i = 0; // reset to 0
             continue;
         }
         /* device settings */
@@ -194,6 +206,18 @@ int parse_settings(){
             token = strtok(NULL,"=");
             devsettings->stim_trig_chan = atoi(token);
             continue;
+        }
+        if(strcmp(line, "ANALOG_IN_CHAN") == 0){
+            i=0;
+            token = strtok(NULL,"=");
+            strcpy(buf, token);
+            token = strtok(buf, ",");
+            while(token != NULL){
+                devsettings->analog_in_chan[i] = (int)atoi(token);
+                i++;
+                token = strtok(NULL,",");
+            }
+            i = 0; // set 0 again, just to be sure
         }
     }
     return 0;

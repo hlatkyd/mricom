@@ -33,23 +33,24 @@
 /*main shell functions*/
 void init();
 char **shell_parse_cmd(char *line);
+int shell_get_argc(char **args);
 char *shell_read_cmd();
 void shell_loop();
-int shell_launch(char **args);
-int shell_execute(char **args);
+int shell_launch(int argc, char **args);
+int shell_execute(int argc, char **args);
 /* ----------------------*/
 /*        builtins       */
 /* ----------------------*/
 
-int sh_exit(char **args);
-int sh_help(char **args);
-int sh_test(char **args);
-int sh_listh(char **args);
-int sh_listp(char **args);
-int sh_killp(char **args);
-int sh_start(char **args);
-int sh_stop(char **args);
-int sh_list(char **args);
+int sh_exit(int argc, char **args);
+int sh_help(int argc, char **args);
+int sh_test(int argc, char **args);
+int sh_listh(int argc, char **args);
+int sh_listp(int argc, char **args);
+int sh_killp(int argc, char **args);
+int sh_start(int argc, char **args);
+int sh_stop(int argc, char **args);
+int sh_list(int argc, char **args);
 
 /* init settings */
 daq_settings *settings;
@@ -76,7 +77,7 @@ char *builtin_str[] = {
 };
 /* functions for builtin commands*/
 /* should be same oreder as builtin_str list names*/
-int (*builtin_func[]) (char **) = {
+int (*builtin_func[]) (int, char **) = {
     &sh_exit,
     &sh_help,
     &sh_listp,
@@ -97,7 +98,7 @@ int sh_num_builtins(){
  * attempt to exit program gracefully
  */
  //TODO check for unintended stop ps -ef, or something
-int sh_exit(char **args){
+int sh_exit(int argc, char **args){
     
     int i,j,n;
     int id;
@@ -109,7 +110,10 @@ int sh_exit(char **args){
         killp(id);
     }
     comedi_device_close();
-    printf("freeing memory...\n");
+    if(settings->fp_daq != NULL)
+        fclose(settings->fp_daq);
+    if(settings->fp_kst != NULL)
+        fclose(settings->fp_kst);
     free(procpt);
     free(data);
     free(settings);
@@ -121,7 +125,7 @@ int sh_exit(char **args){
  * prints available builtin commands
  */
 
-int sh_help(char **args){
+int sh_help(int argc, char **args){
     int i, n;
     char *cmdname;
     cmdname = NULL;
@@ -178,42 +182,56 @@ int sh_help(char **args){
     }
     return 1;
 }
-int sh_test(char **args){
+int sh_test(int argc, char **args){
     //TODO implement usage by specific arguments
     // start, stop, stim etc
     clock_t time;
+    double tot_time;
+    int i;
+    int n = 10;
     if(settings->is_daq_on == 1){
         printf("acquisition is ON, testing prohibited\n");
         return 1;
     }
-    if(strcmp(args[1],"gen") == 0){
-        time = clock();
-        test_randfill_buffer(0.0);
-        time = clock() - time;
-        double ttime = ((double)time)/CLOCKS_PER_SEC;
-        printf(" buffer fill exec time: %f\n",ttime);
-    } else if(strcmp(args[1],"trig") == 0){
-            comedi_digital_trig("events/testevent.evt");
-    } else if(strcmp(args[1],"analog") == 0){
-        printf("testing analog setup\n");
-        comedi_setup_analog_acq();
-    } else if(strcmp(args[1],"digital") == 0){
-        printf("testing digital setup and exec\n");
-        comedi_setup_digital_sequence("test");
-        comedi_execute_digital_sequence();
+    if(argc > 1){
+        if(strcmp(args[1],"sim") == 0){
+            printf("generating random data... \n");
+            test_daq_simulate();
+        } else if(strcmp(args[1],"trig") == 0){
+                comedi_digital_trig("events/testevent.evt");
+        } else if(strcmp(args[1],"analog") == 0){
+            printf("testing analog setup\n");
+            comedi_setup_analog_acq();
+        } else if(strcmp(args[1],"digital") == 0){
+            printf("testing digital setup and exec\n");
+            comedi_setup_digital_sequence("test");
+            comedi_execute_digital_sequence();
+        } else if(strcmp(args[1],"timing") == 0){
+            printf("testing execution time of some functions: \n");
+            // filling bffer with random num
+            time = clock();
+            for(i=0;i<n;i++){
+                test_rand_membuf(0);
+            }
+            time = clock() - time;
+            tot_time = ((double)time)/CLOCKS_PER_SEC;
+            printf(" test_rand_membuf: %f\n",tot_time / n);
+
+        } else {
+            test_print(args);
+        }
     } else {
-        test_print(args);
+        printf(" (no action)\n");
     }
     //test_fork();
-    //daq_start_kst();
     //test_system();
     return 1;
 }
-int sh_listp(char **args){
+int sh_listp(int argc, char **args){
     listp();
     return 1;
 }
-int sh_killp(char **args){
+int sh_killp(int argc, char **args){
     char argin[10];
     int procid;
     //printf("args : %s\n",args[1]);
@@ -222,34 +240,36 @@ int sh_killp(char **args){
     killp(procid);
     return 1;
 }
-int sh_start(char **args){
+int sh_start(int argc, char **args){
     //TODO make arguments useful, eg kst start
 
     start();
     return 1;
 }
-int sh_stop(char **args){
+int sh_stop(int argc, char **args){
     // TODO make arguments as well, eg kst stop
     stop();
     return 1;
 }
-int sh_list(char **args){
+int sh_list(int argc, char **args){
     //TODO maybe arguments here as well such as list [args, eg set]??
-    if(strcmp(args[1],"settings")==0){
-        double elapsed_time;
-        printf("\n");
-        listsettings();
-        listdevsettings();
-        printf("\n");
-        elapsed_time = daq_timer_elapsed();
-        printf("elapsed time = %lf\n",elapsed_time);
-        return 1;
-    } else if (strcmp(args[1],"process")==0){
-        listp();
-        return 1;
-    } else {
-        printf("unknown argument %s\n",args[1]);
-        return 1;
+    if(argc > 1){
+        if(strcmp(args[1],"settings")==0){
+            double elapsed_time;
+            printf("\n");
+            listsettings();
+            listdevsettings();
+            printf("\n");
+            elapsed_time = daq_timer_elapsed();
+            printf("elapsed time = %lf\n",elapsed_time);
+            return 1;
+        } else if (strcmp(args[1],"process")==0){
+            listp();
+            return 1;
+        } else {
+            printf("unknown argument %s\n",args[1]);
+            return 1;
+        }
     }
 }
 /*-----------------------------------------------------------------------------*/
@@ -274,6 +294,7 @@ void init(){
     devsettings = (dev_settings*)malloc(sizeof(dev_settings));
     parse_settings();
     settings->is_daq_on = 0;
+    settings->is_kst_on = 0;
 
     /* check for kst2 install and ramdisk mount and device */
 
@@ -381,11 +402,28 @@ char *shell_read_cmd(){
     }
 
 }
+
+/* Function: shell_get_argc
+ * ----------------------
+ * counts argument strings 
+ */
+int shell_get_argc(char **args){
+
+    int i = 0;
+    while(1){
+        if(args[i] != NULL){
+            i++;
+            continue;
+        } else
+            break;
+    }
+    return i;
+}
 /* Function: shell_launch
  * ----------------------
  * launches original shell commmands 
  */
-int shell_launch(char **args){
+int shell_launch(int argc, char **args){
     
     pid_t pid, wpid;
     int status;
@@ -413,7 +451,7 @@ int shell_launch(char **args){
  * -----------------------
  * executes builtin command if name matches, othervise execute system command
  */
-int shell_execute(char **args){
+int shell_execute(int argc, char **args){
     int i;
 
     if(args[0] == NULL) {
@@ -432,10 +470,10 @@ int shell_execute(char **args){
     /* starting builtins if found*/
     for(i=0; i<sh_num_builtins();i++){
         if(strcmp(args[0], builtin_str[i]) == 0){
-            return (*builtin_func[i])(args);
+            return (*builtin_func[i])(argc, args);
         }
     }
-    return shell_launch(args);
+    return shell_launch(argc, args);
 }
 
 void shell_loop(){
@@ -443,13 +481,16 @@ void shell_loop(){
     char *line;
     char **args; 
     int res;
+    int argc;
 
     do {
         line = shell_read_cmd();
 
         args = shell_parse_cmd(line);
 
-        res = shell_execute(args);
+        argc = shell_get_argc(args);
+
+        res = shell_execute(argc, args);
 
         free(line);
         free(args);

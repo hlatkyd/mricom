@@ -62,16 +62,15 @@ void test_fork(){
 //TODO
 // not as important as daq_analog_start or something
 /*
- * Function: test_generate_loop()
+ * Function: test_daq_simulate
  * ------------------------------
  * generate random data and append to daq_file
  * use the standard daq settings defined at compile time or settings file
  */
  //TODO shell command be 'test start' and 'test stop'
-void test_generate(){
+void test_daq_simulate(){
 
-    int duration = 30;
-    int iter, max_iter;
+    int i = 0;
     double time, itertime, timestep;
     char process_name[] = "test_datagenerator";
     FILE *fp;
@@ -79,18 +78,25 @@ void test_generate(){
 
     //timestep = 1 / acqconst->sampling_rate;
     time = 0.0;
-    max_iter = 60;
-    itertime = (double)NBUFFER/SAMPLING_RATE;
+    //itertime = 0.5;
+    itertime = 1;
+
     /* fork and run */
+    pid = fork();
+
     if(pid == 0){
 
         // child
-        for(iter=0; iter<max_iter; iter++){
-            time = time + itertime*iter;
+        while(1){
             //TODO make a timer function here
-            test_randfill_buffer(time);
-            daq_save_buffer();
-            sleep(1);
+            test_rand_membuf(time);
+            daq_append_membuf();
+            daq_update_window();
+            daq_update_kstfile();
+            time += itertime;
+            i++;
+            //usleep(itertime * 1000000);
+            sleep(itertime);
         }
         //TODO process_remove something
         return;
@@ -115,19 +121,48 @@ void test_generate(){
  *                           with usec accuracy
  */
  //TODO test execution time of this
-void test_randfill_buffer(double start_time){
+void test_rand_membuf(double start_time){
 
     int i, j;
+    int naichan = NAICHAN;
+    int naochan = NAOCHAN;
+    int ndichan = NDICHAN;
+    int ndochan = NDOCHAN;
     int nchan = NCHAN;
     int samples = SAMPLING_RATE;
     double timestep = (double) 1 / SAMPLING_RATE;
+    double t;
+    srand(time(NULL));
     for(j=0;j<samples;j++){
+        // fill columns
         for(i=0;i<nchan;i++){
+            // time
+            t = start_time + timestep * j;
             if(i == 0){
-                data->membuf[0][j] = start_time + timestep * j;
-            } else {
-                srand(time(NULL));
+                data->membuf[0][j] = t;
+            } else if(i>0 && i < naichan + 1){
+                // analog input channels
+                // fill resp with sin x
+                if(i == 1){
+                    data->membuf[i][j] = sin(2*M_PI*t);
+                } else {
+                    data->membuf[i][j] = (double)rand()/RAND_MAX;
+                }
+            } else if(i > naichan +1  && i < naichan + naochan + 1){
+                // analog output
                 data->membuf[i][j] = (double)rand()/RAND_MAX;
+            } else if(i>naichan + naochan + 1 &&
+                      i < naichan + naochan + ndichan + 1){
+                // digital input
+                if (j * 2 / samples == 1){
+                    data->membuf[i][j] = 1;
+                } else {
+                    data->membuf[i][j] = 0;
+                }
+            } else if(i>naichan + naochan + 1 &&
+                      i < naichan + naochan + ndichan + 1){
+                //digital oputput
+                data->membuf[i][j] = rand() % 2;
             }
         }
     }
@@ -196,6 +231,7 @@ void daq_start_acq(){
 
 void daq_init_kstfile(){
 
+    //TODO backup, check for orig
     int nchan = NCHAN;
     int samples = SAMPLING_RATE * TIME_WINDOW;
     double time_window = (double) TIME_WINDOW;
@@ -227,26 +263,64 @@ void daq_init_kstfile(){
     }
     
     // write header
-    for(i=0; i<nchan; i++){
-        fprintf(fp,"%s%s",settings->channel_names[i],dlt);
-    }
-    fprintf(fp,"\n");
+    fprintf_header(fp);
     // write data
 
     for(j=0; j<samples; j++){
         for(i=0; i<nchan; i++){
-            fprintf(fp,"%lf%s",data->window[i][j],dlt);
+            fprintf(fp,"%.*lf%s",settings->precision,data->window[i][j],dlt);
         }
         fprintf(fp,"\n");
     }
     fclose(fp);
 
 }
+/* Function: daq_update_file
+ * ---------------------------
+ * save whole data window into file
+ */
+void daq_update_kstfile(){
+
+    FILE *fp;
+    int samples = SAMPLING_RATE;
+    int nchan = NCHAN;
+    int window = TIME_WINDOW * SAMPLING_RATE;
+    char *dlt = DELIMITER;
+    int i, j;
+
+    fp = fopen(settings->kst_file,"w+");
+    fprintf_header(fp);
+    for(j=0; j<window; j++){
+        for(i=0; i<nchan; i++){
+            fprintf(fp,"%.*lf%s",settings->precision,data->window[i][j],dlt);
+        }
+        fprintf(fp,"\n");
+    }
+    fclose(fp);
+}
 /* Function: daq_update_window
  * ---------------------------
- * Shifts data window, and appends buffered data to the end
+ * Shifts data window backwards, and appends 'membuf' data to the end
  */
 void daq_update_window(){
+
+    int i, j;
+    int nchan = NCHAN;
+    int samples = SAMPLING_RATE;
+    int window = SAMPLING_RATE * TIME_WINDOW;
+
+    for(j=0;j<window;j++){
+        for(i=0;i<nchan;i++){
+            // shift back
+            if(j<window-samples){
+                data->window[i][j] = data->window[i][j+samples];
+            }
+            // fill end with membuf data
+            if(j>window-samples){
+                data->window[i][j] = data->membuf[i][j - (window-samples)];
+            }
+        }
+    }
 
 }
 
@@ -254,41 +328,47 @@ void daq_update_window(){
  * ---------------------------
  * Append full buffer data (analog and digital) to end of daq file
  */
-void daq_save_buffer(){
+void daq_append_membuf(){
 
     FILE *fp;
     char *dlt = DELIMITER;
     int samples = SAMPLING_RATE;
     int nchan = NCHAN;
     int i, j;
-
-    fp = fopen(settings->daq_file, "a+");
+    fp = settings->fp_daq;
+    /*
+    fp = fopen(settings->daq_file, "a");
     if(fp == NULL){
         printf("error writing daq file on path %s\n",settings->daq_file);
         exit(EXIT_FAILURE);
     }
+    */
     /* write data */
     for(j=0; j<samples; j++){
         for(i=0; i<nchan; i++){
-            fprintf(fp,"%lf%s",data->membuf[i][j],dlt);
+            fprintf(fp,"%.*lf%s",settings->precision,data->membuf[i][j],dlt);
         }
         fprintf(fp,"\n");
     }
 
-    fclose(fp);
+    //fclose(fp);
 
 }
-/* Function: daq_start_kst
+/* Function: daq_launch_kst
  * -----------------------
  * Starts kst with standard acquisition settings
  */
-void daq_start_kst(){
+void daq_launch_kst(){
 
     char *kst_path = settings->kst_path;
     char *kst_settings_file = settings->kst_settings;
     char process_name[] = "kst"; // local process name
     struct stat s= {0};
     // check if kst settings is in current dir
+    if(settings->is_kst_on == 1){
+        printf(" daq_launch_kst : a kst instance is already started\n");
+        return;
+    }
     if(!(stat(settings->kst_settings,&s))){
         if(ENOENT == errno)
             perror("can't find kst settings file in current dir\n");
@@ -303,7 +383,6 @@ void daq_start_kst(){
 
     if(pid == 0){
         // child
-        //system("kst2");
         execvp(kstcall[0], kstcall);
         //perror("execv");
         return;
@@ -315,6 +394,7 @@ void daq_start_kst(){
     else {
         // parent
         process_add(pid, process_name);
+        settings->is_kst_on = 1;
     }
     return;
 }
@@ -351,6 +431,8 @@ void process_remove(int pid){
             index = i;
         }
     }
+    if(strcmp(procpt->name[index],"kst") == 0)
+        settings->is_kst_on = 0;
     if(index != n){
         /* remove from name list and rearrange list*/
         for(i=index; i<n; i++){
@@ -456,10 +538,36 @@ int is_ramdisk_accessible(){
         }
         return 0;
     } else {
+        if(DEBUG > 0){
+            printf("Ramdisk not found at %s...\n",settings->ramdisk);
+        }
         return 1;
     }
 }
 
+/*
+ * Function: fprintf_header
+ * ------------------------
+ *  write data file header
+ */
+
+int fprintf_header(FILE *fp){
+    // TODO write additional info here, study number etc
+    int nchan = NCHAN;
+    char *dlt = DELIMITER;
+    int i;
+
+    // check if file open
+    if(fp == NULL){
+        perror("Failed to write header: ");
+        return 1;
+    }
+    for(i=0; i<nchan; i++){
+        fprintf(fp,"%s%s",settings->channel_names[i],dlt);
+    }
+    fprintf(fp,"\n");
+    return 0;
+}
 /*-------------------------------------------------------------------*/
 /*                     util user functions                           */
 /*-------------------------------------------------------------------*/
@@ -483,6 +591,18 @@ void gettime(){
 
 void listdevsettings(){
 
+    int i = 0;
+    printf("\ndevsettings struct:\n");
+    printf("---------------------\n");
+    printf("is_analog_differential: %d\n",
+                devsettings->is_analog_differential);
+    printf("analog_in_subdev: %d\n",devsettings->analog_in_subdev);
+    printf("analog_in_chan: ");
+    for(i;i<4;i++){
+        printf("%d,",devsettings->analog_in_chan[i]);
+    }
+    printf("\nstim_trig_subdev: %d\n",devsettings->stim_trig_subdev);
+    printf("stim_trig_chan: %d\n",devsettings->stim_trig_chan);
 }
 /*
  * Function: lsitsettings
@@ -499,6 +619,7 @@ void listsettings(){
     printf("device : %s\n",settings->device);
     printf("daq_file : %s\n",settings->daq_file);
     printf("kst_file : %s\n",settings->kst_file);
+    printf("precision: %d\n",settings->precision);
     printf("ramdisk: %s\n",settings->ramdisk);
     printf("procpar: %s\n",settings->procpar);
     printf("event_dir: %s\n",settings->event_dir);
@@ -510,6 +631,9 @@ void listsettings(){
         printf("%s,",settings->channel_names[i]);
     }
     printf("\n");
+    printf("is_daq_on: %d\n",settings->is_daq_on);
+    printf("is_kst_on: %d\n",settings->is_kst_on);
+
     
 }
 /*
@@ -564,7 +688,7 @@ void killp(int procid){
 /*-------------------------------------------------------------------*/
 void start(){
 
-    daq_start_kst();
+    daq_launch_kst();
     daq_timer_start();
     return;
 }

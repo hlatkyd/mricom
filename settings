@@ -11,12 +11,13 @@ DEVICE=/dev/comedi0
 DAQ_FILE=/mnt/ramdisk/mricomrt.dat 
 # vnmrj procpar file of next/current acquisition
 # procpar file includes the parameter "mricompar" to relay commands
-# TODO think this over
 PROCPAR=/mnt/vnmrserver/procpar
 # ramdisk
 RAMDISK=/mnt/ramdisk
 # data file delimiter
 DELIMITER=\t
+# precision - how many decimals saved in data file
+PRECISION=3
 # stimulation event file dir
 EVENT_DIR=events
 
@@ -26,6 +27,8 @@ EVENT_DIR=events
 
 # kst2 layout settings file
 KST_SETTINGS=mricom.kst
+# data file, but only window data for kst
+KST_FILE=/mnt/ramdisk/mricomkst.dat
 # kst channel count
 CHANNELS=default
 # channel naming start with analog in, then out, digital in, then out

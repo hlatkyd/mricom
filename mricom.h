@@ -4,6 +4,7 @@
  *
  */
 
+//TODO would be nice: use float instead of double
 #define VERSION_MINOR 1
 #define VERSION_MAJOR 0
 
@@ -70,8 +71,10 @@ typedef struct daq_data{
 typedef struct daq_settings{
     char device[32];
     char daq_file[128];         // full data file
-    //TODO make this separate or not?
+    FILE *fp_daq;               // FILE pointer to daq file if open 
     char kst_file[128];         // only contain data for kst display window
+    FILE *fp_kst;               // FILE pointer to kst window file if open
+    int precision;              // decimals saved in data files
     char ramdisk[128];          // ramdisk for fast data logging
     char procpar[128];          // vnmrj procpar file of curexp
     char event_dir[128];        // dir of stimulation event files
@@ -84,6 +87,7 @@ typedef struct daq_settings{
     // 0 or 1 to signal if acquisition is ongoing and prohibit some functions
     // for example test data generation, etc...
     int is_daq_on;
+    int is_kst_on;              // 1 if a kst instance was started
     
 }daq_settings;
 
