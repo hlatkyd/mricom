@@ -12,7 +12,7 @@
  */
 
 #include "mricom.h"
-#include "func.h"
+
 
 extern processes *procpt;
 extern daq_data *data;
@@ -26,6 +26,12 @@ void test_print(char **args){
 
     printf("test_print says: %s\n",args[1]);
     return;
+}
+void testproc(){
+
+    printf("starting testproc...\n");
+    sleep(5);
+    printf("testproc ended...\n");
 }
 //TODO make obsolete
 void test_fork(){
@@ -425,12 +431,18 @@ void process_remove(int pid){
     int n = procpt->nproc;
     int index;
     int i;
+    printf("n: %d\n",n);
     /* find the index of process with procid*/
     for(i=0; i<=n; i++){
+        printf("pid : %d, procid %d\n",pid,procpt->procid[i]);
         if(pid == procpt->procid[i]){
             index = i;
         }
     }
+    if(DEBUG > 1){
+        printf("removing process %d, index %d\n",pid,index);
+    }
+    
     if(strcmp(procpt->name[index],"kst") == 0)
         settings->is_kst_on = 0;
     if(index != n){
@@ -568,6 +580,101 @@ int fprintf_header(FILE *fp){
     fprintf(fp,"\n");
     return 0;
 }
+
+/*
+ * Function: procmonitor
+ * ---------------------
+ * checks for zombie processes coming from mricom and removes them
+ * cleans local process list
+ */
+
+//TODO might not be the best way...
+void procmonitor(){
+
+    FILE *stream;
+    char path[128];
+    char *token;
+    int i;
+    int sleeptime = 1000000; // in microsec
+    while(1){
+
+        //TODO use fork and exec instead of popen
+        stream = popen("ps -ef | grep mricom | grep '<defunct>'","r");
+        if(stream == NULL){
+            printf(" procmonitor: failed popen\n");
+            usleep(sleeptime);
+            continue;
+        }
+        while(fgets(path, sizeof(path),stream) != NULL){
+            // if no 'grep mricom' in path only
+            if(strstr(path," grep mricom ") == NULL){
+                token = strtok(path,"\t");
+                for(i=0;i<4;i++){
+                    token = strtok(NULL, "\t");
+                    printf("%s\n",token);
+                }
+                
+                //printf("%s",path);
+            }
+        }
+
+        usleep(sleeptime);
+    }
+    printf("out of loop!? \n");
+}
+
+/*
+ * Function launch_process
+ * -----------------------
+ * fork and launch a background process.
+ *
+ * INPUT: process_name
+ */
+
+void launch_process(char *process_name){
+
+    
+    int procnum;
+    int status;
+    pid_t pid, cpid, wpid;
+
+    pid = fork();
+    if(pid == 0){
+        // child
+
+        // check for available process names
+        if(strcmp(process_name,"procmonitor") == 0){
+            procmonitor();
+        } else if(strcmp(process_name, "stimtest") == 0){
+            comedi_digital_trig("events/testevent.evt");
+        } else if(strcmp(process_name, "testproc") == 0){
+            testproc();
+        } else {
+            printf("cannot launch process '%s'\n",process_name);
+        }
+        exit(1);
+    }
+    else if(pid < 0){
+        //error forking
+        perror("error forking");
+    }
+    else {
+        // parent
+
+        process_add(pid, process_name);
+        if(strcmp(process_name,"procmonitor") == 0){
+            if(DEBUG > 0){
+                printf(" starting 'procmonitor'\n");
+            }
+        } else if(strcmp(process_name, "stimtest") == 0){
+            printf("testing digital trigger output...\n");
+        } else {
+            printf("cannot launch process '%s'\n",process_name);
+        }
+    }
+    return;
+
+}
 /*-------------------------------------------------------------------*/
 /*                     util user functions                           */
 /*-------------------------------------------------------------------*/
@@ -656,10 +763,11 @@ void listp(){
 
     int i;
     int n = procpt->nproc;
-    printf("Mricom processes running:\n");
+    printf("Number of mricom processes running: %d\n",n);
+    printf(" main process: %d\n",procpt->mainpid);
     if(n!=0){
         for (i = 0; i < n; i++){
-            printf("name: %s, pid: %d\n",
+            printf(" child name: %s, pid: %d\n",
                             procpt->name[i], procpt->procid[i]);
         }
     }
@@ -710,4 +818,19 @@ void reset(){
     daq_init_kstfile();
     printf("done\n");
     return;
+}
+
+/*
+ * Function: stimtest
+ * ------------------
+ * Run a brief digital trigger series
+ *
+ * Input: t -- stimulus length in seconds
+ */
+
+void stimtest(int t){
+
+    //TODO timing not implemented yet
+
+    launch_process("stimtest");
 }

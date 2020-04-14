@@ -6,6 +6,7 @@
 /*test functions*/
 void test_print(char **args);
 void test_fork();
+void testproc();
 void test_rand_membuf(double time);
 void test_daq_simulate();
 void test_write_data();
@@ -33,13 +34,14 @@ void process_remove(int pid);
 int is_kst_accessible();
 int is_ramdisk_accessible();
 int is_nicard_accessible();
+void listsettings();
+void listdevsettings();
 int fprintf_header(FILE *);
-//TODO remove zombie procids, etc
+void launch_process(char *);
 void procmonitor();
 
 /*util user interface funcs*/
-void listsettings();
-void listdevsettings();
+void list();
 void catdata();
 void listp();
 void killp(int procid);
@@ -48,3 +50,4 @@ void killp(int procid);
 void start();
 void stop();
 void reset();
+void stimtest(int t);

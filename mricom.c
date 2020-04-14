@@ -14,9 +14,6 @@
  */
 
 #include "mricom.h"
-#include "func.h"
-#include "comedifunc.h"
-#include "parser.h"
 
 /* ----------------------*/
 /*     shell constants   */
@@ -51,6 +48,7 @@ int sh_killp(int argc, char **args);
 int sh_start(int argc, char **args);
 int sh_stop(int argc, char **args);
 int sh_list(int argc, char **args);
+int sh_stimtest(int argc, char **args);
 
 /* init settings */
 daq_settings *settings;
@@ -73,7 +71,8 @@ char *builtin_str[] = {
     "test",
     "start",
     "stop",
-    "list"
+    "list",
+    "stimtest"
 };
 /* functions for builtin commands*/
 /* should be same oreder as builtin_str list names*/
@@ -85,7 +84,8 @@ int (*builtin_func[]) (int, char **) = {
     &sh_test,
     &sh_start,
     &sh_stop,
-    &sh_list
+    &sh_list,
+    &sh_stimtest
 };
 int sh_num_builtins(){
     return sizeof(builtin_str) / sizeof(char*);
@@ -173,8 +173,11 @@ int sh_help(int argc, char **args){
             case 6: // stop
                 printf("stop data acquisition\n");
                 break;
-            case 7: // listset
+            case 7: // list
                 printf("print settings struct\n");
+                break;
+            case 8: // stimtest
+                printf("test digital trigger output\n");
                 break;
         }
         printf("\n");
@@ -243,7 +246,13 @@ int sh_killp(int argc, char **args){
 int sh_start(int argc, char **args){
     //TODO make arguments useful, eg kst start
 
-    start();
+    if(argc == 2){
+        if(strcmp(args[1],"testproc") == 0){
+            launch_process("testproc");
+        }
+    }
+    if(argc == 1)
+        start();
     return 1;
 }
 int sh_stop(int argc, char **args){
@@ -271,6 +280,25 @@ int sh_list(int argc, char **args){
             return 1;
         }
     }
+}
+int sh_stimtest(int argc, char **args){
+
+    int t_length; // stimulus length in seconds
+    int t_length_def = 10;
+    int val;
+    if(argc == 1){
+        t_length = t_length_def;
+    } else if(argc == 2){
+        val = atoi(args[1]);
+        if(val == 0){
+            printf("stimtest: wrong input for stimulus length\n");
+            t_length = t_length_def;
+        } else {
+            t_length = val;
+        }
+    }
+    stimtest(t_length);
+    return 1;
 }
 /*-----------------------------------------------------------------------------*/
 /*                               OPAQUE PARTS                                  */
@@ -319,10 +347,12 @@ void init(){
     // malloc for process structure
     procpt = (processes*)malloc(sizeof(processes));
     procpt->nproc = 0;
+    procpt->mainpid = getpid();
 
     // malloc for daq_data
     data = (daq_data*)malloc(sizeof(daq_data));
 
+    launch_process("procmonitor");
 
     // init daq file
     daq_init_kstfile();

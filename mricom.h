@@ -9,7 +9,7 @@
 #define VERSION_MAJOR 0
 
 // define debug
-#define DEBUG 1
+#define DEBUG 2
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +25,10 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <comedilib.h>
+
+#include "func.h"
+#include "parser.h"
+#include "comedifunc.h"
 
 /* daq constants */
 #define NAICHAN 3 // number of analog input channels
@@ -54,6 +58,7 @@
 
 /* procerss struct to keep track of local child processes*/
 typedef struct processes{
+    int mainpid;
     int nproc;
     int procid[MAX_ID];
     char name[MAX_ID][MAX_NAME_LENGTH];
