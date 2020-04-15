@@ -102,6 +102,8 @@ typedef struct dev_settings{
 
     // comedi device pointer
     comedi_t *dev;              
+    // analog acquisition command
+    comedi_cmd *cmd;
     // 1 if analog wiring is differential, 0 otherwise
     int is_analog_differential;
     // analog subdevice number (0 on ni-6035e)

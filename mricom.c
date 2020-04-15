@@ -247,10 +247,17 @@ int sh_start(int argc, char **args){
     //TODO make arguments useful, eg kst start
 
     if(argc == 2){
+        // test process for local pid functionality testing
         if(strcmp(args[1],"testproc") == 0){
+
             launch_process("testproc");
+        // data acquisition
+        } else if(strcmp(args[1],"daq") == 0){
+        
+            launch_process("daq");
         }
     }
+    // full start???
     if(argc == 1)
         start();
     return 1;
@@ -352,7 +359,8 @@ void init(){
     // malloc for daq_data
     data = (daq_data*)malloc(sizeof(daq_data));
 
-    launch_process("procmonitor");
+    //TODO do this properly
+    //launch_process("procmonitor");
 
     // init daq file
     daq_init_kstfile();
@@ -488,7 +496,7 @@ int shell_execute(int argc, char **args){
         //empty command
         return 1;
     }
-    /* prohibited shell commands*/
+    // prohibited shell commands
     if(strcmp(args[0],"kill") == 0){
         printf("did you mean 'killp [id]?'\n");
         return 1;
@@ -497,12 +505,13 @@ int shell_execute(int argc, char **args){
         printf("no 'rm' here!\n");
         return 1;
     }
-    /* starting builtins if found*/
+    // starting builtins first if found
     for(i=0; i<sh_num_builtins();i++){
         if(strcmp(args[0], builtin_str[i]) == 0){
             return (*builtin_func[i])(argc, args);
         }
     }
+    // if not a builtin, then lauch as shell command
     return shell_launch(argc, args);
 }
 
@@ -514,7 +523,10 @@ void shell_loop(){
     int argc;
 
     do {
+
         line = shell_read_cmd();
+
+        // TODO put process monitor cycle here????
 
         args = shell_parse_cmd(line);
 

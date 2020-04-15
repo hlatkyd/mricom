@@ -91,23 +91,98 @@ int comedi_digital_trig(char *eventfile){
 /*
  * Function: comedi_setup_analog_acq:
  * ------------------------------------------
- * read event file for digital trigger generation
+ * setup analog input subdevice, command, etc
+ *
+ * Uses hard-defined parameters in settings and mricom.h and returns 
+ * a prepared comedi command type 'comedi_cmd'
  */
-int comedi_setup_analog_acq(){
+comedi_cmd *comedi_setup_analog_acq(){
 
-    return 0;
+    comedi_t *dev;
+    comedi_cmd c, *cmd = &c;
+    int subdev_flags;
+    int aref;                       // int indicating analog ref type
+    int chan;
+    int subdev;
+    int chanlist[NAICHAN];
+    int n_chan = NAICHAN;           // number of acquisition channels
+    int range = 0;                  //??
+    int n_scan = 1000;              // number of scans, TODO this is testing
+    double freq = 10.0;             // 
+    double val;
+    int scan_period_ns;
+    int ret;
+    int i;
+    comedi_range *range_info[NAICHAN];
+    lsampl_t maxdata[NAICHAN];
+
+    dev = devsettings->dev;
+
+    comedi_set_global_oor_behavior(COMEDI_OOR_NUMBER);
+
+    if(dev == NULL){
+        comedi_perror(settings->device);
+        exit(1);
+    }
+    subdev = devsettings->analog_in_subdev;
+    for(i=0;i<NAICHAN;i++){
+        chan = devsettings->analog_in_chan[i];
+        chanlist[i] = CR_PACK(chan, range, aref);
+        range_info[i] = comedi_get_range(dev, subdev, chan, range);
+        maxdata[i] = comedi_get_maxdata(dev, subdev, chan);
+    }
+    if(devsettings->is_analog_differential == 1){
+        aref = AREF_DIFF;
+    } else {
+        printf(" comedi_setup_analog_acq: only diff is tested\n");
+        aref = AREF_GROUND;
+    }
+
+    // init command
+    memset(cmd,0,sizeof(*cmd));
+    // make generic command, then modify it
+    printf("dev, subdev, nchan: %p, %d, %d\n",dev, subdev,n_chan);
+    ret = comedi_get_cmd_generic_timed(dev, subdev, cmd, n_chan, 1e9);
+    printf("ret %d\n",ret);
+    //cmd->start_src = TRIG_NOW;
+    cmd->chanlist = chanlist;
+    cmd->chanlist_len = n_chan;
+    //TODO del this after testing
+    //if(cmd->stop_src == TRIG_COUNT){
+    //    cmd->stop_arg = n_scan;
+    //}
+
+
+    // test if everything is ok
+    ret = comedi_command_test(dev, cmd);
+    printf("ret %d\n",ret);
+    if(ret < 0){
+        comedi_perror("comedi_command_test");
+        exit(1);
+    }
+    if(ret != 0){
+        printf("comedi_setup_analog_acq: error preparing command: %d\n",ret);
+        exit(1);
+    }
+
+    devsettings->cmd = cmd;
+    return cmd;
 }
 
 /*
  * Function: comedi_start_analog_acq:
  * ------------------------------------------
- * read event file for digital trigger generation
+ * start analog acquisition command
  */
-int comedi_start_analog_acq(){
+int comedi_start_analog_acq(comedi_cmd *cmd){
 
-    comedi_t *device;
+    int ret;
+    comedi_t *dev;
 
-    device = devsettings->dev;
+    dev = devsettings->dev;
+
+    // start the command
+    ret = comedi_command(dev, cmd);
     return 0;
 
 }

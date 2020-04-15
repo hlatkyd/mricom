@@ -32,6 +32,7 @@ void testproc(){
     printf("starting testproc...\n");
     sleep(5);
     printf("testproc ended...\n");
+    return;
 }
 //TODO make obsolete
 void test_fork(){
@@ -595,11 +596,35 @@ void procmonitor(){
     char path[128];
     char *token;
     int i;
+    int status;
     int sleeptime = 1000000; // in microsec
+    pid_t pid, wpid;
+
     while(1){
 
+        usleep(sleeptime);
         //TODO use fork and exec instead of popen
-        stream = popen("ps -ef | grep mricom | grep '<defunct>'","r");
+        //stream = popen("ps -ef | grep mricom | grep '<defunct>'","r");
+        pid = fork();
+
+        //child, call exec here
+        if(pid == 0){
+        
+            sleep(1);
+            exit(1);
+        } else if(pid < 0){
+            perror("procmonitor fork error: ");
+        } else {
+            //parent should wait for child
+            listp();
+            do {
+                wpid = waitpid(pid, &status, WUNTRACED);
+            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+        }
+    }
+}
+
+/*
         if(stream == NULL){
             printf(" procmonitor: failed popen\n");
             usleep(sleeptime);
@@ -614,7 +639,6 @@ void procmonitor(){
                     printf("%s\n",token);
                 }
                 
-                //printf("%s",path);
             }
         }
 
@@ -622,6 +646,7 @@ void procmonitor(){
     }
     printf("out of loop!? \n");
 }
+*/
 
 /*
  * Function launch_process
@@ -633,10 +658,11 @@ void procmonitor(){
 
 void launch_process(char *process_name){
 
-    
     int procnum;
     int status;
+    int retval;
     pid_t pid, cpid, wpid;
+    comedi_cmd *cmd;
 
     pid = fork();
     if(pid == 0){
@@ -645,10 +671,20 @@ void launch_process(char *process_name){
         // check for available process names
         if(strcmp(process_name,"procmonitor") == 0){
             procmonitor();
+
         } else if(strcmp(process_name, "stimtest") == 0){
+
             comedi_digital_trig("events/testevent.evt");
+
         } else if(strcmp(process_name, "testproc") == 0){
+
             testproc();
+
+        } else if(strcmp(process_name, "daq") == 0){
+
+            cmd = comedi_setup_analog_acq();
+            retval = comedi_start_analog_acq(cmd);
+
         } else {
             printf("cannot launch process '%s'\n",process_name);
         }
@@ -668,6 +704,10 @@ void launch_process(char *process_name){
             }
         } else if(strcmp(process_name, "stimtest") == 0){
             printf("testing digital trigger output...\n");
+
+        } else if(strcmp(process_name, "daq") == 0){
+            printf("starting analog acquisition...\n");
+
         } else {
             printf("cannot launch process '%s'\n",process_name);
         }
