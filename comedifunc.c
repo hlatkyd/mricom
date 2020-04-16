@@ -8,6 +8,12 @@
 extern daq_settings *settings;
 extern dev_settings *devsettings;
 
+static unsigned int chanlist[NAICHAN];
+static comedi_range * range_info[NAICHAN];
+static lsampl_t maxdata[NAICHAN];
+
+void print_datum(lsampl_t raw, int channel_index);
+
 /*
  * Function: comedi_device_setup
  * -----------------------------
@@ -89,17 +95,17 @@ int comedi_digital_trig(char *eventfile){
 }
 
 /*
- * Function: comedi_setup_analog_acq:
+ * Function: comedi_start_analog_acq:
  * ------------------------------------------
- * setup analog input subdevice, command, etc
+ * setup analog input subdevice, command, then start
  *
- * Uses hard-defined parameters in settings and mricom.h and returns 
- * a prepared comedi command type 'comedi_cmd'
+ * Uses hard-defined parameters in settings and mricom.h
  */
-comedi_cmd *comedi_setup_analog_acq(){
+ int comedi_start_analog_acq(){
 
     comedi_t *dev;
-    comedi_cmd c, *cmd = &c;
+    comedi_cmd *cmd;
+
     int subdev_flags;
     int aref;                       // int indicating analog ref type
     int chan;
@@ -109,14 +115,19 @@ comedi_cmd *comedi_setup_analog_acq(){
     int range = 0;                  //??
     int n_scan = 1000;              // number of scans, TODO this is testing
     double freq = 10.0;             // 
+
+    char buf[BUFSZ];
     double val;
     int scan_period_ns;
-    int ret;
-    int i;
+    int i, ret, col;
+    int total = 0;
+    lsampl_t raw;
+
     comedi_range *range_info[NAICHAN];
     lsampl_t maxdata[NAICHAN];
 
     dev = devsettings->dev;
+    cmd = devsettings->cmd;
 
     comedi_set_global_oor_behavior(COMEDI_OOR_NUMBER);
 
@@ -125,6 +136,15 @@ comedi_cmd *comedi_setup_analog_acq(){
         exit(1);
     }
     subdev = devsettings->analog_in_subdev;
+
+    // check if subdev is correct
+    ret = comedi_find_subdevice_by_type(dev, COMEDI_SUBD_AI, 0);
+
+    if(ret != subdev){
+        printf(" Settings specified subdevice is not analog input subdevice\n");
+        printf(" Exiting...\n");
+        exit(1);
+    }
     for(i=0;i<NAICHAN;i++){
         chan = devsettings->analog_in_chan[i];
         chanlist[i] = CR_PACK(chan, range, aref);
@@ -141,21 +161,27 @@ comedi_cmd *comedi_setup_analog_acq(){
     // init command
     memset(cmd,0,sizeof(*cmd));
     // make generic command, then modify it
-    printf("dev, subdev, nchan: %p, %d, %d\n",dev, subdev,n_chan);
+    if(DEBUG >1){
+        printf(" daq setup: subdev, nchan: %d, %d\n",subdev,n_chan);
+    }
     ret = comedi_get_cmd_generic_timed(dev, subdev, cmd, n_chan, 1e9);
-    printf("ret %d\n",ret);
-    //cmd->start_src = TRIG_NOW;
+    if(ret < 0){
+        comedi_perror("comedi_get_cmd_generic_timed");
+        exit(1);
+    }
+
+    cmd->start_src = TRIG_NOW;
     cmd->chanlist = chanlist;
     cmd->chanlist_len = n_chan;
     //TODO del this after testing
-    //if(cmd->stop_src == TRIG_COUNT){
-    //    cmd->stop_arg = n_scan;
-    //}
-
+    cmd->stop_src = TRIG_COUNT;
+    cmd->stop_arg = n_scan;
 
     // test if everything is ok
     ret = comedi_command_test(dev, cmd);
-    printf("ret %d\n",ret);
+    if(DEBUG > 0 && ret == 0){
+        printf(" comedi_command_test ok\n");
+    }
     if(ret < 0){
         comedi_perror("comedi_command_test");
         exit(1);
@@ -165,26 +191,50 @@ comedi_cmd *comedi_setup_analog_acq(){
         exit(1);
     }
 
-    devsettings->cmd = cmd;
-    return cmd;
-}
-
-/*
- * Function: comedi_start_analog_acq:
- * ------------------------------------------
- * start analog acquisition command
- */
-int comedi_start_analog_acq(comedi_cmd *cmd){
-
-    int ret;
-    comedi_t *dev;
-
-    dev = devsettings->dev;
-
-    // start the command
+    // run command
     ret = comedi_command(dev, cmd);
-    return 0;
+    if(ret < 0){
+        comedi_perror("comedi_command");
+        exit(1);
+    }
+    printf("analog command running\n");
+    col = 0;
+    subdev_flags = comedi_get_subdevice_flags(dev, subdev);
+    while(1){
+        printf("yaaay\n");
+        ret = read(comedi_fileno(dev),buf, BUFSZ);
+        printf("ret %d\n",ret);
+        if(ret < 0){
+            perror("read");
+            break;
+        } else if (ret == 0){
+            // stop condition
+            break;
+        } else {
+            int bytes_per_sample;
+            total += ret;
 
+            if(subdev_flags & SDF_LSAMPL){
+                bytes_per_sample = sizeof(lsampl_t);
+            } else {
+                bytes_per_sample = sizeof(sampl_t);
+            }
+            for (i = 0; i < ret / bytes_per_sample; i++){
+                if (subdev_flags & SDF_LSAMPL) {
+                    raw = ((lsampl_t *)buf)[i];
+                } else {
+                    raw = ((sampl_t *)buf)[i];
+                }
+                print_datum(raw, col);
+                col++;
+                if(col == n_chan){
+                    printf("\n");
+                    col = 0;
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 /*
@@ -209,3 +259,18 @@ int comedi_execute_digital_sequence(){
 
 
 }
+/*
+ * Function: print_datum
+ * ---------------------
+ * utility to print analog acq data
+ */
+
+void print_datum(lsampl_t raw, int channel_index){
+
+	double physical_value;
+
+	physical_value = comedi_to_phys(raw, range_info[channel_index],
+					maxdata[channel_index]);
+	printf("%#8.6g ", physical_value);
+}
+

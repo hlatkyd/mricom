@@ -9,6 +9,8 @@
 DEVICE=/dev/comedi0
 # real time data collection file
 DAQ_FILE=/mnt/ramdisk/mricomrt.dat 
+# process control file
+PID_FILE=.mricomproc.pid
 # vnmrj procpar file of next/current acquisition
 # procpar file includes the parameter "mricompar" to relay commands
 PROCPAR=/mnt/vnmrserver/procpar

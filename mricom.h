@@ -38,6 +38,7 @@
 #define NCHAN  (NAICHAN+NAOCHAN+NDICHAN+NDOCHAN + 1) // +time
 //NOTE: fifo is 512 samples on NI-6035E
 #define NBUFFER 200 // sampled data buffer
+#define BUFSZ 10000 // TODO test this, buffer size , comedi
 #define SAMPLING_RATE 200 // daq sampling rate in samples/s
 #define TIME_WINDOW 20 // interval of time on charts in sec
 #define DELIMITER "\t"  // used in data file 
@@ -81,6 +82,8 @@ typedef struct daq_settings{
     FILE *fp_kst;               // FILE pointer to kst window file if open
     int precision;              // decimals saved in data files
     char ramdisk[128];          // ramdisk for fast data logging
+    char pid_file[128];          // local process id and contorl file
+    FILE *fp_pid;               // FILE pointer to pidfile
     char procpar[128];          // vnmrj procpar file of curexp
     char event_dir[128];        // dir of stimulation event files
     //TODO is this needed?

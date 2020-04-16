@@ -657,12 +657,12 @@ void procmonitor(){
  */
 
 void launch_process(char *process_name){
+    /*possible process names are  hardcoded, take care*/
 
     int procnum;
     int status;
     int retval;
     pid_t pid, cpid, wpid;
-    comedi_cmd *cmd;
 
     pid = fork();
     if(pid == 0){
@@ -674,6 +674,7 @@ void launch_process(char *process_name){
 
         } else if(strcmp(process_name, "stimtest") == 0){
 
+            printf("testing digital trigger output...\n");
             comedi_digital_trig("events/testevent.evt");
 
         } else if(strcmp(process_name, "testproc") == 0){
@@ -682,8 +683,7 @@ void launch_process(char *process_name){
 
         } else if(strcmp(process_name, "daq") == 0){
 
-            cmd = comedi_setup_analog_acq();
-            retval = comedi_start_analog_acq(cmd);
+            comedi_start_analog_acq();
 
         } else {
             printf("cannot launch process '%s'\n",process_name);
@@ -698,19 +698,18 @@ void launch_process(char *process_name){
         // parent
 
         process_add(pid, process_name);
+
         if(strcmp(process_name,"procmonitor") == 0){
             if(DEBUG > 0){
                 printf(" starting 'procmonitor'\n");
             }
-        } else if(strcmp(process_name, "stimtest") == 0){
-            printf("testing digital trigger output...\n");
-
-        } else if(strcmp(process_name, "daq") == 0){
-            printf("starting analog acquisition...\n");
-
-        } else {
-            printf("cannot launch process '%s'\n",process_name);
         }
+
+        /*
+        do {
+            wpid = waitpid(pid, &status, WUNTRACED);
+        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+        */
     }
     return;
 

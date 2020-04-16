@@ -204,7 +204,7 @@ int sh_test(int argc, char **args){
                 comedi_digital_trig("events/testevent.evt");
         } else if(strcmp(args[1],"analog") == 0){
             printf("testing analog setup\n");
-            comedi_setup_analog_acq();
+            comedi_start_analog_acq();
         } else if(strcmp(args[1],"digital") == 0){
             printf("testing digital setup and exec\n");
             comedi_setup_digital_sequence("test");
@@ -254,6 +254,7 @@ int sh_start(int argc, char **args){
         // data acquisition
         } else if(strcmp(args[1],"daq") == 0){
         
+            //comedi_setup_analog_acq();
             launch_process("daq");
         }
     }
@@ -327,6 +328,7 @@ void init(){
     settings = (daq_settings*)malloc(sizeof(daq_settings));
     // malloc for device settings
     devsettings = (dev_settings*)malloc(sizeof(dev_settings));
+    devsettings->cmd = malloc(sizeof(struct comedi_cmd_struct));
     parse_settings();
     settings->is_daq_on = 0;
     settings->is_kst_on = 0;
