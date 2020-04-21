@@ -26,6 +26,7 @@
 #include <readline/history.h>
 #include <comedilib.h>
 
+#include "common.h"
 #include "func.h"
 #include "parser.h"
 #include "comedifunc.h"
