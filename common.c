@@ -1,14 +1,10 @@
-/* parser.c
+/* common.c
  * 
- * parse vnmrj procpar file
- *
- * parse settings file
+ * Common function definitions include varoius parsers and
+ * mricom specific process management
+ * 
  */
-
-#include "mricom.h"
-
-extern daq_settings *settings;
-extern dev_settings *devsettings;
+#include "common.h"
 
 /*
  * Function: parse_procpar
@@ -75,7 +71,8 @@ int search_procpar(char *parameter_name, char *command){
  * ------------------------
  * reads settings file and fills daq_settings struct
  */
-int parse_settings(){
+int parse_settings(struct daq_settings *settings,
+                    struct dev_settings *devsettings){
 
     void remove_spaces(char* s) {
         const char* d = s;
@@ -220,5 +217,34 @@ int parse_settings(){
             i = 0; // set 0 again, just to be sure
         }
     }
+    return 0;
+}
+
+/* Function: getppname
+ * -------------------------
+ * Find parent process name and put into string pointer input
+ */
+int getppname(char *name){
+
+    pid_t pid; 
+    FILE *fp;
+    char path[32];
+    char pidstr[8];
+    char *pname = NULL;
+    size_t len = 0;
+    pid = getppid();
+    //itoa(pid,pidstr,10);
+    sprintf(pidstr, "%d",pid);
+    strcpy(path, "/proc/");
+    strcat(path, pidstr);
+    strcat(path, "/comm");
+    //printf("path here : %s\n",path);
+    fp = fopen(path,"r");
+    if(fp == NULL){
+        perror("getppname");
+        exit(1);
+    }
+    getline(&pname, &len, fp);
+    strcpy()
     return 0;
 }

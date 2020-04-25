@@ -5,51 +5,13 @@
  * shell code base: Stephen Brennan
  * https://github.com/brenns10/lsh
  *
- * contents:
- * - 
- *
- *
- *
- *
  */
-
+#include "common.h"
 #include "mricom.h"
+#include "func.h"
+#include "comedifunc.h"
 
-/* ----------------------*/
-/*     shell constants   */
-/* ----------------------*/
-
-#define CMD_BUFFER 256
-#define MAX_ARG_LENGTH 128
-#define ARG_DELIM " \t\r\n\a"
-
-/* ----------------------*/
-/* function declarations */
-/* ----------------------*/
-
-/*main shell functions*/
-void init();
-char **shell_parse_cmd(char *line);
-int shell_get_argc(char **args);
-char *shell_read_cmd();
-void shell_loop();
-int shell_launch(int argc, char **args);
-int shell_execute(int argc, char **args);
-/* ----------------------*/
-/*        builtins       */
-/* ----------------------*/
-
-int sh_exit(int argc, char **args);
-int sh_help(int argc, char **args);
-int sh_test(int argc, char **args);
-int sh_listh(int argc, char **args);
-int sh_listp(int argc, char **args);
-int sh_killp(int argc, char **args);
-int sh_start(int argc, char **args);
-int sh_stop(int argc, char **args);
-int sh_list(int argc, char **args);
-int sh_stimtest(int argc, char **args);
-
+//TODO move these into main, avoid global??
 /* init settings */
 daq_settings *settings;
 /* init data struct */
@@ -59,7 +21,7 @@ processes *procpt;
 /* init device settings struct*/
 dev_settings *devsettings;
 
-
+//TODO review these, less is more
 /* command names
  * 
  * should be the same order as builtin command pointer list */
@@ -329,7 +291,8 @@ void init(){
     // malloc for device settings
     devsettings = (dev_settings*)malloc(sizeof(dev_settings));
     devsettings->cmd = malloc(sizeof(struct comedi_cmd_struct));
-    parse_settings();
+    parse_settings(settings, devsettings);
+    //TODO make these obsolete 
     settings->is_daq_on = 0;
     settings->is_kst_on = 0;
 

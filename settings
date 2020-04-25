@@ -9,6 +9,7 @@
 DEVICE=/dev/comedi0
 # real time data collection file
 DAQ_FILE=/mnt/ramdisk/mricomrt.dat 
+#TODO
 # process control file
 PID_FILE=.mricomproc.pid
 # vnmrj procpar file of next/current acquisition

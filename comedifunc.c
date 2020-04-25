@@ -2,7 +2,7 @@
  *
  * Contains functions using the comedi library
  */
-
+#include "common.h"
 #include "mricom.h"
 
 extern daq_settings *settings;

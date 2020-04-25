@@ -10,8 +10,10 @@
  *  - util user functions
  *  - main user functions 
  */
-
+#include "common.h"
+#include "func.h"
 #include "mricom.h"
+#include "comedifunc.h"
 
 
 extern processes *procpt;
