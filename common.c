@@ -74,14 +74,6 @@ int search_procpar(char *parameter_name, char *command){
 int parse_settings(struct daq_settings *settings,
                     struct dev_settings *devsettings){
 
-    void remove_spaces(char* s) {
-        const char* d = s;
-        do {
-            while (*d == ' ') {
-                ++d;
-            }
-        } while (*s++ = *d++);
-    }
 
     char settings_file[] = SETTINGS_FILE;
     FILE *fp;
@@ -219,6 +211,111 @@ int parse_settings(struct daq_settings *settings,
     }
     return 0;
 }
+/* Function: parse_blockstim_conf
+ * -------------------------------
+ * Fill struct blockstim_settings from config file
+ *
+ * Args:
+ */
+
+int parse_blockstim_conf(struct blockstim_settings *bs, char *conffile, char *n){
+
+    #define N_PARS 8            // number of params set in conf file
+
+    FILE *fp;
+    char line[128];
+    char buf[128];
+    char *token;
+    double temp;
+    int len;
+    int i = 0; int j = 0; int count = 0;
+    int start = 0;
+
+    fp = fopen(conffile, "r");
+    if(fp == NULL){
+        printf("\nparser_blockstim_conf: could not open file %s\n",conffile);
+        exit(1);
+    }
+    while(fgets(line, 128, fp)){
+        // ignore whitespace and comments
+        if(line[0] == '\n' || line[0] == '\t'
+           || line[0] == '#' || line[0] == ' '){
+            continue;
+        }
+        count++;
+        //remove whitespace
+        remove_spaces(line);
+        //remove newline
+        len = strlen(line);
+        if(line[len-1] == '\n')
+            line[len-1] = '\0';
+        /* general settings */
+        
+        token = strtok(line,"=");
+        // find first line referring to design 'n'
+        if(strcmp(token,"DESIGN") == 0){
+            token = strtok(NULL,"=");
+            if(strcmp(token,n) == 0){
+                // found the line, save number
+                start = count;
+                continue; 
+            } else {
+                continue;
+            }
+        } else if (start != 0 && count > start && count < start + N_PARS + 1){
+            // read params here
+            if (strcmp(token,"SUBDEV") == 0){
+                token = strtok(NULL,"=");
+                bs->subdev = atoi(token);
+                continue;
+            }
+            if (strcmp(token,"CHAN") == 0){
+                token = strtok(NULL,"=");
+                bs->chan = atoi(token);
+                continue;
+            }
+            if (strcmp(token,"START_DELAY") == 0){
+                token = strtok(NULL,"=");
+                sscanf(token, "%lf", &temp);
+                bs->start_delay = temp;
+                continue;
+            }
+            if (strcmp(token,"ON_TIME") == 0){
+                token = strtok(NULL,"=");
+                sscanf(token, "%lf", &temp);
+                bs->on_time = temp;
+                continue;
+            }
+            if (strcmp(token,"OFF_TIME") == 0){
+                token = strtok(NULL,"=");
+                sscanf(token, "%lf",&temp);
+                bs->off_time = temp;
+                continue;
+            }
+            if (strcmp(token,"TTL_USECW") == 0){
+                token = strtok(NULL,"=");
+                sscanf(token, "%lf", &temp);
+                bs->ttl_usecw = temp;
+                continue;
+            }
+            if (strcmp(token,"TTL_FREQ") == 0){
+                token = strtok(NULL,"=");
+                sscanf(token, "%lf", &temp);
+                bs->ttl_freq = temp;
+                continue;
+            }
+            if (strcmp(token,"N_BLOCKS") == 0){
+                token = strtok(NULL,"=");
+                bs->n_blocks = atoi(token);
+                continue;
+            }
+        } else {
+            continue;
+        }
+    }
+
+    return 0;
+}
 
 /* Function: getppname
  * -------------------------
@@ -245,6 +342,19 @@ int getppname(char *name){
         exit(1);
     }
     getline(&pname, &len, fp);
-    strcpy()
+    strcpy(name, pname);
     return 0;
 }
+/* Function: remove_spaces
+ * -----------------------
+ * remove whitespace from a line in config file
+ */
+void remove_spaces(char* s) {
+    const char* d = s;
+    do {
+        while (*d == ' ') {
+            ++d;
+        }
+    } while (*s++ = *d++);
+}
+

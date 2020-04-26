@@ -93,14 +93,31 @@ typedef struct dev_settings{
 
 } dev_settings;
 
+struct blockstim_settings{
+
+    char device[16];
+    int subdev;                         // digital io subdevice on 6035E: 
+    int chan;                           // digital output channel
+    double start_delay;
+    double on_time;
+    double off_time;
+    int ttl_usecw;
+    double ttl_freq;
+    int n_blocks;
+
+};
+
 extern daq_settings *settings;
 extern dev_settings *devsettings;
+
+
+#endif
 
 int parse_procpar();
 int search_procpar(char *parname, char *command);
 int parse_settings(struct daq_settings *, struct dev_settings *);
+int parse_blockstim_conf(struct blockstim_settings *bs, char *file, char *d);
 
+/* util common func*/
+void remove_spaces(char *);
 int getppname(char *name);
-
-#endif
-
