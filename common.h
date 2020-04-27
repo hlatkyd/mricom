@@ -85,13 +85,20 @@ typedef struct dev_settings{
     // analog channels, usually 0,1,2,....
     unsigned int analog_in_chan[8];
     // subdevice where digital stimulation channel is located (2)
-    unsigned int stim_trig_subdev;
-    // digital stim channel (0 in settings)
-    unsigned int stim_trig_chan;
+    unsigned int stim_trig_subdev;//subdev of  digital stim channel is located 
+    unsigned int stim_trig_chan;// digital stim channel (0 in settings)
     //TODO what is this for again??
     double timing_buffer[1024];
 
 } dev_settings;
+
+struct header_common{
+
+    double version;
+    char process_name[16];
+    struct timeval start_time;
+
+};
 
 struct blockstim_settings{
 
@@ -117,7 +124,9 @@ int parse_procpar();
 int search_procpar(char *parname, char *command);
 int parse_settings(struct daq_settings *, struct dev_settings *);
 int parse_blockstim_conf(struct blockstim_settings *bs, char *file, char *d);
+int fprintf_header_common(FILE *fp, struct header_common *h);
 
 /* util common func*/
 void remove_spaces(char *);
 int getppname(char *name);
+void gethrtime(char *buffer, struct timeval tv);

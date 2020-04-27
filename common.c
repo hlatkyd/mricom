@@ -316,6 +316,27 @@ int parse_blockstim_conf(struct blockstim_settings *bs, char *conffile, char *n)
 
     return 0;
 }
+/*
+ * Function: fprint_common_header
+ * ------------------------------
+ * write timing, version, etc info into file common to tsv and meta
+ */
+int fprintf_header_common(FILE *fp, struct header_common *h){
+
+    char line[64];
+    char buf[64];
+    int vmaj = VERSION_MAJOR;
+    int vmin = VERSION_MINOR;
+    if(fp == NULL){
+        printf("fprint_header_common: file not open\n");
+        exit(1);
+    }
+    gethrtime(buf, h->start_time);
+    fprintf(fp,"# %s, v%d.%d\n",h->process_name, vmaj, vmin);
+    fprintf(fp,"# %s\n", buf);
+    return 0;
+
+}
 
 /* Function: getppname
  * -------------------------
@@ -344,6 +365,25 @@ int getppname(char *name){
     getline(&pname, &len, fp);
     strcpy(name, pname);
     return 0;
+}
+
+/*
+ * Function gethrtime
+ * ------------------
+ * Copy timeval into human readable string buffer
+ */
+void gethrtime(char *buf, struct timeval tv){
+
+    time_t nowtime;
+    struct tm *nowtm;
+    char tmbuf[64];
+
+    gettimeofday(&tv, NULL);
+    nowtime = tv.tv_sec;
+    nowtm = localtime(&nowtime);
+    strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d %H:%M:%S", nowtm);
+    snprintf(buf, sizeof buf, "%s.%06ld", tmbuf, tv.tv_usec);
+
 }
 /* Function: remove_spaces
  * -----------------------

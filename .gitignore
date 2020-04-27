@@ -1,2 +1,6 @@
 # no object files
 *.o
+
+# no tsv data and metadata files
+*.meta
+*.tsv
