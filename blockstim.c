@@ -1,6 +1,7 @@
 #include "blockstim.h"
 
-#define BLOCKSTIM_TESTING 1
+#define BLOCKSTIM_TESTING 0
+#define VERBOSE_BLOCKSTIM 0
 #define LOG_TTL_LEADING 1   // log the rising edge of TTL
 #define LOG_SEC 1           // write log file in sec format
 
@@ -31,20 +32,21 @@ int main(int argc, char *argv[]){
      *      1 - ?? TODO
      */
 
-
-
     comedi_t *dev;
     char devpath[] = "/dev/comedi0";
+    //TODO use absolute paths here
     char conf[] = "blockstim.conf";     // config file, parse for defaults
-    char logfile[] = "blockstim.tsv";   // tab separated data file
+    char datafile[] = "blockstim.tsv";   // tab separated data file
     char metafile[] = "blockstim.meta"; // metadata for tsv file
     FILE *fp;
     char parent_name[32];
     int is_mricom_child = 0; // set to 1 later if true
-    struct header_common *header;
+    struct header *h;
+    char cmdl[64]; // command line call to process in /proc/pid/cmdline
 
     char design[16];
     struct blockstim_settings *bs;
+    struct times *t;
 
     int usec_ttl1;                      // time while TTL is on in microsec
     int usec_ttl0;                      // time while TTL is off
@@ -63,10 +65,12 @@ int main(int argc, char *argv[]){
     int ret;
     int TEST = 0;                       // indicate test stim, no saving
     
-    header = malloc(sizeof(struct header_common));
+    h = malloc(sizeof(struct header));
+    t = malloc(sizeof(struct times));
     gettimeofday(&start_tv,NULL);
-    header->start_time = tv;
-    strcpy(header->process_name, argv[0]);
+    h->timestamp = start_tv;
+    t->start = start_tv;
+    strcpy(h->proc, argv[0]);
     // check if parent is mricom
     getppname(parent_name);
     if(strcmp(parent_name, "mricom") == 0){
@@ -77,13 +81,13 @@ int main(int argc, char *argv[]){
 
     if (argc == 3 && strcmp(argv[1], "design") == 0){
         strcpy(design,argv[2]);
-        parse_blockstim_conf(bs, conf, design);
+        parse_bstim_conf(bs, conf, design);
         if(strncmp(argv[2], "test", 4) == 0){
             TEST = 1; // set to not save csv and log
         }
     } else {
         // default to design 1
-        parse_blockstim_conf(bs, conf, "default");
+        parse_bstim_conf(bs, conf, "default");
     }
 
     usec_ttl1 = bs->ttl_usecw;
@@ -105,16 +109,15 @@ int main(int argc, char *argv[]){
         //printf("press any key\n");
         //getchar();
     }
-    // wrinting out timing to file
-    if(TEST != 1){
-        fp = fopen(logfile,"w");
-        if(fp == NULL){
-            perror("fopen");
-            exit(1);
-        }
-        // prepare header
-        prepare_log(fp, parent_name, bs);
+    // open data file
+    fp = fopen(datafile,"w");
+    if(fp == NULL){
+        perror("fopen");
+        exit(1);
     }
+    // prepare header
+    fprintf_common_header(fp,h, argv);
+    append_bs_chdata(fp, bs);
     // device setup
     dev = comedi_open(devpath);
     if(dev == NULL){
@@ -130,10 +133,11 @@ int main(int argc, char *argv[]){
 
     usec_start = 0;
     gettimeofday(&tv,NULL);
+    t->action = tv;
     diff = getsecdiff(start_tv, tv);
-    printf("setup time: %lf\n",diff);
+    //printf("setup time: %lf\n",diff);
     usec_target = usec_start + (int)(bs->start_delay * 1000000.0);
-    printf("starting...\n");
+    //printf("starting...\n");
     for(j=0; j < bs->n_blocks; j++){
         // this is an ON block
         for(i=0; i < n; i++){
@@ -153,82 +157,177 @@ int main(int argc, char *argv[]){
             comedi_dio_write(dev, bs->subdev, bs->chan, 0);
 
             // log TTL time values
-            if(TEST != 1){
-                usec_temp = getusecdelay(tv);
-                append_log(fp,i,usec_temp, usec_ttl1);
-            }
+            usec_temp = getusecdelay(tv);
+            append_bs_data(fp,i,j,usec_temp, usec_ttl1);
         }
         // OFF block, set usec target
         usec_target += (int)(bs->off_time * 1000000.0);
 
     }
     gettimeofday(&stop_tv, NULL);
+    t->stop = stop_tv;
     diff = getsecdiff(start_tv, stop_tv);
-    printf("elapsed time: %lf\n",diff);
-    if(TEST != 1){
-        fclose(fp);
-    }
+    // close tsv data file
+    fclose(fp);
+    // write metadata file
     fp = fopen(metafile,"w");
     if(fp == NULL){
         printf("blockstim: cannot open %s\n",metafile);
         exit(1);
     }
-    fprintf_header_common(fp, header);
-    // close tsv, write meta
+    // print same header for metadata file as well
+    fprintf_common_header(fp, h, argv);
+    fprintf_bstim_meta(fp, h, bs, t);
+    fclose(fp);
     comedi_close(dev);
 }
-/*
- * Function: getusecdelay
- * ----------------------
- * Calculate current difference in microsec from input time
- */
-int getusecdelay(struct timeval tv1){
+// append column names and units in 2 rows
+void append_bs_chdata(FILE *fp, struct blockstim_settings *bs){
 
-    struct timeval tv2;
-    int time;
-    int mic;
-    double mega = 1000000;
-    gettimeofday(&tv2,NULL);
-    time = (tv2.tv_sec - tv1.tv_sec) * mega;
-    mic = (tv2.tv_usec - tv1.tv_usec);
-    mic += time;
-    return mic;
-}
-/*
- * Function: getsecdiff
- * ----------------------
- * Calculate difference in seconds (double) between two timepoints
- */
-double getsecdiff(struct timeval tv1, struct timeval tv2){
-
-    double diff;
-    diff = tv2.tv_sec - tv1.tv_sec;
-    diff += (double) (tv2.tv_usec - tv1.tv_usec) / 1000000.0;
-    return diff;
-}
-/*
- * Function: prepare_log
- * ---------------------
- * Prepare log header, leave blank space where data is acquired later
- */
-void prepare_log(FILE *fp, char *parent, struct blockstim_settings *bs){
-
+    char cols[3][8] = {"N_TTL","TIME","N_BLOCK"};
+    char units[3][8] = {"n","usec","n"};
+    int i;
+    fprintf(fp,"%s,%s,%s\n",cols[0],cols[1],cols[2]);
+    fprintf(fp,"%s,%s,%s\n",units[0],units[1],units[2]);
 
 }
-
-void append_log(FILE *fp, int n, int time, int usec_ttl1){
+// append TTL timing data
+void append_bs_data(FILE *fp, int n, int b, int time, int usec_ttl1){
 
     if(LOG_TTL_LEADING == 1){
         time -= usec_ttl1;
     }
-    fprintf(fp,"%d,%d\n",n,time);
+    fprintf(fp,"%d,%d,%d\n",n, time, b);
 
 }
-/*
- * Function: finish_log_header
- * ---------------------------
- * Fill in elapsed times
+void fprintf_bstim_meta(FILE *fp, 
+                        struct header *h,
+                        struct blockstim_settings *bs, 
+                        struct times *t){
+
+    char *buf;
+    buf = malloc(sizeof(char)*64);
+    fprintf(fp, "\n%% BLOCKSTIM SETTINGS\n");
+    fprintf(fp, "device=%s\n",bs->device);
+    fprintf(fp, "subdev=%d\n",bs->subdev);
+    fprintf(fp, "chan=%d\n",bs->chan);
+    fprintf(fp, "start_delay=%lf\n",bs->start_delay);
+    fprintf(fp, "on_time=%lf\n",bs->on_time);
+    fprintf(fp, "off_time=%lf\n",bs->off_time);
+    fprintf(fp, "ttl_usecw=%d\n",bs->ttl_usecw);
+    fprintf(fp, "ttl_freq=%lf\n",bs->ttl_freq);
+    fprintf(fp, "n_blocks=%d\n",bs->n_blocks);
+    fprintf(fp, "\n%% TIMING\n");
+    gethrtime(buf, t->start);
+    fprintf(fp, "start=%s\n",buf);
+    gethrtime(buf, t->action);
+    fprintf(fp, "action=%s\n",buf);
+    gethrtime(buf, t->stop);
+    fprintf(fp, "stop=%s\n",buf);
+}
+
+/* Function: parse_bstim_conf
+ * -------------------------------
+ * Fill struct blockstim_settings from config file
+ *
+ * Args:
  */
-void finish_log_header(FILE *fp){
 
+int parse_bstim_conf(struct blockstim_settings *bs, char *conffile, char *n){
+
+    #define N_PARS 8            // number of params set in conf file
+
+    FILE *fp;
+    char line[128];
+    char buf[128];
+    char *token;
+    double temp;
+    int len;
+    int i = 0; int j = 0; int count = 0;
+    int start = 0;
+
+    fp = fopen(conffile, "r");
+    if(fp == NULL){
+        printf("\nparser_bstim_conf: could not open file %s\n",conffile);
+        exit(1);
+    }
+    while(fgets(line, 128, fp)){
+        // ignore whitespace and comments
+        if(line[0] == '\n' || line[0] == '\t'
+           || line[0] == '#' || line[0] == ' '){
+            continue;
+        }
+        count++;
+        //remove whitespace
+        remove_spaces(line);
+        //remove newline
+        len = strlen(line);
+        if(line[len-1] == '\n')
+            line[len-1] = '\0';
+        /* general settings */
+
+        token = strtok(line,"=");
+        // find first line referring to design 'n'
+        if(strcmp(token,"DESIGN") == 0){
+            token = strtok(NULL,"=");
+            if(strcmp(token,n) == 0){
+                // found the line, save number
+                start = count;
+                continue;
+            } else {
+                continue;
+            }
+        } else if (start != 0 && count > start && count < start + N_PARS + 1){
+            // read params here
+            if (strcmp(token,"SUBDEV") == 0){
+                token = strtok(NULL,"=");
+                bs->subdev = atoi(token);
+                continue;
+            }
+            if (strcmp(token,"CHAN") == 0){
+                token = strtok(NULL,"=");
+                bs->chan = atoi(token);
+                continue;
+            }
+            if (strcmp(token,"START_DELAY") == 0){
+                token = strtok(NULL,"=");
+                sscanf(token, "%lf", &temp);
+                bs->start_delay = temp;
+                continue;
+            }
+            if (strcmp(token,"ON_TIME") == 0){
+                token = strtok(NULL,"=");
+                sscanf(token, "%lf", &temp);
+                bs->on_time = temp;
+                continue;
+            }
+            if (strcmp(token,"OFF_TIME") == 0){
+                token = strtok(NULL,"=");
+                sscanf(token, "%lf",&temp);
+                bs->off_time = temp;
+                continue;
+            }
+            if (strcmp(token,"TTL_USECW") == 0){
+                token = strtok(NULL,"=");
+                sscanf(token, "%lf", &temp);
+                bs->ttl_usecw = temp;
+                continue;
+            }
+            if (strcmp(token,"TTL_FREQ") == 0){
+                token = strtok(NULL,"=");
+                sscanf(token, "%lf", &temp);
+                bs->ttl_freq = temp;
+                continue;
+            }
+            if (strcmp(token,"N_BLOCKS") == 0){
+                token = strtok(NULL,"=");
+                bs->n_blocks = atoi(token);
+                continue;
+            }
+        } else {
+            continue;
+        }
+    }
+    return 0;
 }
+

@@ -211,117 +211,12 @@ int parse_settings(struct daq_settings *settings,
     }
     return 0;
 }
-/* Function: parse_blockstim_conf
- * -------------------------------
- * Fill struct blockstim_settings from config file
- *
- * Args:
- */
-
-int parse_blockstim_conf(struct blockstim_settings *bs, char *conffile, char *n){
-
-    #define N_PARS 8            // number of params set in conf file
-
-    FILE *fp;
-    char line[128];
-    char buf[128];
-    char *token;
-    double temp;
-    int len;
-    int i = 0; int j = 0; int count = 0;
-    int start = 0;
-
-    fp = fopen(conffile, "r");
-    if(fp == NULL){
-        printf("\nparser_blockstim_conf: could not open file %s\n",conffile);
-        exit(1);
-    }
-    while(fgets(line, 128, fp)){
-        // ignore whitespace and comments
-        if(line[0] == '\n' || line[0] == '\t'
-           || line[0] == '#' || line[0] == ' '){
-            continue;
-        }
-        count++;
-        //remove whitespace
-        remove_spaces(line);
-        //remove newline
-        len = strlen(line);
-        if(line[len-1] == '\n')
-            line[len-1] = '\0';
-        /* general settings */
-        
-        token = strtok(line,"=");
-        // find first line referring to design 'n'
-        if(strcmp(token,"DESIGN") == 0){
-            token = strtok(NULL,"=");
-            if(strcmp(token,n) == 0){
-                // found the line, save number
-                start = count;
-                continue; 
-            } else {
-                continue;
-            }
-        } else if (start != 0 && count > start && count < start + N_PARS + 1){
-            // read params here
-            if (strcmp(token,"SUBDEV") == 0){
-                token = strtok(NULL,"=");
-                bs->subdev = atoi(token);
-                continue;
-            }
-            if (strcmp(token,"CHAN") == 0){
-                token = strtok(NULL,"=");
-                bs->chan = atoi(token);
-                continue;
-            }
-            if (strcmp(token,"START_DELAY") == 0){
-                token = strtok(NULL,"=");
-                sscanf(token, "%lf", &temp);
-                bs->start_delay = temp;
-                continue;
-            }
-            if (strcmp(token,"ON_TIME") == 0){
-                token = strtok(NULL,"=");
-                sscanf(token, "%lf", &temp);
-                bs->on_time = temp;
-                continue;
-            }
-            if (strcmp(token,"OFF_TIME") == 0){
-                token = strtok(NULL,"=");
-                sscanf(token, "%lf",&temp);
-                bs->off_time = temp;
-                continue;
-            }
-            if (strcmp(token,"TTL_USECW") == 0){
-                token = strtok(NULL,"=");
-                sscanf(token, "%lf", &temp);
-                bs->ttl_usecw = temp;
-                continue;
-            }
-            if (strcmp(token,"TTL_FREQ") == 0){
-                token = strtok(NULL,"=");
-                sscanf(token, "%lf", &temp);
-                bs->ttl_freq = temp;
-                continue;
-            }
-            if (strcmp(token,"N_BLOCKS") == 0){
-                token = strtok(NULL,"=");
-                bs->n_blocks = atoi(token);
-                continue;
-            }
-        } else {
-            continue;
-        }
-    }
-
-    return 0;
-}
 /*
  * Function: fprint_common_header
  * ------------------------------
  * write timing, version, etc info into file common to tsv and meta
  */
-int fprintf_header_common(FILE *fp, struct header_common *h){
+int fprintf_common_header(FILE *fp, struct header *h, char **args){
 
     char line[64];
     char buf[64];
@@ -331,18 +226,29 @@ int fprintf_header_common(FILE *fp, struct header_common *h){
         printf("fprint_header_common: file not open\n");
         exit(1);
     }
-    gethrtime(buf, h->start_time);
-    fprintf(fp,"# %s, v%d.%d\n",h->process_name, vmaj, vmin);
-    fprintf(fp,"# %s\n", buf);
+    gethrtime(buf, h->timestamp);
+    fprintf(fp,"# cmd=%s args=%s,%s Mricom v%d.%d\n",
+               h->proc, args[1], args[2], vmaj, vmin);
+    fprintf(fp,"# timestamp=%s\n", buf);
     return 0;
 
 }
+/*
+ * Function: compare_common_header
+ * --------------------------------
+ * Return 1 if the 2-line headers are the same in the 2 files (.tsv and .meta)
+ * 
+ */
+int compare_common_header(char *file1, char *file2){
 
+    return 0;
+
+}
 /* Function: getppname
  * -------------------------
  * Find parent process name and put into string pointer input
  */
-int getppname(char *name){
+void getppname(char *name){
 
     pid_t pid; 
     FILE *fp;
@@ -364,27 +270,95 @@ int getppname(char *name){
     }
     getline(&pname, &len, fp);
     strcpy(name, pname);
-    return 0;
+    free(pname);
+    fclose(fp);
+}
+/* Function: getcmdline
+ * -------------------------
+ * Find process invoking command and put into string pointer input
+ */
+ //TODO dont use this
+void getcmdline(char *cmdl){
+
+    pid_t pid; 
+    //FILE *fp;
+    int fd; // file descriptor
+    char path[32];
+    char pidstr[8];
+    //char *buf = NULL;
+    char *buf;
+    buf = malloc(sizeof(char)*64);
+    size_t len = 0;
+    pid = getpid();
+    //itoa(pid,pidstr,10);
+    sprintf(pidstr, "%d",pid);
+    strcpy(path, "/proc/");
+    strcat(path, pidstr);
+    strcat(path, "/cmdline");
+    //printf("path here : %s\n",path);
+    fd = open(path,O_RDONLY);
+    if(fd == -1){
+        perror("getcmdline");
+        exit(1);
+    }
+    //getline(&buf, &len, fp);
+
+    read(fd, buf, 64);
+    strcpy(cmdl, buf);
+    close(fd);
 }
 
 /*
  * Function gethrtime
  * ------------------
  * Copy timeval into human readable string buffer
+ * example: 2020-04-28 20:07:34.992715
  */
-void gethrtime(char *buf, struct timeval tv){
+void gethrtime(char *outbuf, struct timeval tv){
 
     time_t nowtime;
     struct tm *nowtm;
     char tmbuf[64];
+    char buf[64];
 
-    gettimeofday(&tv, NULL);
+    memset(outbuf, 0, sizeof((*outbuf)));
     nowtime = tv.tv_sec;
     nowtm = localtime(&nowtime);
     strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d %H:%M:%S", nowtm);
     snprintf(buf, sizeof buf, "%s.%06ld", tmbuf, tv.tv_usec);
+    strcpy(outbuf, buf);
 
 }
+/*
+ * Function: getusecdelay
+ * ----------------------
+ * Calculate current difference in microsec from input time
+ */
+int getusecdelay(struct timeval tv1){
+
+    struct timeval tv2;
+    int time;
+    int mic;
+    double mega = 1000000;
+    gettimeofday(&tv2,NULL);
+    time = (tv2.tv_sec - tv1.tv_sec) * mega;
+    mic = (tv2.tv_usec - tv1.tv_usec);
+    mic += time;
+    return mic;
+}
+/*
+ * Function: getsecdiff
+ * ----------------------
+ * Calculate difference in seconds (double) between two timepoints
+ */
+double getsecdiff(struct timeval tv1, struct timeval tv2){
+
+    double diff;
+    diff = tv2.tv_sec - tv1.tv_sec;
+    diff += (double) (tv2.tv_usec - tv1.tv_usec) / 1000000.0;
+    return diff;
+}
+
 /* Function: remove_spaces
  * -----------------------
  * remove whitespace from a line in config file

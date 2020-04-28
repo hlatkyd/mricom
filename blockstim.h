@@ -1,13 +1,33 @@
 #include "common.h"
 
+
+/* ---------------------------------*/
+/*       comedi subprogram settings */
+/* ---------------------------------*/
+struct blockstim_settings{
+
+    char device[16];
+    int subdev;                         // digital io subdevice on 6035E: 
+    int chan;                           // digital output channel
+    double start_delay;
+    double on_time;
+    double off_time;
+    int ttl_usecw;
+    double ttl_freq;
+    int n_blocks;
+
+};
+
+
 /* This is an OK digital triggering solution without addititive timing error
  * and microsec resolution.
  *
  *
  */
-int getusecdelay(struct timeval tv);
-double getsecdiff(struct timeval tv1, struct timeval tv2);
-void append_log(FILE *fp, int n, int time, int usec_ttl1);
-void prepare_log(FILE *fp, char *parent, struct blockstim_settings *bs);
-void finish_log_header(FILE *fp);
+
+void append_bs_data(FILE *fp, int n, int b, int time, int usec_ttl1);
+void append_bs_chdata(FILE *fp, struct blockstim_settings *bs);
+int parse_bstim_conf(struct blockstim_settings *bs, char *file, char *d);
+void fprintf_bstim_meta(FILE *fp, struct header *h,
+                        struct blockstim_settings *bs, struct times *t);
 

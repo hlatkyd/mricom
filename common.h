@@ -92,41 +92,50 @@ typedef struct dev_settings{
 
 } dev_settings;
 
-struct header_common{
+/* -------------------------------*/
+/*            headers             */
+/* -------------------------------*/
+
+struct header{
 
     double version;
-    char process_name[16];
-    struct timeval start_time;
+    char proc[16];
+    char args[16][32];
+    struct timeval timestamp;
 
+    char names[32][32];
+    char units[32][32];
 };
 
-struct blockstim_settings{
+struct times{
 
-    char device[16];
-    int subdev;                         // digital io subdevice on 6035E: 
-    int chan;                           // digital output channel
-    double start_delay;
-    double on_time;
-    double off_time;
-    int ttl_usecw;
-    double ttl_freq;
-    int n_blocks;
-
+    struct timeval start;
+    struct timeval action;
+    struct timeval stop;
 };
+
 
 extern daq_settings *settings;
 extern dev_settings *devsettings;
 
 
 #endif
+//TODO maybe move part of func here?
+/*------------------------------*/
+/*      common function declare */
+/*------------------------------*/
 
 int parse_procpar();
 int search_procpar(char *parname, char *command);
 int parse_settings(struct daq_settings *, struct dev_settings *);
-int parse_blockstim_conf(struct blockstim_settings *bs, char *file, char *d);
-int fprintf_header_common(FILE *fp, struct header_common *h);
+//int parse_blockstim_conf(struct blockstim_settings *bs, char *file, char *d);
+int fprintf_common_header(FILE *fp, struct header *h, char **args);
+int compare_common_header(char *file1, char *file2);
 
 /* util common func*/
 void remove_spaces(char *);
-int getppname(char *name);
+void getppname(char *name);
+void getcmdline(char *cmd);
 void gethrtime(char *buffer, struct timeval tv);
+int getusecdelay(struct timeval tv1);
+double getsecdiff(struct timeval tv1, struct timeval tv2);
