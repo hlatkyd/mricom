@@ -31,3 +31,5 @@ int parse_bstim_conf(struct blockstim_settings *bs, char *file, char *d);
 void fprintf_bstim_meta(FILE *fp, struct header *h,
                         struct blockstim_settings *bs, struct times *t);
 
+// troubleshooting
+void printf_bs(struct blockstim_settings *bs);

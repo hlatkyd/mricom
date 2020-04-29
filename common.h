@@ -21,6 +21,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/file.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <comedilib.h>
@@ -44,16 +45,33 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-typedef struct daq_settings{
+/* -------------------------------*/
+/*  process pid file control      */
+/* -------------------------------*/
+
+struct mpid{
+
+    int num;
+    char name[32];
+    char parent[32];
+    pid_t pid;
+    pid_t ppid;
+
+};
+
+/* -------------------------------*/
+/*    general daq settings        */
+/* -------------------------------*/
+typedef struct gen_settings{
     char device[32];
+    char workdir[128];          // acquisition directory
     char daq_file[128];         // full data file
     FILE *fp_daq;               // FILE pointer to daq file if open
     char kst_file[128];         // only contain data for kst display window
     FILE *fp_kst;               // FILE pointer to kst window file if open
     int precision;              // decimals saved in data files
     char ramdisk[128];          // ramdisk for fast data logging
-    char pid_file[128];          // local process id and contorl file
-    FILE *fp_pid;               // FILE pointer to pidfile
+    char mpid_file[128];          // local process id and contorl file
     char procpar[128];          // vnmrj procpar file of curexp
     char event_dir[128];        // dir of stimulation event files
     //TODO is this needed?
@@ -72,19 +90,17 @@ typedef struct daq_settings{
 
 // comedi device setup struct, most values can be set in settings
 // depends on actual wiring setup, careful when settings these
+/* -------------------------------*/
+/*    general device settings     */
+/* -------------------------------*/
 typedef struct dev_settings{
 
-    // comedi device pointer
-    comedi_t *dev;
-    // analog acquisition command
-    comedi_cmd *cmd;
-    // 1 if analog wiring is differential, 0 otherwise
-    int is_analog_differential;
-    // analog subdevice number (0 on ni-6035e)
-    unsigned int analog_in_subdev;
-    // analog channels, usually 0,1,2,....
-    unsigned int analog_in_chan[8];
-    // subdevice where digital stimulation channel is located (2)
+    char devpath[16];   // device file
+    comedi_t *dev;      // comedi device pointer
+    comedi_cmd *cmd;    // analog acquisition command
+    int is_analog_differential; // 1 if analog wiring is differential
+    unsigned int analog_in_subdev; // analog subdevice number (0 on ni-6035e)
+    unsigned int analog_in_chan[8];// analog channels, usually 0,1,2,....
     unsigned int stim_trig_subdev;//subdev of  digital stim channel is located 
     unsigned int stim_trig_chan;// digital stim channel (0 in settings)
     //TODO what is this for again??
@@ -127,10 +143,18 @@ extern dev_settings *devsettings;
 
 int parse_procpar();
 int search_procpar(char *parname, char *command);
-int parse_settings(struct daq_settings *, struct dev_settings *);
+int parse_settings(struct gen_settings *, struct dev_settings *);
+int parse_dev_settings(struct dev_settings *);
+int parse_gen_settings(struct gen_settings *);
 //int parse_blockstim_conf(struct blockstim_settings *bs, char *file, char *d);
 int fprintf_common_header(FILE *fp, struct header *h, char **args);
 int compare_common_header(char *file1, char *file2);
+
+
+/* process control */
+
+int processctrl_add(struct gen_settings *gs, struct mpid *mp);
+int processctrl_remove();
 
 /* util common func*/
 void remove_spaces(char *);

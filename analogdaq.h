@@ -7,3 +7,15 @@
  */
 
 #include "common.h"
+
+
+struct ai_settings{
+
+    
+
+
+};
+
+
+int set_smd_params(comedi_cmd *cmd, int p_ns, int n_scans);
+void print_datum

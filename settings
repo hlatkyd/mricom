@@ -5,18 +5,22 @@
 # GENERAL SETTINGS
 #------------------
 
+#TODO move this to dev settings
 # comedi device file
 DEVICE=/dev/comedi0
+# dir to save all files during acquisition
+WORKDIR=/home/david/dev/mricom
+#TODO
+# process control file always inside WORKDIR
+PID_FILE=mproc.pid
 # real time data collection file
 DAQ_FILE=/mnt/ramdisk/mricomrt.dat 
-#TODO
-# process control file
-PID_FILE=.mricomproc.pid
 # vnmrj procpar file of next/current acquisition
 # procpar file includes the parameter "mricompar" to relay commands
 PROCPAR=/mnt/vnmrserver/procpar
 # ramdisk
 RAMDISK=/mnt/ramdisk
+#TODO make delim and precision constant
 # data file delimiter
 DELIMITER=\t
 # precision - how many decimals saved in data file
@@ -42,6 +46,8 @@ CHANNEL_NAMES=TIME,RESP,PULSOX,ECG,TRIG,GATE
 #     DEVICE SETTINGS
 #--------------------------
 
+# comedi device file
+DEVPATH=/dev/comedi0
 # analog wiring setup
 IS_ANALOG_DIFFERENTIAL=1
 # analog subdevice number

@@ -3,26 +3,12 @@
  *
  */
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <comedilib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/time.h>
+#include "analogdaq.h"
 
 #define DIGITALTRIG 1
-
-#define NCHAN 3
-#define BUFSZ 1000
 #define VERBOSE 1
-char buf[BUFSZ]; // TODO what is this exaclty?
 
-unsigned int subdev = 0;
-unsigned int chan = 0; // channels start from here, so: 0,1,2
-unsigned int n_chan = NCHAN; // number of analog input channels 
-char devfile[] = "/dev/comedi0";
-unsigned int p_ns = (unsigned int) 1e6; // scan period in nanosec
+
 
 static unsigned int chanlist[NCHAN];
 static comedi_range *range_info[NCHAN];
@@ -32,6 +18,15 @@ void print_datum(sampl_t raw, int channel_index);
 int set_cmd_params(comedi_cmd *cmd, unsigned int p_ns, unsigned int n_scans);
 
 int main(int argc, char **argv){
+
+    //-----------------
+    char buf[BUFSZ]; // TODO what is this exaclty?
+    unsigned int subdev = 0;
+    unsigned int chan = 0; // channels start from here, so: 0,1,2
+    unsigned int n_chan = NAICHAN; // number of analog input channels 
+    char devfile[] = "/dev/comedi0";
+    unsigned int p_ns = (unsigned int) 1e6; // scan period in nanosec
+    //-------------------------
 
     comedi_t *dev;
     comedi_cmd c, *cmd=&c;

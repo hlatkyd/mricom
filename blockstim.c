@@ -33,28 +33,30 @@ int main(int argc, char *argv[]){
      */
 
     comedi_t *dev;
-    char devpath[] = "/dev/comedi0";
-    //TODO use absolute paths here
-    char conf[] = "blockstim.conf";     // config file, parse for defaults
-    char datafile[] = "blockstim.tsv";   // tab separated data file
-    char metafile[] = "blockstim.meta"; // metadata for tsv file
+    struct blockstim_settings *bs;
+    struct dev_settings *dvs;
+    struct gen_settings *gs;
+    struct mpid *mp;
+    char devpath[16];
+    int chan;
+    int subdev;
+    char conf[128] = {0};// config file containing designs and defaults
+    char datafile[128] = {0};// tab separated data tsv
+    char metafile[128] = {0};//metadata for tsv
     FILE *fp;
+    FILE *fp_meta;
     char parent_name[32];
     int is_mricom_child = 0; // set to 1 later if true
     struct header *h;
     char cmdl[64]; // command line call to process in /proc/pid/cmdline
 
-    char design[16];
-    struct blockstim_settings *bs;
     struct times *t;
+    struct timeval start_tv, action_tv, stop_tv;   // calc elapsed time
+    struct timeval tv;                  // for TTL timing
 
     int usec_ttl1;                      // time while TTL is on in microsec
     int usec_ttl0;                      // time while TTL is off
-    int duration;                       // full duration in seconds
 
-    struct timeval start_tv, stop_tv;   // calc elapsed time
-    double diff;
-    struct timeval tv;                  // for TTL timing
     struct timespec nano;               // for wait with nanosleep
     nano.tv_sec = 0;                    //
     nano.tv_nsec = 1;                   //
@@ -65,23 +67,47 @@ int main(int argc, char *argv[]){
     int ret;
     int TEST = 0;                       // indicate test stim, no saving
     
+    int procadd = 0;                      // 0, or 1 if proc added to local pid
+
+    mp = malloc(sizeof(struct mpid));
+    gs = malloc(sizeof(struct gen_settings));
+    parse_gen_settings(gs);
+    getppname(parent_name);
+    if(strcmp(parent_name, "mricom") == 0){
+        is_mricom_child = 1;
+        //TODO local pid control here
+        ret = processctrl_add(gs, mp);
+        if(ret == 0){
+            procadd = 1;
+        }
+    }
     h = malloc(sizeof(struct header));
     t = malloc(sizeof(struct times));
     gettimeofday(&start_tv,NULL);
     h->timestamp = start_tv;
     t->start = start_tv;
+
+    bs = malloc(sizeof(struct blockstim_settings));
+    dvs = malloc(sizeof(struct dev_settings));
+    // parse settings file
+    parse_dev_settings(dvs);
+    // set file paths in workdir
+    strcat(conf,gs->workdir);
+    strcat(conf,"/blockstim.conf");
+    strcat(datafile,gs->workdir);
+    strcat(datafile,"/blockstim.tsv");
+    strcat(metafile,gs->workdir);
+    strcat(metafile,"/blockstim.meta");
+    strcpy(devpath,dvs->devpath);
+    subdev = dvs->stim_trig_subdev;
+    chan = dvs->stim_trig_chan;
+
     strcpy(h->proc, argv[0]);
     // check if parent is mricom
-    getppname(parent_name);
-    if(strcmp(parent_name, "mricom") == 0){
-        is_mricom_child = 1;
-        //TODO local pid control here
-    }
-    bs = malloc(sizeof(struct blockstim_settings));
 
     if (argc == 3 && strcmp(argv[1], "design") == 0){
-        strcpy(design,argv[2]);
-        parse_bstim_conf(bs, conf, design);
+        //strcpy(design,argv[2]);
+        parse_bstim_conf(bs, conf, argv[2]);
         if(strncmp(argv[2], "test", 4) == 0){
             TEST = 1; // set to not save csv and log
         }
@@ -90,25 +116,13 @@ int main(int argc, char *argv[]){
         parse_bstim_conf(bs, conf, "default");
     }
 
+    if(VERBOSE_BLOCKSTIM == 1){
+        printf_bs(bs);
+    }
     usec_ttl1 = bs->ttl_usecw;
     usec_ttl0 = (int)(1.0 / bs->ttl_freq * 1000000) - usec_ttl1;
     n = (int) ((bs->on_time * 1e6) / (usec_ttl1+usec_ttl0));
 
-    // only for testing
-    if(BLOCKSTIM_TESTING > 0){
-        printf("subdev %d\n",bs->subdev);
-        printf("chan %d\n",bs->chan);
-        printf("start_delay %lf\n",bs->start_delay);
-        printf("on_time %lf\n",bs->on_time);
-        printf("off_time %lf\n",bs->off_time);
-        printf("ttl_usecw %d\n",bs->ttl_usecw);
-        printf("ttl_freq %lf\n",bs->ttl_freq);
-        printf("n_blocks %d\n",bs->n_blocks);
-        printf("usec ttl0 : %d\n",usec_ttl0);
-        printf("n in an ON block: %d\n",n);
-        //printf("press any key\n");
-        //getchar();
-    }
     // open data file
     fp = fopen(datafile,"w");
     if(fp == NULL){
@@ -124,17 +138,17 @@ int main(int argc, char *argv[]){
         comedi_perror("comedi_open");
     }
     // check if subdev is correct
-    ret = comedi_get_subdevice_type(dev, bs->subdev);
+    ret = comedi_get_subdevice_type(dev, subdev);
     if(ret != COMEDI_SUBD_DIO){
         printf("wrong subdev");
         exit(1);
     }
-    comedi_dio_config(dev, bs->subdev, bs->chan, COMEDI_OUTPUT);
+    comedi_dio_config(dev, subdev, chan, COMEDI_OUTPUT);
 
     usec_start = 0;
+    gettimeofday(&action_tv,NULL);
     gettimeofday(&tv,NULL);
-    t->action = tv;
-    diff = getsecdiff(start_tv, tv);
+    t->action = action_tv;
     //printf("setup time: %lf\n",diff);
     usec_target = usec_start + (int)(bs->start_delay * 1000000.0);
     //printf("starting...\n");
@@ -147,14 +161,14 @@ int main(int argc, char *argv[]){
                 nanosleep(&nano, NULL);
             } while(usec < usec_target);
             usec_target += usec_ttl1;
-            comedi_dio_write(dev, bs->subdev, bs->chan, 1);
+            comedi_dio_write(dev, subdev, chan, 1);
             // wait for usec target and then set TTL OFF
             do{
                 usec = getusecdelay(tv);
                 nanosleep(&nano, NULL);
             } while(usec < usec_target);
             usec_target += usec_ttl0;
-            comedi_dio_write(dev, bs->subdev, bs->chan, 0);
+            comedi_dio_write(dev, subdev, chan, 0);
 
             // log TTL time values
             usec_temp = getusecdelay(tv);
@@ -166,20 +180,27 @@ int main(int argc, char *argv[]){
     }
     gettimeofday(&stop_tv, NULL);
     t->stop = stop_tv;
-    diff = getsecdiff(start_tv, stop_tv);
     // close tsv data file
     fclose(fp);
     // write metadata file
-    fp = fopen(metafile,"w");
-    if(fp == NULL){
+    fp_meta = fopen(metafile,"w");
+    if(fp_meta == NULL){
         printf("blockstim: cannot open %s\n",metafile);
         exit(1);
     }
     // print same header for metadata file as well
-    fprintf_common_header(fp, h, argv);
-    fprintf_bstim_meta(fp, h, bs, t);
-    fclose(fp);
+    fprintf_common_header(fp_meta, h, argv);
+    fprintf_bstim_meta(fp_meta, h, bs, t);
+    fclose(fp_meta);
     comedi_close(dev);
+
+    if(strcmp(parent_name, "mricom") == 0 && procadd == 1){
+        ret = processctrl_remove();
+        if(ret != 0){
+            printf("blockstim: processctrl_remove error");
+        }
+    }
+    return 0;
 }
 // append column names and units in 2 rows
 void append_bs_chdata(FILE *fp, struct blockstim_settings *bs){
@@ -187,8 +208,9 @@ void append_bs_chdata(FILE *fp, struct blockstim_settings *bs){
     char cols[3][8] = {"N_TTL","TIME","N_BLOCK"};
     char units[3][8] = {"n","usec","n"};
     int i;
-    fprintf(fp,"%s,%s,%s\n",cols[0],cols[1],cols[2]);
-    fprintf(fp,"%s,%s,%s\n",units[0],units[1],units[2]);
+    char *d = DELIMITER;
+    fprintf(fp,"%s%s%s%s%s\n",cols[0],d,cols[1],d,cols[2]);
+    fprintf(fp,"%s%s%s%s%s\n",units[0],d,units[1],d,units[2]);
 
 }
 // append TTL timing data
@@ -197,7 +219,8 @@ void append_bs_data(FILE *fp, int n, int b, int time, int usec_ttl1){
     if(LOG_TTL_LEADING == 1){
         time -= usec_ttl1;
     }
-    fprintf(fp,"%d,%d,%d\n",n, time, b);
+    char *d = DELIMITER;
+    fprintf(fp,"%d%s%d%s%d\n",n, d, time, d, b);
 
 }
 void fprintf_bstim_meta(FILE *fp, 
@@ -209,8 +232,6 @@ void fprintf_bstim_meta(FILE *fp,
     buf = malloc(sizeof(char)*64);
     fprintf(fp, "\n%% BLOCKSTIM SETTINGS\n");
     fprintf(fp, "device=%s\n",bs->device);
-    fprintf(fp, "subdev=%d\n",bs->subdev);
-    fprintf(fp, "chan=%d\n",bs->chan);
     fprintf(fp, "start_delay=%lf\n",bs->start_delay);
     fprintf(fp, "on_time=%lf\n",bs->on_time);
     fprintf(fp, "off_time=%lf\n",bs->off_time);
@@ -226,6 +247,17 @@ void fprintf_bstim_meta(FILE *fp,
     fprintf(fp, "stop=%s\n",buf);
 }
 
+void printf_bs(struct blockstim_settings *bs){
+
+    printf("\n%% BLOCKSTIM SETTINGS\n");
+    printf("device=%s\n",bs->device);
+    printf("start_delay=%lf\n",bs->start_delay);
+    printf("on_time=%lf\n",bs->on_time);
+    printf("off_time=%lf\n",bs->off_time);
+    printf("ttl_usecw=%d\n",bs->ttl_usecw);
+    printf("ttl_freq=%lf\n",bs->ttl_freq);
+    printf("n_blocks=%d\n",bs->n_blocks);
+}
 /* Function: parse_bstim_conf
  * -------------------------------
  * Fill struct blockstim_settings from config file
@@ -235,7 +267,7 @@ void fprintf_bstim_meta(FILE *fp,
 
 int parse_bstim_conf(struct blockstim_settings *bs, char *conffile, char *n){
 
-    #define N_PARS 8            // number of params set in conf file
+    #define N_PARS 6            // number of params set in conf file
 
     FILE *fp;
     char line[128];
@@ -279,16 +311,6 @@ int parse_bstim_conf(struct blockstim_settings *bs, char *conffile, char *n){
             }
         } else if (start != 0 && count > start && count < start + N_PARS + 1){
             // read params here
-            if (strcmp(token,"SUBDEV") == 0){
-                token = strtok(NULL,"=");
-                bs->subdev = atoi(token);
-                continue;
-            }
-            if (strcmp(token,"CHAN") == 0){
-                token = strtok(NULL,"=");
-                bs->chan = atoi(token);
-                continue;
-            }
             if (strcmp(token,"START_DELAY") == 0){
                 token = strtok(NULL,"=");
                 sscanf(token, "%lf", &temp);
