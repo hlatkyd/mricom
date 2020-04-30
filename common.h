@@ -153,6 +153,7 @@ int compare_common_header(char *file1, char *file2);
 
 /* process control */
 
+void fill_mpid(struct mpid *mp);
 int processctrl_add(struct gen_settings *gs, struct mpid *mp);
 int processctrl_remove();
 

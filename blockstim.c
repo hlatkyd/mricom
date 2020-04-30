@@ -1,6 +1,6 @@
 #include "blockstim.h"
 
-#define BLOCKSTIM_TESTING 0
+#define BLOCKSTIM_TESTING 1
 #define VERBOSE_BLOCKSTIM 0
 #define LOG_TTL_LEADING 1   // log the rising edge of TTL
 #define LOG_SEC 1           // write log file in sec format
@@ -73,9 +73,10 @@ int main(int argc, char *argv[]){
     gs = malloc(sizeof(struct gen_settings));
     parse_gen_settings(gs);
     getppname(parent_name);
-    if(strcmp(parent_name, "mricom") == 0){
+    if(strcmp(parent_name, "mricom") == 0 || BLOCKSTIM_TESTING == 1){
         is_mricom_child = 1;
         //TODO local pid control here
+        fill_mpid(mp);
         ret = processctrl_add(gs, mp);
         if(ret == 0){
             procadd = 1;

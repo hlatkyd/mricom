@@ -6,6 +6,23 @@
  */
 #include "common.h"
 #define VERBOSE_PROCESSCTRL 1
+
+/* Function: fill_mpid
+ * -------------------
+ * fill mpid struct with pid, ppid, name, num from /proc
+ */
+
+void fill_mpid(struct mpid *mp){
+
+    char name[32];
+    char pname[32];
+
+    mp->pid = getpid();
+    mp->ppid = getppid();
+
+
+}
+
 /*
  * Function: processctrl_add
  * -------------------------
