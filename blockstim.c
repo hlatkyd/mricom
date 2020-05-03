@@ -69,6 +69,8 @@ int main(int argc, char *argv[]){
     
     int procadd = 0;                      // 0, or 1 if proc added to local pid
 
+    signal(SIGINT, sighandler);
+
     mp = malloc(sizeof(struct mpid));
     gs = malloc(sizeof(struct gen_settings));
     parse_gen_settings(gs);
@@ -77,7 +79,7 @@ int main(int argc, char *argv[]){
         is_mricom_child = 1;
         //TODO local pid control here
         fill_mpid(mp);
-        ret = processctrl_add(gs, mp);
+        ret = processctrl_add(gs->mpid_file, mp, "START");
         if(ret == 0){
             procadd = 1;
         }
@@ -137,11 +139,12 @@ int main(int argc, char *argv[]){
     dev = comedi_open(devpath);
     if(dev == NULL){
         comedi_perror("comedi_open");
+        exit(1);
     }
     // check if subdev is correct
     ret = comedi_get_subdevice_type(dev, subdev);
     if(ret != COMEDI_SUBD_DIO){
-        printf("wrong subdev");
+        printf("wrong subdev\n");
         exit(1);
     }
     comedi_dio_config(dev, subdev, chan, COMEDI_OUTPUT);
@@ -196,7 +199,9 @@ int main(int argc, char *argv[]){
     comedi_close(dev);
 
     if(strcmp(parent_name, "mricom") == 0 && procadd == 1){
-        ret = processctrl_remove();
+        //TODO this is obsolete, delet??
+        //ret = processctrl_remove(gs->mpid_file, mp);
+        ret = processctrl_add(gs->mpid_file, mp, "STOP");
         if(ret != 0){
             printf("blockstim: processctrl_remove error");
         }

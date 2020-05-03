@@ -12,13 +12,11 @@
 #include "comedifunc.h"
 
 //TODO move these into main, avoid global??
-/* init settings */
-daq_settings *settings;
-/* init data struct */
-daq_data *data;
-/* init global process pointer */
-processes *procpt;
 /* init device settings struct*/
+struct gen_settings *gs;
+struct dev_settings *ds;
+struct processes *pr;
+
 dev_settings *devsettings;
 
 //TODO review these, less is more
@@ -33,8 +31,7 @@ char *builtin_str[] = {
     "test",
     "start",
     "stop",
-    "list",
-    "stimtest"
+    "list"
 };
 /* functions for builtin commands*/
 /* should be same oreder as builtin_str list names*/
@@ -46,8 +43,7 @@ int (*builtin_func[]) (int, char **) = {
     &sh_test,
     &sh_start,
     &sh_stop,
-    &sh_list,
-    &sh_stimtest
+    &sh_list
 };
 int sh_num_builtins(){
     return sizeof(builtin_str) / sizeof(char*);
@@ -62,24 +58,7 @@ int sh_num_builtins(){
  //TODO check for unintended stop ps -ef, or something
 int sh_exit(int argc, char **args){
     
-    int i,j,n;
     int id;
-    n = procpt->nproc;
-
-    printf("Killing internal processes...\n");
-    for(i=n;i>0;i--){
-        id = procpt->procid[i-1];
-        killp(id);
-    }
-    comedi_device_close();
-    if(settings->fp_daq != NULL)
-        fclose(settings->fp_daq);
-    if(settings->fp_kst != NULL)
-        fclose(settings->fp_kst);
-    free(procpt);
-    free(data);
-    free(settings);
-    free(devsettings);
     return 0;
 }
 /* Shell function sh_help
@@ -150,79 +129,20 @@ int sh_help(int argc, char **args){
 int sh_test(int argc, char **args){
     //TODO implement usage by specific arguments
     // start, stop, stim etc
-    clock_t time;
-    double tot_time;
-    int i;
-    int n = 10;
-    if(settings->is_daq_on == 1){
-        printf("acquisition is ON, testing prohibited\n");
-        return 1;
-    }
-    if(argc > 1){
-        if(strcmp(args[1],"sim") == 0){
-            printf("generating random data... \n");
-            test_daq_simulate();
-        } else if(strcmp(args[1],"trig") == 0){
-                comedi_digital_trig("events/testevent.evt");
-        } else if(strcmp(args[1],"analog") == 0){
-            printf("testing analog setup\n");
-            comedi_start_analog_acq();
-        } else if(strcmp(args[1],"digital") == 0){
-            printf("testing digital setup and exec\n");
-            comedi_setup_digital_sequence("test");
-            comedi_execute_digital_sequence();
-        } else if(strcmp(args[1],"timing") == 0){
-            printf("testing execution time of some functions: \n");
-            // filling bffer with random num
-            time = clock();
-            for(i=0;i<n;i++){
-                test_rand_membuf(0);
-            }
-            time = clock() - time;
-            tot_time = ((double)time)/CLOCKS_PER_SEC;
-            printf(" test_rand_membuf: %f\n",tot_time / n);
-
-        } else {
-            test_print(args);
-        }
-    } else {
-        printf(" (no action)\n");
-    }
-    //test_fork();
-    //test_system();
     return 1;
 }
 int sh_listp(int argc, char **args){
-    listp();
+    //TODO
     return 1;
 }
 int sh_killp(int argc, char **args){
+    //TODO
     char argin[10];
-    int procid;
-    //printf("args : %s\n",args[1]);
-    strcpy(argin, args[1]);
-    procid = atoi(argin);
-    killp(procid);
     return 1;
 }
 int sh_start(int argc, char **args){
     //TODO make arguments useful, eg kst start
 
-    if(argc == 2){
-        // test process for local pid functionality testing
-        if(strcmp(args[1],"testproc") == 0){
-
-            launch_process("testproc");
-        // data acquisition
-        } else if(strcmp(args[1],"daq") == 0){
-        
-            //comedi_setup_analog_acq();
-            launch_process("daq");
-        }
-    }
-    // full start???
-    if(argc == 1)
-        start();
     return 1;
 }
 int sh_stop(int argc, char **args){
@@ -234,41 +154,19 @@ int sh_list(int argc, char **args){
     //TODO maybe arguments here as well such as list [args, eg set]??
     if(argc > 1){
         if(strcmp(args[1],"settings")==0){
-            double elapsed_time;
             printf("\n");
-            listsettings();
-            listdevsettings();
+            //listsettings();
+            //listdevsettings();
             printf("\n");
-            elapsed_time = daq_timer_elapsed();
-            printf("elapsed time = %lf\n",elapsed_time);
             return 1;
         } else if (strcmp(args[1],"process")==0){
-            listp();
+            //listp();
             return 1;
         } else {
             printf("unknown argument %s\n",args[1]);
             return 1;
         }
     }
-}
-int sh_stimtest(int argc, char **args){
-
-    int t_length; // stimulus length in seconds
-    int t_length_def = 10;
-    int val;
-    if(argc == 1){
-        t_length = t_length_def;
-    } else if(argc == 2){
-        val = atoi(args[1]);
-        if(val == 0){
-            printf("stimtest: wrong input for stimulus length\n");
-            t_length = t_length_def;
-        } else {
-            t_length = val;
-        }
-    }
-    stimtest(t_length);
-    return 1;
 }
 /*-----------------------------------------------------------------------------*/
 /*                               OPAQUE PARTS                                  */
@@ -287,15 +185,13 @@ void init(){
     printf("-----------------------------------------------\n");
 
     // malloc for settings
-    settings = (daq_settings*)malloc(sizeof(daq_settings));
     // malloc for device settings
     devsettings = (dev_settings*)malloc(sizeof(dev_settings));
-    devsettings->cmd = malloc(sizeof(struct comedi_cmd_struct));
-    parse_settings(settings, devsettings);
-    //TODO make these obsolete 
-    settings->is_daq_on = 0;
-    settings->is_kst_on = 0;
-
+    ds = malloc(sizeof(struct dev_settings));
+    gs = malloc(sizeof(struct gen_settings));
+    pr = malloc(sizeof(struct processes));
+    parse_gen_settings(gs);
+    parse_dev_settings(ds);
     /* check for kst2 install and ramdisk mount and device */
 
     if(DEBUG > 0){
@@ -316,25 +212,8 @@ void init(){
 
     //is_accessible(kstpath);
 
-    // malloc for process structure
-    procpt = (processes*)malloc(sizeof(processes));
-    procpt->nproc = 0;
-    procpt->mainpid = getpid();
-
-    // malloc for daq_data
-    data = (daq_data*)malloc(sizeof(daq_data));
-
     //TODO do this properly
     //launch_process("procmonitor");
-
-    // init daq file
-    daq_init_kstfile();
-    daq_timer_start();
-    // init device
-    if(is_dev_ok == 1)
-        ret = comedi_device_setup();
-        if(ret != 0)
-            printf("\twarning: unable to set up comedi device\n");
 
     printf("\nType 'help' to list available commands.\n");
     printf("-----------------------------------------------\n");
@@ -505,11 +384,33 @@ void shell_loop(){
 
 }
 
-int main(int argc, char *argv[]){
+int main(int argc_cmd, char *argv_cmd[]){
+
+
+    //shell_loop();
+    char *line;
+    char **args; 
+    int res;
+    int argc;
 
     init();
 
-    shell_loop();
+    do {
+
+        line = shell_read_cmd();
+
+        // TODO put process monitor cycle here????
+
+        args = shell_parse_cmd(line);
+
+        argc = shell_get_argc(args);
+
+        res = shell_execute(argc, args);
+
+        free(line);
+        free(args);
+
+    } while(res != 0);
 
     return EXIT_SUCCESS;
 }

@@ -12,7 +12,8 @@ DEVICE=/dev/comedi0
 WORKDIR=/home/david/dev/mricom
 #TODO
 # process control file always inside WORKDIR
-PID_FILE=mproc.pid
+# also use define for this
+PID_FILE=mproc.log
 # real time data collection file
 DAQ_FILE=/mnt/ramdisk/mricomrt.dat 
 # vnmrj procpar file of next/current acquisition

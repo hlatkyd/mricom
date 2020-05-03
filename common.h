@@ -1,4 +1,4 @@
-/* mricom.h
+/* common.h
  * --------
  * Device used: NiDAQ PCI-6035E
  *
@@ -16,6 +16,7 @@
 #include <time.h>
 #include <ctype.h>
 #include <math.h>
+#include <signal.h>
 #include <unistd.h>
 #include <errno.h>
 #include <sys/wait.h>
@@ -41,6 +42,7 @@
 
 /* settings file containing user defined stuff */
 #define SETTINGS_FILE "settings"
+#define MPROC_FILE "mproc.log"
 
 #ifndef COMMON_H
 #define COMMON_H
@@ -51,9 +53,10 @@
 
 struct mpid{
 
-    int num;
+    int num; // TODO let mricom issue this<
+    struct timeval tv;
     char name[32];
-    char parent[32];
+    char pname[32];
     pid_t pid;
     pid_t ppid;
 
@@ -103,8 +106,6 @@ typedef struct dev_settings{
     unsigned int analog_in_chan[8];// analog channels, usually 0,1,2,....
     unsigned int stim_trig_subdev;//subdev of  digital stim channel is located 
     unsigned int stim_trig_chan;// digital stim channel (0 in settings)
-    //TODO what is this for again??
-    double timing_buffer[1024];
 
 } dev_settings;
 
@@ -131,10 +132,6 @@ struct times{
 };
 
 
-extern daq_settings *settings;
-extern dev_settings *devsettings;
-
-
 #endif
 //TODO maybe move part of func here?
 /*------------------------------*/
@@ -154,8 +151,8 @@ int compare_common_header(char *file1, char *file2);
 /* process control */
 
 void fill_mpid(struct mpid *mp);
-int processctrl_add(struct gen_settings *gs, struct mpid *mp);
-int processctrl_remove();
+int processctrl_add(char *path, struct mpid *mp, char *status);
+void sighandler(int signum);
 
 /* util common func*/
 void remove_spaces(char *);

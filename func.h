@@ -31,9 +31,9 @@ void process_add(int pid, char *name);
 void process_remove(int pid);
 
 /* util opaqe functions */
-int is_kst_accessible();
-int is_ramdisk_accessible();
-int is_nicard_accessible();
+int is_kst_accessible(struct gen_settings *gs);
+int is_ramdisk_accessible(struct gen_settings *gs);
+int is_nicard_accessible(struct gen_settings *gs);
 void listsettings();
 void listdevsettings();
 int fprintf_header(FILE *);

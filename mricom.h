@@ -26,24 +26,13 @@
 #define MRICOM_H
 
 /* procerss struct to keep track of local child processes*/
-typedef struct processes{
+struct processes{
     int mainpid;
     int nproc;
     int procid[MAX_ID];
     char name[MAX_ID][MAX_NAME_LENGTH];
-} processes;
+};
 
-/* struct mainly for daq board data acquisition*/
-typedef struct daq_data{
-
-    struct timeval clock;
-    double window[NCHAN][TIME_WINDOW * SAMPLING_RATE]; // data window in kst
-    double membuf[NCHAN][SAMPLING_RATE]; // full data buffer in memory
-    double daqbuf[NAICHAN][NBUFFER]; // daq board data buffer
-} daq_data;
-
-extern processes *procpt;
-extern daq_data *data;
 
 #endif
 
@@ -74,5 +63,4 @@ int sh_killp(int argc, char **args);
 int sh_start(int argc, char **args);
 int sh_stop(int argc, char **args);
 int sh_list(int argc, char **args);
-int sh_stimtest(int argc, char **args);
 

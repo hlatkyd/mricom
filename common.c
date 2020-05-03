@@ -7,6 +7,7 @@
 #include "common.h"
 #define VERBOSE_PROCESSCTRL 1
 
+#define LLENGTH 64 // mpid file line length
 /* Function: fill_mpid
  * -------------------
  * fill mpid struct with pid, ppid, name, num from /proc
@@ -14,13 +15,44 @@
 
 void fill_mpid(struct mpid *mp){
 
-    char name[32];
-    char pname[32];
-
+    FILE *fp;
+    //struct timeval tv;
+    char path[32];
+    char pidstr[8];
+    char *buf = NULL;
+    size_t len = 0;
+    int i;
+    gettimeofday(&(mp->tv), NULL);
+    // get pid and parent pid
     mp->pid = getpid();
     mp->ppid = getppid();
-
-
+    // get names by rading /proc/[pid]/comm
+    pid_t pid;
+    for(i=0;i<2;i++){
+        if(i==0)
+            pid = mp->pid;
+        else
+            pid = mp->ppid;
+        sprintf(pidstr, "%d",pid);
+        strcpy(path, "/proc/");
+        strcat(path, pidstr);
+        strcat(path, "/comm");
+        //printf("path here : %s\n",path);
+        fp = fopen(path,"r");
+        if(fp == NULL){
+            perror("fill_mpid");
+            exit(1);
+        }
+        getline(&buf, &len, fp);
+        //remove newline
+        buf[strlen(buf)-1]='\0';
+        if(i==0)
+            strcpy(mp->name, buf);
+        else
+            strcpy(mp->pname, buf);
+        fclose(fp);
+        free(buf);
+    }
 }
 
 /*
@@ -29,21 +61,44 @@ void fill_mpid(struct mpid *mp){
  * add process id to local pid file, return 0 on success
  *
  */
-int processctrl_add(struct gen_settings *gs, struct mpid *mp){
+int processctrl_add(char *path, struct mpid *mp, char *status){
     
-    int fd;
     int ret;
     char buf[64];
-    fd = open(gs->mpid_file,O_RDWR);
+    char line[128];
+    char *d = DELIMITER;
+    struct timeval tv;
+    int fd;
+    FILE *fp;
+    gettimeofday(&tv, NULL);
+    gethrtime(buf, tv);
+    if(strcmp(status,"START") == 0 || strcmp(status,"STOP") == 0 ||
+            strcmp(status, "INTRPT") == 0){
+        ;
+    } else{
+        printf("processctrl_add: wrong status input\n");
+        exit(1);
+    }
+    fd = open(path, O_RDWR | O_APPEND);
     if(fd < 0){
         perror("processctrl_add");
         exit(1);
     }
+    fp = fdopen(fd, "a+");
+    // make line 
+    sprintf(line,"%s%s%d%s%d%s%s%s%s%s%s",
+            status,d,mp->pid,d,mp->ppid,d,mp->name,d,mp->pname,d,buf);
+    printf("%s\n",line);
+    // lock file access
     ret = flock(fd,LOCK_SH);
     if(fd < 0){
         perror("processctrl_add");
         exit(1);
     }
+    // open file stream
+    fprintf(fp, "%s\n",line);
+    fclose(fp);
+    // unlock file access
     ret = flock(fd,LOCK_UN);
     if(fd < 0){
         perror("processctrl_add");
@@ -56,19 +111,23 @@ int processctrl_add(struct gen_settings *gs, struct mpid *mp){
     }
     return 0;
 }
-
 /*
- * Function: processctrl_remove
- * -------------------------
- * remove process id from local pid file return 0 on success
- *
+ * Function: sighandler
+ * --------------------
+ *  Catch interrupts (eg.: Ctrl-c) and finish log file before termination
  */
-int processctrl_remove(struct gen_settings *gs){
-    
-    return 0;
-}
+void sighandler(int signum){
+    // accepts no argument, so set up mpid again
+    struct mpid *mp;
+    char path[] = MPROC_FILE;
+    if(signum == 2){
+        mp = malloc(sizeof(struct mpid));
+        fill_mpid(mp);
+        printf("pid, ppid %d, %d, %s\n",mp->pid, mp->ppid, mp->name);
+        processctrl_add(path, mp, "INTRPT");
+        exit(1);
 
-int parse_pid(){
+    }
 
 }
 
@@ -496,6 +555,7 @@ void getppname(char *name){
         exit(1);
     }
     getline(&pname, &len, fp);
+    //TODO strip newline from end
     strcpy(name, pname);
     free(pname);
     fclose(fp);

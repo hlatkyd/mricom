@@ -2,184 +2,11 @@
  *
  * mricom user function definitions
  *
- * contents:
- *  - test functions
- *  - util daq functions
- *  - util shell functions
- *  - util init
- *  - util user functions
- *  - main user functions 
  */
 #include "common.h"
 #include "func.h"
 #include "mricom.h"
-#include "comedifunc.h"
 
-
-extern processes *procpt;
-extern daq_data *data;
-extern daq_settings *settings;
-extern dev_settings *devsettings;
-
-/*-------------------------------------------------------------------*/
-/*                           test functions                          */
-/*-------------------------------------------------------------------*/
-void test_print(char **args){
-
-    printf("test_print says: %s\n",args[1]);
-    return;
-}
-void testproc(){
-
-    printf("starting testproc...\n");
-    sleep(5);
-    printf("testproc ended...\n");
-    return;
-}
-//TODO make obsolete
-void test_fork(){
-
-    int i;
-    int procnum;
-    char testname[] = "test_process";
-    char *kstpath[] = {"kst2",
-                    "/home/david/dev/mricom/test/kst_test.kst",
-                    NULL};
-    pid_t pid;
-    pid = fork();
-    printf("hello forks!\n");
-
-    if(pid == 0){
-
-        // child
-        //system("kst2");
-        //execvp(kstpath[0], kstpath);
-        //perror("execv");
-        return;
-    }
-    else if(pid < 0){
-        //error forking
-        perror("error forking");
-    }
-    else {
-        // parent
-        process_add(pid, testname);
-    }
-    return;
-
-}
-//TODO
-// not as important as daq_analog_start or something
-/*
- * Function: test_daq_simulate
- * ------------------------------
- * generate random data and append to daq_file
- * use the standard daq settings defined at compile time or settings file
- */
- //TODO shell command be 'test start' and 'test stop'
-void test_daq_simulate(){
-
-    int i = 0;
-    double time, itertime, timestep;
-    char process_name[] = "test_datagenerator";
-    FILE *fp;
-    pid_t pid;
-
-    //timestep = 1 / acqconst->sampling_rate;
-    time = 0.0;
-    //itertime = 0.5;
-    itertime = 1;
-
-    /* fork and run */
-    pid = fork();
-
-    if(pid == 0){
-
-        // child
-        while(1){
-            //TODO make a timer function here
-            test_rand_membuf(time);
-            daq_append_membuf();
-            daq_update_window();
-            daq_update_kstfile();
-            time += itertime;
-            i++;
-            //usleep(itertime * 1000000);
-            sleep(itertime);
-        }
-        //TODO process_remove something
-        return;
-    }
-    else if(pid < 0){
-        //error forking
-        perror("error forking");
-    }
-    else {
-        // parent
-        process_add(pid, process_name);
-    }
-    return;
-}
-/*
- * Function test_randfill_buffer
- * -----------------------------
- * Fill data->membuf with random values and progress time
- * 
- * INPUT:
- *      double start_time -- time at the start of buffer in sec
- *                           with usec accuracy
- */
- //TODO test execution time of this
-void test_rand_membuf(double start_time){
-
-    int i, j;
-    int naichan = NAICHAN;
-    int naochan = NAOCHAN;
-    int ndichan = NDICHAN;
-    int ndochan = NDOCHAN;
-    int nchan = NCHAN;
-    int samples = SAMPLING_RATE;
-    double timestep = (double) 1 / SAMPLING_RATE;
-    double t;
-    srand(time(NULL));
-    for(j=0;j<samples;j++){
-        // fill columns
-        for(i=0;i<nchan;i++){
-            // time
-            t = start_time + timestep * j;
-            if(i == 0){
-                data->membuf[0][j] = t;
-            } else if(i>0 && i < naichan + 1){
-                // analog input channels
-                // fill resp with sin x
-                if(i == 1){
-                    data->membuf[i][j] = sin(2*M_PI*t);
-                } else {
-                    data->membuf[i][j] = (double)rand()/RAND_MAX;
-                }
-            } else if(i > naichan +1  && i < naichan + naochan + 1){
-                // analog output
-                data->membuf[i][j] = (double)rand()/RAND_MAX;
-            } else if(i>naichan + naochan + 1 &&
-                      i < naichan + naochan + ndichan + 1){
-                // digital input
-                if (j * 2 / samples == 1){
-                    data->membuf[i][j] = 1;
-                } else {
-                    data->membuf[i][j] = 0;
-                }
-            } else if(i>naichan + naochan + 1 &&
-                      i < naichan + naochan + ndichan + 1){
-                //digital oputput
-                data->membuf[i][j] = rand() % 2;
-            }
-        }
-    }
-    return;
-}
-void test_system(){
-    return;
-}
 /*-------------------------------------------------------------------*/
 /*                    util  daq functions                            */
 /*-------------------------------------------------------------------*/
@@ -471,7 +298,7 @@ void process_remove(int pid){
  *
  * look for kst2 in PATH
  */
-int is_kst_accessible(){
+int is_kst_accessible(struct gen_settings *settings){
 
     FILE *fp;
     char path[1024];
@@ -496,7 +323,6 @@ int is_kst_accessible(){
     } else{
         printf("oops, something wrong in 'is_kst_accessible'\n");
     }
-    strcpy(settings->kst_path, path);
     return 0;
 }
 /* Function: is_nicard_accessible
@@ -506,7 +332,7 @@ int is_kst_accessible(){
  * TODO check for card version
  */
 
-int is_nicard_accessible(){
+int is_nicard_accessible(struct gen_settings *settings){
     FILE *fp;
     char path[1024];
     int lines = 0;
@@ -540,12 +366,12 @@ int is_nicard_accessible(){
         return 1;
     }
 }
-/* Function: is_nicard_accessible
+/* Function: is_ramdisk_accessible
  * ------------------------------
  *
  * checks if ramdisk is correctly mounted on path specified in settings
  */
-int is_ramdisk_accessible(){
+int is_ramdisk_accessible(struct gen_settings *settings){
     
     if(access(settings->ramdisk, W_OK) == 0){
         if(DEBUG > 0){
