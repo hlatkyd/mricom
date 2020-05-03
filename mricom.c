@@ -155,8 +155,8 @@ int sh_list(int argc, char **args){
     if(argc > 1){
         if(strcmp(args[1],"settings")==0){
             printf("\n");
-            //listsettings();
-            //listdevsettings();
+            listsettings(gs);
+            listdevsettings(ds);
             printf("\n");
             return 1;
         } else if (strcmp(args[1],"process")==0){
@@ -197,13 +197,13 @@ void init(){
     if(DEBUG > 0){
         printf("\nmricom startup check...\n");
     }
-    if(is_ramdisk_accessible() != 0){
+    if(is_ramdisk_accessible(gs) != 0){
         printf("\n\tWarning: ramdisk mount point not found!\n");
     }
-    if(is_kst_accessible() != 0){
+    if(is_kst_accessible(gs) != 0){
         printf("\n\tWarning: installed kst2 not found!\n");
     }
-    if(is_nicard_accessible() != 0){
+    if(is_nicard_accessible(gs) != 0){
         printf("\n\tWarning: NI card not found!\n");
         is_dev_ok = 0;
     } else {

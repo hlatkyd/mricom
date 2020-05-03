@@ -4,3 +4,9 @@
 # no tsv data and metadata files
 *.meta
 *.tsv
+# no compiled
+mricom
+mrikst
+blockstim
+analogdaq
+testproc

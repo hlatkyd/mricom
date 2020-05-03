@@ -5,7 +5,7 @@
  */
 
 /* constants for command history */
-#define MAX_ID 16 // maximum number of processes
+#define MAX_ID 32 // maximum number of processes
 #define MAX_NAME_LENGTH 32 // maximum process name length
 #define MAX_HISTORY_LENGTH 64 // command history elements
 #define MAX_CMD_LENGTH 128 // command length to story in history
@@ -29,8 +29,10 @@
 struct processes{
     int mainpid;
     int nproc;
-    int procid[MAX_ID];
+    int pid[MAX_ID];
+    int ppid[MAX_ID];
     char name[MAX_ID][MAX_NAME_LENGTH];
+    char pname[MAX_ID][MAX_NAME_LENGTH];
 };
 
 
@@ -58,6 +60,7 @@ int sh_exit(int argc, char **args);
 int sh_help(int argc, char **args);
 int sh_test(int argc, char **args);
 int sh_listh(int argc, char **args);
+//move lsitp to list
 int sh_listp(int argc, char **args);
 int sh_killp(int argc, char **args);
 int sh_start(int argc, char **args);
