@@ -17,7 +17,6 @@ struct gen_settings *gs;
 struct dev_settings *ds;
 struct processes *pr;
 
-dev_settings *devsettings;
 
 //TODO review these, less is more
 /* command names
@@ -58,7 +57,7 @@ int sh_num_builtins(){
  //TODO check for unintended stop ps -ef, or something
 int sh_exit(int argc, char **args){
     
-    int id;
+    free(ds);free(pr);free(gs);
     return 0;
 }
 /* Shell function sh_help
@@ -159,8 +158,11 @@ int sh_list(int argc, char **args){
             listdevsettings(ds);
             printf("\n");
             return 1;
-        } else if (strcmp(args[1],"process")==0){
-            //listp();
+        } else if (strcmp(args[1],"proc")==0){
+            //struct processes *p;
+            //p = malloc(sizeof(struct processes));
+            processctrl_get(gs->mpid_file, pr);
+            listprocesses(pr);
             return 1;
         } else {
             printf("unknown argument %s\n",args[1]);
@@ -185,11 +187,10 @@ void init(){
     printf("-----------------------------------------------\n");
 
     // malloc for settings
-    // malloc for device settings
-    devsettings = (dev_settings*)malloc(sizeof(dev_settings));
     ds = malloc(sizeof(struct dev_settings));
     gs = malloc(sizeof(struct gen_settings));
     pr = malloc(sizeof(struct processes));
+    pr->mainpid = getpid();
     parse_gen_settings(gs);
     parse_dev_settings(ds);
     /* check for kst2 install and ramdisk mount and device */
@@ -359,30 +360,6 @@ int shell_execute(int argc, char **args){
     return shell_launch(argc, args);
 }
 
-void shell_loop(){
-
-    char *line;
-    char **args; 
-    int res;
-    int argc;
-
-    do {
-
-        line = shell_read_cmd();
-
-        // TODO put process monitor cycle here????
-
-        args = shell_parse_cmd(line);
-
-        argc = shell_get_argc(args);
-
-        res = shell_execute(argc, args);
-
-        free(line);
-        free(args);
-    } while(res != 0);
-
-}
 
 int main(int argc_cmd, char *argv_cmd[]){
 

@@ -6,7 +6,6 @@
  */
 #include "common.h"
 #define VERBOSE_PROCESSCTRL 1
-
 #define LLENGTH 64 // mpid file line length
 /* Function: fill_mpid
  * -------------------
@@ -88,7 +87,6 @@ int processctrl_add(char *path, struct mpid *mp, char *status){
     // make line 
     sprintf(line,"%s%s%d%s%d%s%s%s%s%s%s",
             status,d,mp->pid,d,mp->ppid,d,mp->name,d,mp->pname,d,buf);
-    printf("%s\n",line);
     // lock file access
     ret = flock(fd,LOCK_SH);
     if(fd < 0){
@@ -111,6 +109,122 @@ int processctrl_add(char *path, struct mpid *mp, char *status){
     }
     return 0;
 }
+
+/*
+ * Function processctrl_get
+ * ------------------------
+ *  Parse process log file mproc.log and fill running process struct
+ *  
+ */
+#define N_MAX 128
+#define LLENGTH 64
+#define PROCESSCTRL_CHILD_ONLY 1
+int processctrl_get(char *path, struct processes *p){
+
+    FILE *fp;
+    char filebuf[N_MAX][LLENGTH];
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    int i,j,k, n, col;
+    int n_remove;
+    int remove_list[N_MAX];
+    char lstatus[N_MAX][8];
+    int lpid[N_MAX];
+    int lppid[N_MAX];
+    char lname[N_MAX][32];
+    char lpname[N_MAX][32];
+    char ltimestamp[N_MAX][32];
+    char *d = DELIMITER;
+    char *token;
+    fp = fopen(path,"r");
+    if(fp == NULL){
+        printf("could not open %s\n",path);
+        return 1;
+    }
+    i = 0;
+    // read into buffer
+    while (read = getline(&line, &len, fp) != -1){
+        if(strncmp(line, "#",1) == 0){
+            continue;
+        } else {
+            //replace EOL with nullbyte
+            line[strlen(line)-1] = '\0';
+            strcpy(filebuf[i], line);
+        }
+        i++;
+
+    }
+    n = i;
+    // fill lists
+    for(i=0; i<n; i++){
+        strcpy(line, filebuf[i]);
+        token = strtok(line,d);
+        col = 0;
+        while(token != NULL){
+            switch(col){
+                case 0 :
+                    strcpy(lstatus[i],token);
+                    break;
+                case 1 :
+                    lpid[i] = atoi(token);
+                    break;
+                case 2 :
+                    lppid[i] = atoi(token);
+                    break;
+                case 3 :
+                    strcpy(lname[i],token);
+                    break;
+                case 4 :
+                    strcpy(lpname[i],token);
+                    break;
+                case 5 :
+                    strcpy(ltimestamp[i],token);
+                    break;
+            }
+            token = strtok(NULL, d);
+            col++;
+        }
+
+    }
+    // find removable listings
+    k = 0;
+    for(i=0;i<n; i++){
+       for(j=i; j<n; j++){
+            if(lpid[i] == lpid[j] && strcmp(lstatus[i],"START")==0 && 
+              (strcmp(lstatus[j],"STOP")==0 || strcmp(lstatus[j],"INTRPT")==0)){
+                //printf("i, j %d, %d\n",i,j);
+                remove_list[k] = i;
+                remove_list[k+1] = j;
+                k += 2;
+            }
+       } 
+    }
+    n_remove = k;
+    p->nproc = n - n_remove; 
+    // remove processes which ended (by STOP or INTRPT) and fill struct
+
+    i = 0;
+    //TODO this is plain wrong
+    //printf("n, nremove:%d, %d\n",n,n_remove);
+    for(j=0; j<n; j++){
+        for(k=0;k<n_remove;k++){
+            if(j == remove_list[k]){
+                break;
+            } else{
+                p->pid[i] = lpid[j];
+                p->ppid[i] = lppid[j];
+                strcpy(p->name[i],lname[j]);
+                printf("name: %s\n",lname[j]);
+                strcpy(p->timestamp[i],ltimestamp[j]);
+                i++;
+            }
+        }
+    }
+    if(line)
+        free(line);
+    return 0;
+}
 /*
  * Function: sighandler
  * --------------------
@@ -120,13 +234,13 @@ void sighandler(int signum){
     // accepts no argument, so set up mpid again
     struct mpid *mp;
     char path[] = MPROC_FILE;
+    char c = '\0';
     if(signum == 2){
         mp = malloc(sizeof(struct mpid));
         fill_mpid(mp);
-        printf("pid, ppid %d, %d, %s\n",mp->pid, mp->ppid, mp->name);
         processctrl_add(path, mp, "INTRPT");
+        free(mp);
         exit(1);
-
     }
 
 }
@@ -592,6 +706,7 @@ void getcmdline(char *cmdl){
 
     read(fd, buf, 64);
     strcpy(cmdl, buf);
+    free(buf);
     close(fd);
 }
 

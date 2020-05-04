@@ -11,11 +11,11 @@ int is_ramdisk_accessible(struct gen_settings *);
 int is_nicard_accessible(struct gen_settings *);
 void listsettings(struct gen_settings *);
 void listdevsettings(struct dev_settings *);
+void listprocesses(struct processes *p);
 
 /*util user interface funcs*/
 void list();
 void catdata();
-void listp();
 
 /*main user interface funcs*/
 void start();

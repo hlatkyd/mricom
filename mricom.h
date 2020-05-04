@@ -5,11 +5,8 @@
  */
 
 /* constants for command history */
-#define MAX_ID 32 // maximum number of processes
-#define MAX_NAME_LENGTH 32 // maximum process name length
 #define MAX_HISTORY_LENGTH 64 // command history elements
 #define MAX_CMD_LENGTH 128 // command length to story in history
-
 
 /* ----------------------*/
 /*     shell constants   */
@@ -24,17 +21,6 @@
 
 #ifndef MRICOM_H // header guard
 #define MRICOM_H
-
-/* procerss struct to keep track of local child processes*/
-struct processes{
-    int mainpid;
-    int nproc;
-    int pid[MAX_ID];
-    int ppid[MAX_ID];
-    char name[MAX_ID][MAX_NAME_LENGTH];
-    char pname[MAX_ID][MAX_NAME_LENGTH];
-};
-
 
 #endif
 

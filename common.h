@@ -44,6 +44,7 @@
 #define SETTINGS_FILE "settings"
 #define MPROC_FILE "mproc.log"
 
+
 #ifndef COMMON_H
 #define COMMON_H
 
@@ -131,6 +132,22 @@ struct times{
     struct timeval stop;
 };
 
+/* -------------------------------*/
+/*      running processes         */
+/* -------------------------------*/
+
+#define MAX_ID 32 // maximum number of processes
+#define MAX_NAME_LENGTH 32 // maximum process name length
+/* procerss struct to keep track of local child processes*/
+struct processes{
+
+    int mainpid;
+    int nproc;
+    int pid[MAX_ID];
+    int ppid[MAX_ID];
+    char name[MAX_ID][MAX_NAME_LENGTH];
+    char timestamp[MAX_ID][MAX_NAME_LENGTH];
+};
 
 #endif
 //TODO maybe move part of func here?
@@ -152,6 +169,7 @@ int compare_common_header(char *file1, char *file2);
 
 void fill_mpid(struct mpid *mp);
 int processctrl_add(char *path, struct mpid *mp, char *status);
+int processctrl_get(char *path, struct processes *p);
 void sighandler(int signum);
 
 /* util common func*/

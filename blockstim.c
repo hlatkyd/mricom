@@ -75,14 +75,16 @@ int main(int argc, char *argv[]){
     gs = malloc(sizeof(struct gen_settings));
     parse_gen_settings(gs);
     getppname(parent_name);
+    fill_mpid(mp);
+    ret = processctrl_add(gs->mpid_file, mp, "START");
     if(strcmp(parent_name, "mricom") == 0 || BLOCKSTIM_TESTING == 1){
         is_mricom_child = 1;
         //TODO local pid control here
-        fill_mpid(mp);
+        /*
         ret = processctrl_add(gs->mpid_file, mp, "START");
         if(ret == 0){
             procadd = 1;
-        }
+        */
     }
     h = malloc(sizeof(struct header));
     t = malloc(sizeof(struct times));
@@ -132,9 +134,17 @@ int main(int argc, char *argv[]){
         perror("fopen");
         exit(1);
     }
+    fp_meta = fopen(metafile,"w");
+    if(fp_meta == NULL){
+        printf("blockstim: cannot open %s\n",metafile);
+        exit(1);
+    }
     // prepare header
     fprintf_common_header(fp,h, argv);
     append_bs_chdata(fp, bs);
+    // write metadata file
+    // print same header for metadata file as well
+    fprintf_common_header(fp_meta, h, argv);
     // device setup
     dev = comedi_open(devpath);
     if(dev == NULL){
@@ -186,25 +196,13 @@ int main(int argc, char *argv[]){
     t->stop = stop_tv;
     // close tsv data file
     fclose(fp);
-    // write metadata file
-    fp_meta = fopen(metafile,"w");
-    if(fp_meta == NULL){
-        printf("blockstim: cannot open %s\n",metafile);
-        exit(1);
-    }
-    // print same header for metadata file as well
-    fprintf_common_header(fp_meta, h, argv);
     fprintf_bstim_meta(fp_meta, h, bs, t);
     fclose(fp_meta);
     comedi_close(dev);
 
-    if(strcmp(parent_name, "mricom") == 0 && procadd == 1){
-        //TODO this is obsolete, delet??
-        //ret = processctrl_remove(gs->mpid_file, mp);
-        ret = processctrl_add(gs->mpid_file, mp, "STOP");
-        if(ret != 0){
-            printf("blockstim: processctrl_remove error");
-        }
+    ret = processctrl_add(gs->mpid_file, mp, "STOP");
+    if(ret != 0){
+        printf("blockstim: processctrl_remove error");
     }
     return 0;
 }

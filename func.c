@@ -8,10 +8,6 @@
 #include "mricom.h"
 
 /*-------------------------------------------------------------------*/
-/*                    util  daq functions                            */
-/*-------------------------------------------------------------------*/
-
-/*-------------------------------------------------------------------*/
 /*                     util shell functions                          */
 /*-------------------------------------------------------------------*/
 
@@ -125,7 +121,7 @@ int is_ramdisk_accessible(struct gen_settings *settings){
 void listdevsettings(struct dev_settings *devsettings){
 
     int i = 0;
-    printf("\ndevsettings struct:\n");
+    printf("\nstruct devsettings:\n");
     printf("---------------------\n");
     printf("is_analog_differential: %d\n",
                 devsettings->is_analog_differential);
@@ -138,7 +134,7 @@ void listdevsettings(struct dev_settings *devsettings){
     printf("stim_trig_chan: %d\n",devsettings->stim_trig_chan);
 }
 /*
- * Function: lsitsettings
+ * Function: listsettings
  * -----------------
  * list settings acquired from settings file
  */
@@ -147,7 +143,7 @@ void listsettings(struct gen_settings *settings){
 
     int i = 0;
     // have to do it manually..
-    printf("daq_settings struct:\n");
+    printf("struct daq_settings:\n");
     printf("--------------------\n");
     printf("device : %s\n",settings->device);
     printf("daq_file : %s\n",settings->daq_file);
@@ -166,20 +162,27 @@ void listsettings(struct gen_settings *settings){
     printf("\n");
     printf("is_daq_on: %d\n",settings->is_daq_on);
     printf("is_kst_on: %d\n",settings->is_kst_on);
-
-    
 }
 
 /*
- * Function: listp
- * ---------------
- * list current child processes of mricom
+ * Function: listprocesses
+ * -----------------------
+ * list running processes from mpid.log
  */
-//TODO
-void listp(){
+void listprocesses(struct processes *p){
 
-    return;
+    int i;
+    char *d = DELIMITER;
+    printf("struct processes:\n");
+    printf("-----------------\n");
+    printf("main pid: %d\n",p->mainpid);
+    for(i=0; i<p->nproc;i++){
+        printf("%d%s%d%s%s%s%s\n",
+                p->pid[i],d,p->ppid[i],d,p->name[i],d,p->timestamp[i]);
+    }
+
 }
+
 /*
  * Function: killp
  * ---------------
@@ -201,6 +204,7 @@ void killp(int procid){
 /*-------------------------------------------------------------------*/
 /*                     main user functions                           */
 /*-------------------------------------------------------------------*/
+
 void start(){
 
     return;
