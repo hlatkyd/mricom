@@ -25,7 +25,6 @@ struct processes *pr;
 char *builtin_str[] = {
     "exit",
     "help",
-    "listp",
     "killp",
     "test",
     "start",
@@ -37,7 +36,6 @@ char *builtin_str[] = {
 int (*builtin_func[]) (int, char **) = {
     &sh_exit,
     &sh_help,
-    &sh_listp,
     &sh_killp,
     &sh_test,
     &sh_start,
@@ -57,7 +55,9 @@ int sh_num_builtins(){
  //TODO check for unintended stop ps -ef, or something
 int sh_exit(int argc, char **args){
     
-    free(ds);free(pr);free(gs);
+    free(ds);
+    free(pr);
+    free(gs);
     return 0;
 }
 /* Shell function sh_help
@@ -98,26 +98,20 @@ int sh_help(int argc, char **args){
             case 1: // help
                 printf("print available commands or get help for a command\n");
                 break;
-            case 2: // listp
-                printf("list mricom child processes\n");
-                break;
-            case 3: // killp
+            case 2: // killp
                 printf("kill mricom childprocess by id\n");
                 break;
-            case 4: // test
+            case 3: // test
                 printf("test everything?\n");
                 break;
-            case 5: // start
+            case 4: // start
                 printf("start data acquisition\n");
                 break;
-            case 6: // stop
+            case 5: // stop
                 printf("stop data acquisition\n");
                 break;
-            case 7: // list
+            case 6: // list
                 printf("print settings struct\n");
-                break;
-            case 8: // stimtest
-                printf("test digital trigger output\n");
                 break;
         }
         printf("\n");
@@ -128,10 +122,6 @@ int sh_help(int argc, char **args){
 int sh_test(int argc, char **args){
     //TODO implement usage by specific arguments
     // start, stop, stim etc
-    return 1;
-}
-int sh_listp(int argc, char **args){
-    //TODO
     return 1;
 }
 int sh_killp(int argc, char **args){
@@ -159,8 +149,6 @@ int sh_list(int argc, char **args){
             printf("\n");
             return 1;
         } else if (strcmp(args[1],"proc")==0){
-            //struct processes *p;
-            //p = malloc(sizeof(struct processes));
             processctrl_get(gs->mpid_file, pr);
             listprocesses(pr);
             return 1;

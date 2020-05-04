@@ -203,20 +203,19 @@ int processctrl_get(char *path, struct processes *p){
     n_remove = k;
     p->nproc = n - n_remove; 
     // remove processes which ended (by STOP or INTRPT) and fill struct
-
     i = 0;
-    //TODO this is plain wrong
-    //printf("n, nremove:%d, %d\n",n,n_remove);
     for(j=0; j<n; j++){
         for(k=0;k<n_remove;k++){
             if(j == remove_list[k]){
+                j++;
+                k = n_remove;
                 break;
             } else{
                 p->pid[i] = lpid[j];
                 p->ppid[i] = lppid[j];
                 strcpy(p->name[i],lname[j]);
-                printf("name: %s\n",lname[j]);
                 strcpy(p->timestamp[i],ltimestamp[j]);
+                k = n_remove;
                 i++;
             }
         }

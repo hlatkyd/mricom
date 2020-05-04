@@ -16,14 +16,6 @@
 #define MAX_ARG_LENGTH 128
 #define ARG_DELIM " \t\r\n\a"
 
-
-/* define global structs */
-
-#ifndef MRICOM_H // header guard
-#define MRICOM_H
-
-#endif
-
 /* ----------------------*/
 /* function declarations */
 /* ----------------------*/
@@ -45,9 +37,6 @@ int shell_execute(int argc, char **args);
 int sh_exit(int argc, char **args);
 int sh_help(int argc, char **args);
 int sh_test(int argc, char **args);
-int sh_listh(int argc, char **args);
-//move lsitp to list
-int sh_listp(int argc, char **args);
 int sh_killp(int argc, char **args);
 int sh_start(int argc, char **args);
 int sh_stop(int argc, char **args);
