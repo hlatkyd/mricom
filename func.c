@@ -173,7 +173,7 @@ void listprocesses(struct processes *p){
 
     int i;
     char *d = DELIMITER;
-    printf("struct processes:\n");
+    printf("\nrunning processes:\n");
     printf("-----------------\n");
     printf("main pid: %d\n",p->mainpid);
     for(i=0; i<p->nproc;i++){

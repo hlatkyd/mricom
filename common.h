@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/file.h>
+#include <sys/mman.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <comedilib.h>
@@ -103,6 +104,7 @@ typedef struct dev_settings{
     comedi_t *dev;      // comedi device pointer
     comedi_cmd *cmd;    // analog acquisition command
     int is_analog_differential; // 1 if analog wiring is differential
+    int analog_sampling_rate;
     unsigned int analog_in_subdev; // analog subdevice number (0 on ni-6035e)
     unsigned int analog_in_chan[8];// analog channels, usually 0,1,2,....
     unsigned int stim_trig_subdev;//subdev of  digital stim channel is located 

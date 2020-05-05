@@ -118,7 +118,7 @@ int processctrl_add(char *path, struct mpid *mp, char *status){
  */
 #define N_MAX 128
 #define LLENGTH 64
-#define PROCESSCTRL_CHILD_ONLY 1
+#define MRICOM_CHILD_ONLY 1
 int processctrl_get(char *path, struct processes *p){
 
     FILE *fp;
@@ -193,7 +193,10 @@ int processctrl_get(char *path, struct processes *p){
        for(j=i; j<n; j++){
             if(lpid[i] == lpid[j] && strcmp(lstatus[i],"START")==0 && 
               (strcmp(lstatus[j],"STOP")==0 || strcmp(lstatus[j],"INTRPT")==0)){
-                //printf("i, j %d, %d\n",i,j);
+                // TODO leave only child processes of mricom
+                if(MRICOM_CHILD_ONLY==1 && strcmp(lpname[i],"mricom")==0){
+                    ;
+                }
                 remove_list[k] = i;
                 remove_list[k+1] = j;
                 k += 2;
@@ -576,6 +579,11 @@ int parse_dev_settings(struct dev_settings *ds){
         if(strcmp(line, "IS_ANALOG_DIFFERENTIAL") == 0){
             token = strtok(NULL,"=");
             ds->is_analog_differential = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "ANALOG_SAMPLING_RATE") == 0){
+            token = strtok(NULL,"=");
+            ds->analog_sampling_rate = atoi(token);
             continue;
         }
         if(strcmp(line, "ANALOG_IN_SUBDEV") == 0){
