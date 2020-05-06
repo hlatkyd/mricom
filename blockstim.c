@@ -140,11 +140,11 @@ int main(int argc, char *argv[]){
         exit(1);
     }
     // prepare header
-    fprintf_common_header(fp,h, argv);
+    fprintf_common_header(fp,h, argc, argv);
     append_bs_chdata(fp, bs);
     // write metadata file
     // print same header for metadata file as well
-    fprintf_common_header(fp_meta, h, argv);
+    fprintf_common_header(fp_meta, h, argc, argv);
     // device setup
     dev = comedi_open(devpath);
     if(dev == NULL){
@@ -249,6 +249,7 @@ void fprintf_bstim_meta(FILE *fp,
     fprintf(fp, "action=%s\n",buf);
     gethrtime(buf, t->stop);
     fprintf(fp, "stop=%s\n",buf);
+    free(buf);
 }
 
 void printf_bs(struct blockstim_settings *bs){

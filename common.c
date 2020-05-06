@@ -465,6 +465,8 @@ int parse_gen_settings(struct gen_settings *settings){
     int i = 0; int j = 0;
     int nchan = NCHAN; // for comparing number of channel to channel names
 
+    //set memory to zero
+    memset(settings, 0, sizeof(*settings));
     fp = fopen(settings_file, "r");
     if(fp == NULL){
         printf("\nerror: could not open file 'settings'\n");
@@ -601,6 +603,19 @@ int parse_dev_settings(struct dev_settings *ds){
             ds->stim_trig_chan = atoi(token);
             continue;
         }
+        if(strcmp(line, "ANALOG_CH_NAMES") == 0){
+            i = 0;
+            token = strtok(NULL,"=");
+            strcpy(buf, token);
+            token = strtok(buf, ",");
+            while(token != NULL){
+                strcpy(ds->analog_ch_names[i], token);
+                i++;
+                token = strtok(NULL,",");
+            }
+            i = 0; // reset to 0
+            continue;
+        }
         if(strcmp(line, "ANALOG_IN_CHAN") == 0){
             i=0;
             token = strtok(NULL,"=");
@@ -623,23 +638,60 @@ int parse_dev_settings(struct dev_settings *ds){
  * ------------------------------
  * write timing, version, etc info into file common to tsv and meta
  */
-int fprintf_common_header(FILE *fp, struct header *h, char **args){
+int fprintf_common_header(FILE *fp, struct header *h, int argc, char **args){
 
     char line[64];
     char buf[64];
     int vmaj = VERSION_MAJOR;
     int vmin = VERSION_MINOR;
+    int i;
     if(fp == NULL){
         printf("fprint_header_common: file not open\n");
         exit(1);
     }
     gethrtime(buf, h->timestamp);
-    fprintf(fp,"# cmd=%s args=%s,%s Mricom v%d.%d\n",
-               h->proc, args[1], args[2], vmaj, vmin);
+    fprintf(fp,"# cmd=%s args=",h->proc);
+    if(argc==1){
+        fprintf(fp,"NULL");
+    } else {
+        for(i=1;i<argc;i++){
+            if(i==1)
+                fprintf(fp,"%s",args[i]);
+            else
+            fprintf(fp,",%s",args[i]);
+        }
+    }
+    fprintf(fp," Mricom v%d.%d\n",vmaj,vmin);
     fprintf(fp,"# timestamp=%s\n", buf);
     return 0;
 
 }
+
+
+/*
+ * Function fprintf_times_meta
+ * ---------------------------
+ * log times struct in a common format in metadata files
+ */
+
+void fprintf_times_meta(FILE *fp, struct times *t){
+
+    char *buf;
+    buf = malloc(sizeof(char)*64); // for human readable time
+
+    fprintf(fp, "\n%% TIMING\n");
+    gethrtime(buf, t->start);
+    fprintf(fp, "start=%s\n",buf);
+    gethrtime(buf, t->action);
+    fprintf(fp, "action=%s\n",buf);
+    gethrtime(buf, t->stop);
+    fprintf(fp, "stop=%s\n",buf);
+    free(buf);
+
+}
+
+
+
 /*
  * Function: compare_common_header
  * --------------------------------
@@ -739,6 +791,28 @@ void gethrtime(char *outbuf, struct timeval tv){
 
 }
 /*
+ * Function clockhrtime
+ * ------------------
+ * Same as above, but with clock_gettime struct
+ * Copy timeval into human readable string buffer
+ * example: 2020-04-28 20:07:34.992715
+ */
+void clockhrtime(char *outbuf, struct timespec tv){
+
+    time_t nowtime;
+    struct tm *nowtm;
+    char tmbuf[64];
+    char buf[64];
+
+    memset(outbuf, 0, sizeof((*outbuf)));
+    nowtime = tv.tv_sec;
+    nowtm = localtime(&nowtime);
+    strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d %H:%M:%S", nowtm);
+    snprintf(buf, sizeof buf, "%s.%09ld", tmbuf, tv.tv_nsec);
+    strcpy(outbuf, buf);
+
+}
+/*
  * Function: getusecdelay
  * ----------------------
  * Calculate current difference in microsec from input time
@@ -752,6 +826,23 @@ int getusecdelay(struct timeval tv1){
     gettimeofday(&tv2,NULL);
     time = (tv2.tv_sec - tv1.tv_sec) * mega;
     mic = (tv2.tv_usec - tv1.tv_usec);
+    mic += time;
+    return mic;
+}
+/*
+ * Function: clockusecdelay
+ * ----------------------
+ * Calculate current difference in microsec from input time
+ */
+int clockusecdelay(struct timespec tv1){
+
+    struct timespec tv2;
+    int time;
+    int mic;
+    double giga = 1000000000;
+    clock_gettime(CLOCK_MONOTONIC,&tv2);
+    time = (tv2.tv_sec - tv1.tv_sec) * giga;
+    mic = (tv2.tv_nsec - tv1.tv_nsec);
     mic += time;
     return mic;
 }

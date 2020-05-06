@@ -6,8 +6,12 @@
 #include "analogdaq.h"
 
 #define DIGITALTRIG 1
-#define VERBOSE 1
+#define VERBOSE 0
 #define ANALOGDAQ_TESTING 1
+
+#define CONF_NAME "/analogdaq.conf"
+#define DATAF_NAME "/analogdaq.tsv"
+#define METAF_NAME "/analogdaq.meta"
 
 int main(int argc, char **argv){
 
@@ -53,6 +57,9 @@ int main(int argc, char **argv){
     unsigned int nsamples;
     unsigned int col;
 
+    unsigned int index = 0;
+    double time;
+    double sbuf[NAICHAN+1]; // time as well
     unsigned int i;
     int ret;
 
@@ -74,7 +81,34 @@ int main(int argc, char **argv){
     parse_dev_settings(ds);
     fill_mpid(mp);
     t->start = tv;
+    h->timestamp = tv;
+    strcpy(h->proc, argv[0]);
 
+    // file setup
+    strcat(conf,gs->workdir);
+    strcat(conf,CONF_NAME);
+    strcat(datafile,gs->workdir);
+    strcat(datafile,DATAF_NAME);
+    strcat(metafile,gs->workdir);
+    strcat(metafile,METAF_NAME);
+
+    fp = fopen(datafile,"w");
+    if(fp == NULL){
+        fprintf(stderr, "error: fopen %s\n",datafile);
+        exit(1);
+    }
+    fp_meta = fopen(metafile,"w");
+    if(fp_meta == NULL){
+        fprintf(stderr, "error: fopen %s\n",metafile);
+        exit(1);
+    }
+    fprintf_common_header(fp, h, argc, argv);
+    append_analogdaq_chdata(fp,ds);
+    fprintf_common_header(fp_meta, h, argc, argv);
+
+
+    // device setup
+    parse_analogdaq_conf(as, conf);
     subdev = ds->analog_in_subdev;
     as->period_ns = (int)(1e9 / ds->analog_sampling_rate);
     for(i=0; i< naichan; i++){
@@ -198,8 +232,8 @@ int main(int argc, char **argv){
                     front, back, nsamples);
         }
         if(front == back){
+            usleep(as->refresh_rate_usec);
             comedi_poll(dev, as->subdev);
-            usleep(10000);
             continue;
         }
         for(i=0; i < nsamples; i++){
@@ -208,13 +242,21 @@ int main(int argc, char **argv){
                 sample = *(sampl_t *)((char *)map + bufpos);
             else
                 sample = *(lsampl_t *)((char *)map + bufpos);
-            if(VERBOSE > 0){
+            if(VERBOSE > 1){
                 printf("%lf ",to_physical(sample, as, col));
             }
+            // store in data list buffer for fprintf
+            sbuf[col+1] = to_physical(sample, as, col);
             col++;
             if(col == as->naichan){
-                printf("\n");
+                if(VERBOSE >1)
+                    printf("\n");
                 col = 0;
+                index++;
+                time = (double)(index) * (double)(as->period_ns / 1e9);
+                sbuf[0] = time;
+                // fprintf a whole line
+                append_analogdaq_data(fp,as,sbuf);
             }
             bufpos += sample_size;
             if(bufpos >= bufsize){
@@ -230,6 +272,11 @@ int main(int argc, char **argv){
         back = front;
     }
 
+    gettimeofday(&tv,NULL);
+    t->stop = tv;
+    fprintf_analogdaq_meta(fp_meta, as);
+    fprintf_analogdaq_cmd(fp_meta, cmd);
+    fprintf_times_meta(fp_meta, t);
     // finish
     free(ds);
     free(gs);
@@ -240,6 +287,8 @@ int main(int argc, char **argv){
         free(as->range_info[i]);
     }
     free(as);
+    fclose(fp);
+    fclose(fp_meta);
 
     return 0;
 }
@@ -323,8 +372,8 @@ int prepare_cmd(comedi_t *dev, comedi_cmd *cmd, struct ai_settings *as){
 	 * find a device that allows something else, but it would
 	 * be strange. */
 
-    cmd->stop_src = TRIG_NONE;
-    cmd->stop_arg = 0;
+    cmd->stop_src = TRIG_COUNT;
+    cmd->stop_arg = 1000;
 	/* The end of acquisition is controlled by stop_src and
 	 * stop_arg.
 	 * TRIG_COUNT:  stop acquisition after stop_arg scans.
@@ -425,10 +474,24 @@ void print_ai_settings(struct ai_settings *as){
         printf("%d,",as->chanlist[i]);
     printf("\nn_scan: %d\n",as->n_scan);
     printf("period_ns: %d\n",as->period_ns);
-
-
 }
 
+void fprintf_analogdaq_meta(FILE *fp, struct ai_settings *as){
+
+    fprintf(fp,"\n%% ANALOGDAQ_SETTINGS\n");
+    fprintf(fp,"subdev=%d\n",as->subdev);
+    fprintf(fp,"naichan=%d\n",as->naichan);
+    fprintf(fp,"aref=%d\n",as->aref);
+    fprintf(fp,"sampling_rate=%d\n",as->sampling_rate);
+    fprintf(fp,"precision=%d\n",as->precision);
+    fprintf(fp,"refresh_rate_usec=%d\n",as->refresh_rate_usec);
+}
+
+void fprintf_analogdaq_cmd(FILE *fp, comedi_cmd *cmd){
+
+    fprintf(fp,"\n%% CMD_SETTINGS\n");
+
+}
 double to_physical(unsigned int sample, struct ai_settings *as, int ch){
 
     double phys;
@@ -436,4 +499,87 @@ double to_physical(unsigned int sample, struct ai_settings *as, int ch){
     phys = comedi_to_phys(sample, as->range_info[ch], as->maxdata[ch]);
     return phys;
 
+}
+
+void parse_analogdaq_conf(struct ai_settings *as, char *conffile){
+
+    FILE *fp;
+    char line[128];
+    char buf[128];
+    char *token;
+    double temp;
+    int len;
+
+    fp = fopen(conffile, "r");
+    if(fp == NULL){
+        fprintf(stderr,"\nparser_analogdaq_conf: could not open file %s\n",
+                conffile);
+        exit(1);
+    }
+    while(fgets(line, 128, fp)){
+        // ignore whitespace and comments
+        if(line[0] == '\n' || line[0] == '\t'
+           || line[0] == '#' || line[0] == ' '){
+            continue;
+        }
+        //remove whitespace
+        remove_spaces(line);
+        //remove newline
+        len = strlen(line);
+        if(line[len-1] == '\n')
+            line[len-1] = '\0';
+        /* general settings */
+
+        token = strtok(line,"=");
+        if(strcmp(line, "PRECISION") == 0){
+            token = strtok(NULL,"=");
+            as->precision= atoi(token);
+            continue;
+        }
+        if(strcmp(line, "SAMPLING_RATE") == 0){
+            token = strtok(NULL,"=");
+            as->sampling_rate = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "REFRESH_RATE_USEC") == 0){
+            token = strtok(NULL,"=");
+            as->refresh_rate_usec = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "N_SCAN") == 0){
+            token = strtok(NULL,"=");
+            as->n_scan = atoi(token);
+            continue;
+        }
+    }
+
+}
+
+void append_analogdaq_chdata(FILE *fp, struct dev_settings *ds){
+
+    char cols[NAICHAN][16];
+    char *d = DELIMITER;
+    int i;
+    // print TIME channela s welll
+    for(i=0;i<NAICHAN+1;i++){
+        if(i==0)
+            fprintf(fp,"TIME");
+        else
+            fprintf(fp,"%s%s",d,ds->analog_ch_names[i]);
+    }
+    fprintf(fp,"\n");
+}
+
+void append_analogdaq_data(FILE *fp, struct ai_settings *as, double *samples){
+
+    char *d = DELIMITER;
+    int i;
+    // ch 0 is TIME
+    for(i=0;i<NAICHAN+1;i++){
+        if(i==0)
+            fprintf(fp,"%.*lf",as->precision, samples[0]);
+        else
+            fprintf(fp,"%s%.*lf",d, as->precision, samples[i]);
+    }
+    fprintf(fp,"\n");
 }

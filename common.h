@@ -105,6 +105,7 @@ typedef struct dev_settings{
     comedi_cmd *cmd;    // analog acquisition command
     int is_analog_differential; // 1 if analog wiring is differential
     int analog_sampling_rate;
+    char analog_ch_names[16][16]; // names of analog chs for data files, etc
     unsigned int analog_in_subdev; // analog subdevice number (0 on ni-6035e)
     unsigned int analog_in_chan[8];// analog channels, usually 0,1,2,....
     unsigned int stim_trig_subdev;//subdev of  digital stim channel is located 
@@ -129,9 +130,17 @@ struct header{
 
 struct times{
 
+    //TODO replace these with clock_gettime
     struct timeval start;
     struct timeval action;
     struct timeval stop;
+
+    // TODO use with clock_gettime()
+    /*
+    struct timespec cstart;
+    struct timespec caction;
+    struct timespec cstop;
+    */
 };
 
 /* -------------------------------*/
@@ -163,7 +172,8 @@ int parse_settings(struct gen_settings *, struct dev_settings *);
 int parse_dev_settings(struct dev_settings *);
 int parse_gen_settings(struct gen_settings *);
 //int parse_blockstim_conf(struct blockstim_settings *bs, char *file, char *d);
-int fprintf_common_header(FILE *fp, struct header *h, char **args);
+int fprintf_common_header(FILE *fp, struct header *h, int argc, char **args);
+void fprintf_times_meta(FILE *fp, struct times *t);
 int compare_common_header(char *file1, char *file2);
 
 
@@ -179,5 +189,8 @@ void remove_spaces(char *);
 void getppname(char *name);
 void getcmdline(char *cmd);
 void gethrtime(char *buffer, struct timeval tv);
+void clockhrtime(char *buffer, struct timespec tv);
 int getusecdelay(struct timeval tv1);
+int clockusecdelay(struct timespec tv1);
 double getsecdiff(struct timeval tv1, struct timeval tv2);
+double clocksecdiff(struct timespec tv1, struct timespec tv2);
