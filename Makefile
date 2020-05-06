@@ -3,10 +3,13 @@ DEPS = common.h
 CC=gcc
 CFLAGS=-I.
 LLIBS=-lreadline -lm -lcomedi
-all: mricom blockstim testproc mrikst analogdaq
+all: mricom mribg blockstim testproc mrikst analogdaq
 
 mricom: mricom.o func.o common.o
 	$(CC) -o mricom mricom.o func.o common.o $(LLIBS)
+
+mribg: mribg.o common.o
+	$(CC) -o mribg mribg.o common.o $(LLIBS)
 
 blockstim: blockstim.o common.o 
 	$(CC) -o blockstim blockstim.o common.o $(LLIBS)

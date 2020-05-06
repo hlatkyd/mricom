@@ -20,6 +20,7 @@
 /* function declarations */
 /* ----------------------*/
 
+void mribg_launch();
 /* ----------------------*/
 /*  main shell functions */
 /* ----------------------*/

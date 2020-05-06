@@ -158,9 +158,9 @@ int sh_list(int argc, char **args){
         }
     }
 }
-/*-----------------------------------------------------------------------------*/
-/*                               OPAQUE PARTS                                  */
-/*-----------------------------------------------------------------------------*/
+/*-----------------------------------------------------------*/
+/*                    OPAQUE PARTS                           */
+/*-----------------------------------------------------------*/
 /* Function: init
  * ---------------
  * print name, version, initialize process struct, init command history
@@ -348,6 +348,50 @@ int shell_execute(int argc, char **args){
     return shell_launch(argc, args);
 }
 
+/*
+ * Function: mribg_launch
+ * ----------------------
+ * Start background program for handling automation
+ *
+ * Uses fork for launching in background and pipe for communication
+ */
+void mribg_launch(){
+
+    int fd1[2];
+    int fd2[2];
+    pid_t p;
+
+    char instr[] = "hello";
+    if(pipe(fd1) == -1){
+        fprintf(stderr,"mribg_launch: pipe failed");
+        exit(1);
+    }
+    if(pipe(fd2) == -1){
+        fprintf(stderr,"mribg_launch: pipe failed");
+        exit(1);
+    }
+    p = fork();
+    if(p < 0){
+        fprintf(stderr, "mribg_launch: fork failed");
+        exit(1);
+    // parent process, mricom
+    } else if(p > 0) {
+
+        close(fd1[0]);
+
+        write(fd1[1],instr,strlen(instr)+1);
+        close(fd1[1]);
+        // wait for child to send a string
+        wait(NULL);
+
+        close(fd2[1]);
+    // child process, mribg
+    } else {
+        
+    }
+}
+
+
 
 int main(int argc_cmd, char *argv_cmd[]){
 
@@ -359,6 +403,8 @@ int main(int argc_cmd, char *argv_cmd[]){
     int argc;
 
     init();
+
+    mribg_launch();
 
     do {
 
