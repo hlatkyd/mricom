@@ -175,10 +175,12 @@ void listprocesses(struct processes *p){
     char *d = DELIMITER;
     printf("\nrunning processes:\n");
     printf("-----------------\n");
-    printf("main pid: %d\n",p->mainpid);
+    //printf("mricom pid: %d\n",p->mainpid);
+    printf("PROC%sPARENT%sNAME%sPNAME%sTIMESTAMP\n",d,d,d,d);
     for(i=0; i<p->nproc;i++){
-        printf("%d%s%d%s%s%s%s\n",
-                p->pid[i],d,p->ppid[i],d,p->name[i],d,p->timestamp[i]);
+        printf("%d%s%d%s%s%s%s%s%s\n",
+                p->pid[i],d,p->ppid[i],d,p->name[i],
+                d,p->pname[i],d,p->timestamp[i]);
     }
 
 }

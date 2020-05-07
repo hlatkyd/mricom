@@ -50,7 +50,8 @@ void fill_mpid(struct mpid *mp){
         else
             strcpy(mp->pname, buf);
         fclose(fp);
-        free(buf);
+        //TODO why segfault with this???
+        //free(buf);
     }
 }
 
@@ -217,6 +218,7 @@ int processctrl_get(char *path, struct processes *p){
                 p->pid[i] = lpid[j];
                 p->ppid[i] = lppid[j];
                 strcpy(p->name[i],lname[j]);
+                strcpy(p->pname[i],lpname[j]);
                 strcpy(p->timestamp[i],ltimestamp[j]);
                 k = n_remove;
                 i++;
@@ -240,8 +242,14 @@ void sighandler(int signum){
     if(signum == 2){
         mp = malloc(sizeof(struct mpid));
         fill_mpid(mp);
+        // if interrupting mricom shell, kill mribg as well
+        // TODO seems to exit anyway
+        if(strcmp(mp->name, "mricom")==0){
+           ; 
+        }
         processctrl_add(path, mp, "INTRPT");
         free(mp);
+        fprintf(stderr,"\n%s exiting...\n",mp->name);
         exit(1);
     }
 

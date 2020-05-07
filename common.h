@@ -157,6 +157,7 @@ struct processes{
     int pid[MAX_ID];
     int ppid[MAX_ID];
     char name[MAX_ID][MAX_NAME_LENGTH];
+    char pname[MAX_ID][MAX_NAME_LENGTH];
     char timestamp[MAX_ID][MAX_NAME_LENGTH];
 };
 

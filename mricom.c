@@ -16,6 +16,7 @@
 struct gen_settings *gs;
 struct dev_settings *ds;
 struct processes *pr;
+struct mpid *mmp;
 
 
 //TODO review these, less is more
@@ -126,7 +127,13 @@ int sh_test(int argc, char **args){
 }
 int sh_killp(int argc, char **args){
     //TODO
+    int procid;
     char argin[10];
+    if(argc != 2){
+        fprintf(stderr, "killp: wrong arguments.Usage: 'killp [int process id]'\n");
+    }
+    procid = atoi(args[1]);
+    printf("kil id: %d\n",procid);
     return 1;
 }
 int sh_start(int argc, char **args){
@@ -181,6 +188,10 @@ void init(){
     pr->mainpid = getpid();
     parse_gen_settings(gs);
     parse_dev_settings(ds);
+
+    mmp = malloc(sizeof(struct mpid));
+    fill_mpid(mmp);
+    processctrl_add(gs->mpid_file, mmp, "START");
     /* check for kst2 install and ramdisk mount and device */
 
     if(DEBUG > 0){
@@ -206,6 +217,17 @@ void init(){
 
     printf("\nType 'help' to list available commands.\n");
     printf("-----------------------------------------------\n");
+}
+
+/*
+ * Function: cleanup
+ * -----------------
+ * write mpid log, stop mribg
+ */
+void cleanup(){
+
+    processctrl_add(gs->mpid_file, mmp, "STOP");
+
 }
 
 /* Function: shell_parse_cmd
@@ -354,12 +376,17 @@ int shell_execute(int argc, char **args){
  * Start background program for handling automation
  *
  * Uses fork for launching in background and pipe for communication
+ *
+ * fd pipe:
+ *  1: parent writes -> child reada
+ *  2: child writes -> parent reads
  */
-void mribg_launch(){
+int mribg_launch(){
 
     int fd1[2];
     int fd2[2];
     pid_t p;
+
 
     char instr[] = "hello";
     if(pipe(fd1) == -1){
@@ -377,18 +404,32 @@ void mribg_launch(){
     // parent process, mricom
     } else if(p > 0) {
 
-        close(fd1[0]);
-
+        close(fd1[0]); // close read end, keep only write
+        close(fd2[1]);  // close write end of 2nd pipe
         write(fd1[1],instr,strlen(instr)+1);
-        close(fd1[1]);
-        // wait for child to send a string
-        wait(NULL);
+        //TODO return this somewhere
 
-        close(fd2[1]);
     // child process, mribg
     } else {
         
+        char path[128] = {0};
+        char *args[4];
+        char pipestr1[3];
+        char pipestr2[3];
+        close(fd2[0]); // close read end
+        strcat(path, gs->workdir);
+        strcat(path,"/mribg");
+        args[0] = path;
+        // send read end of pipe 1
+        sprintf(pipestr1,"%d",fd1[0]);
+        // send write end of pipe 2
+        sprintf(pipestr2,"%d",fd2[1]);
+        args[1] = pipestr1;
+        args[2] = pipestr2;
+        args[3] = NULL;
+        execvp(path,args);
     }
+    return 0;
 }
 
 
@@ -401,10 +442,13 @@ int main(int argc_cmd, char *argv_cmd[]){
     char **args; 
     int res;
     int argc;
+    int ret;
+
+    signal(SIGINT,sighandler);
 
     init();
 
-    mribg_launch();
+    ret = mribg_launch();
 
     do {
 
@@ -422,6 +466,8 @@ int main(int argc_cmd, char *argv_cmd[]){
         free(args);
 
     } while(res != 0);
+
+    cleanup();
 
     return EXIT_SUCCESS;
 }
