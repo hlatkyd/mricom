@@ -177,12 +177,13 @@ int fprintf_common_header(FILE *fp, struct header *h, int argc, char **args);
 void fprintf_times_meta(FILE *fp, struct times *t);
 int compare_common_header(char *file1, char *file2);
 
-
 /* process control */
 
 void fill_mpid(struct mpid *mp);
 int processctrl_add(char *path, struct mpid *mp, char *status);
 int processctrl_get(char *path, struct processes *p);
+int processctrl_clean(char *path);
+int processctrl_archive(char *path, char *archive_path);
 void sighandler(int signum);
 
 /* util common func*/

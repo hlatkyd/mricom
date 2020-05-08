@@ -256,6 +256,31 @@ void sighandler(int signum){
 }
 
 /*
+ * Function: processctrl_clean()
+ * -----------------------------
+ * Clear contents of mproc.log  file
+ */
+int processctrl_clean(char *path){
+
+    FILE *fp;
+    fp = fopen(path,"w");
+    fclose(fp);
+    return 0;
+}
+
+/*
+ * Function: processctrl_archive
+ * -----------------------------
+ * Copy mproc.log contents with timestamp  into archive file
+ */
+//TODO
+int processctrl_archive(char *path, char *archive){
+
+    
+    return 0;
+}
+
+/*
  * Function: parse_procpar
  * -----------------------
  */

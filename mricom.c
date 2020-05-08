@@ -30,7 +30,8 @@ char *builtin_str[] = {
     "test",
     "start",
     "stop",
-    "list"
+    "list",
+    "clean"
 };
 /* functions for builtin commands*/
 /* should be same oreder as builtin_str list names*/
@@ -41,7 +42,8 @@ int (*builtin_func[]) (int, char **) = {
     &sh_test,
     &sh_start,
     &sh_stop,
-    &sh_list
+    &sh_list,
+    &sh_clean
 };
 int sh_num_builtins(){
     return sizeof(builtin_str) / sizeof(char*);
@@ -164,6 +166,38 @@ int sh_list(int argc, char **args){
             return 1;
         }
     }
+}
+//TODO shut down everything else and restart mribg
+#define CLEAN_ASK 0 //TODO
+int sh_clean(int argc, char **args){
+    
+    int ret;
+    char c;
+    if(CLEAN_ASK==1){
+        printf("  clean: delete mproc.log contents and restart mribg? [Y/n]\n");
+        scanf("%c",&c);
+        while(1){
+            if(c == 'n' || c == 'N'){
+                return 1;
+            } else if(c == '\n' || c == 'y' || c == 'Y'){
+                ret = processctrl_clean(gs->mpid_file);
+                ret = processctrl_add(gs->mpid_file, mmp, "START");
+                if(ret == 0){
+                    printf(" cleaned mproc.log\n");
+                }
+                return 1;
+            } else {
+                printf("  Wrong input. Use [Y/n]");
+                scanf("%c",&c);
+            }
+        }
+    }
+    ret = processctrl_clean(gs->mpid_file);
+    ret = processctrl_add(gs->mpid_file, mmp, "START");
+    if(ret == 0){
+        printf(" cleaned mproc.log\n");
+    }
+    return 1;
 }
 /*-----------------------------------------------------------*/
 /*                    OPAQUE PARTS                           */
@@ -448,7 +482,7 @@ int main(int argc_cmd, char *argv_cmd[]){
 
     init();
 
-    ret = mribg_launch();
+    //ret = mribg_launch();
 
     do {
 
