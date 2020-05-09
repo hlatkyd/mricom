@@ -3,10 +3,13 @@ DEPS = common.h
 CC=gcc
 CFLAGS=-I.
 LLIBS=-lreadline -lm -lcomedi
-all: mricom mribg blockstim testproc mrikst analogdaq
+all: mricom
 
-mricom: mricom.o func.o common.o
-	$(CC) -o mricom mricom.o func.o common.o $(LLIBS)
+objects := mricom.o common.o func.o blockstim.o analogdaq.o mrikst.o 
+objects += blockstim.o testproc.o
+
+mricom: ./obj/mricom.o ./obj/func.o ./obj/common.o
+	$(CC) -o mricom ./obj/mricom.o ./obj/func.o ./obj/common.o $(LLIBS)
 
 mribg: mribg.o common.o
 	$(CC) -o mribg mribg.o common.o $(LLIBS)
@@ -24,5 +27,3 @@ testproc: testproc.o common.o
 	$(CC) -o testproc testproc.o common.o
 
 
-all clean:
-		rm -f *.o
