@@ -22,6 +22,7 @@ int main(int argc, char **argv){
     struct gen_settings *gs; //general settings
 
     // files
+    char mricomdir[128];
     char conf[128] = {0};
     char datafile[128] = {0};
     char metafile[128] = {0};
@@ -85,12 +86,12 @@ int main(int argc, char **argv){
     strcpy(h->proc, argv[0]);
 
     // file setup
-    strcat(conf,gs->workdir);
-    strcat(conf,CONF_NAME);
-    strcat(datafile,gs->workdir);
-    strcat(datafile,DATAF_NAME);
-    strcat(metafile,gs->workdir);
-    strcat(metafile,METAF_NAME);
+    strcpy(mricomdir, getenv("MRICOMDIR"));
+    snprintf(conf, sizeof(conf),"%s/%s%s",mricomdir,CONF_DIR,CONF_NAME);
+    snprintf(datafile, sizeof(datafile),
+            "%s/%s%s",mricomdir,DATA_DIR,DATAF_NAME);
+    snprintf(metafile, sizeof(metafile),
+            "%s/%s%s",mricomdir,DATA_DIR,METAF_NAME);
 
     fp = fopen(datafile,"w");
     if(fp == NULL){

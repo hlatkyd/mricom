@@ -341,154 +341,14 @@ int search_procpar(char *parameter_name, char *command){
 
 }
 /*
- * Function: parse_settings
+ * Function: parse_gen_settings
  * ------------------------
- * reads settings file and fills daq_settings struct
+ * reads settings file and fills gen_settings struct
  */
- //TODO make this obsolete
-int parse_settings(struct gen_settings *settings,
-                    struct dev_settings *devsettings){
-
-
-    char settings_file[] = SETTINGS_FILE;
-    FILE *fp;
-    char line[128];
-    char buf[128];
-    char *token;
-    int len;
-    int i = 0; int j = 0;
-    int nchan = NCHAN; // for comparing number of channel to channel names
-
-    fp = fopen(settings_file, "r");
-    if(fp == NULL){
-        printf("\nerror: could not open file 'settings'\n");
-        printf("quitting ...\n");
-        exit(EXIT_FAILURE);
-    }
-    while(fgets(line, 128, fp)){
-        // ignore whitespace and comments
-        if(line[0] == '\n' || line[0] == '\t'
-           || line[0] == '#' || line[0] == ' '){
-            continue;
-        }
-        //remove whitespace
-        remove_spaces(line);
-        //remove newline
-        len = strlen(line);
-        if(line[len-1] == '\n')
-            line[len-1] = '\0';
-        /* general settings */
-        
-        token = strtok(line,"=");
-
-        if(strcmp(token,"DEVICE") == 0){
-            token = strtok(NULL,"=");
-            strcpy(settings->device, token);
-            continue;
-        }
-        if(strcmp(token, "DAQ_FILE") == 0){
-            token = strtok(NULL,"=");
-            strcpy(settings->daq_file, token);
-            continue;
-        }
-        if(strcmp(token, "KST_FILE") == 0){
-            token = strtok(NULL,"=");
-            strcpy(settings->kst_file, token);
-            continue;
-        }
-        if(strcmp(token, "PRECISION") == 0){
-            token = strtok(NULL,"=");
-            settings->precision = atoi(token);
-            continue;
-        }
-        if(strcmp(line, "PROCPAR") == 0){
-            token = strtok(NULL,"=");
-            strcpy(settings->procpar, token);
-            continue;
-        }
-        if(strcmp(line, "EVENT_DIR") == 0){
-            token = strtok(NULL,"=");
-            strcpy(settings->event_dir, token);
-            continue;
-        }
-        if(strcmp(line, "RAMDISK") == 0){
-            token = strtok(NULL,"=");
-            strcpy(settings->ramdisk, token);
-            continue;
-        }
-        /* kst2 settings */
-        if(strcmp(line, "KST_SETTINGS") == 0){
-            token = strtok(NULL,"=");
-            strcpy(settings->kst_settings, token);
-            continue;
-        }
-        if(strcmp(line, "CHANNELS") == 0){
-            token = strtok(NULL,"=");
-            // so far 'default' only...
-            if(strcmp(token,"default") == 0){
-                settings->channels = NCHAN;
-            } else {
-                printf("settings error, channels only 'default'\n");
-                settings->channels = NCHAN;
-            }
-            continue;
-
-        }
-        if(strcmp(line, "CHANNEL_NAMES") == 0){
-            i = 0;
-            token = strtok(NULL,"=");
-            strcpy(buf, token);
-            token = strtok(buf, ",");
-            while(token != NULL){
-                strcpy(settings->channel_names[i], token);
-                i++;
-                token = strtok(NULL,",");
-            }
-            if(i != nchan){
-                printf("warning: more channels than channel names\n");
-            }
-            i = 0; // reset to 0
-            continue;
-        }
-        /* device settings */
-        if(strcmp(line, "IS_ANALOG_DIFFERENTIAL") == 0){
-            token = strtok(NULL,"=");
-            devsettings->is_analog_differential = atoi(token);
-            continue;
-        }
-        if(strcmp(line, "ANALOG_IN_SUBDEV") == 0){
-            token = strtok(NULL,"=");
-            devsettings->analog_in_subdev = atoi(token);
-            continue;
-        }
-        if(strcmp(line, "STIM_TRIG_SUBDEV") == 0){
-            token = strtok(NULL,"=");
-            devsettings->stim_trig_subdev = atoi(token);
-            continue;
-        }
-        if(strcmp(line, "STIM_TRIG_CHAN") == 0){
-            token = strtok(NULL,"=");
-            devsettings->stim_trig_chan = atoi(token);
-            continue;
-        }
-        if(strcmp(line, "ANALOG_IN_CHAN") == 0){
-            i=0;
-            token = strtok(NULL,"=");
-            strcpy(buf, token);
-            token = strtok(buf, ",");
-            while(token != NULL){
-                devsettings->analog_in_chan[i] = (int)atoi(token);
-                i++;
-                token = strtok(NULL,",");
-            }
-            i = 0; // set 0 again, just to be sure
-        }
-    }
-    return 0;
-}
 int parse_gen_settings(struct gen_settings *settings){
 
-    char settings_file[] = SETTINGS_FILE;
+    char settings_file[128] = {0} ;
+    char mricomdir[128];
     FILE *fp;
     char line[128];
     char buf[128];
@@ -497,6 +357,11 @@ int parse_gen_settings(struct gen_settings *settings){
     int len;
     int i = 0; int j = 0;
     int nchan = NCHAN; // for comparing number of channel to channel names
+
+    strcpy(mricomdir,getenv("MRICOMDIR"));
+    strcat(settings_file, mricomdir);
+    strcat(settings_file, "/");
+    strcat(settings_file, SETTINGS_FILE);
 
     //set memory to zero
     memset(settings, 0, sizeof(*settings));
@@ -576,7 +441,8 @@ int parse_gen_settings(struct gen_settings *settings){
 }
 int parse_dev_settings(struct dev_settings *ds){
 
-    char settings_file[] = SETTINGS_FILE;
+    char settings_file[128] = {0};
+    char mricomdir[128];
     FILE *fp;
     char line[128];
     char buf[128];
@@ -584,6 +450,11 @@ int parse_dev_settings(struct dev_settings *ds){
     int len;
     int i = 0; int j = 0;
     int naichan = NAICHAN; // for comparing number of channel to channel names
+
+    strcpy(mricomdir,getenv("MRICOMDIR"));
+    strcat(settings_file, mricomdir);
+    strcat(settings_file, "/");
+    strcat(settings_file, SETTINGS_FILE);
 
     fp = fopen(settings_file, "r");
     if(fp == NULL){

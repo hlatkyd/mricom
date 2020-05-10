@@ -143,10 +143,11 @@ void listsettings(struct gen_settings *settings){
 
     int i = 0;
     // have to do it manually..
-    printf("struct daq_settings:\n");
+    printf("struct gen_settings:\n");
     printf("--------------------\n");
     printf("device : %s\n",settings->device);
     printf("daq_file : %s\n",settings->daq_file);
+    printf("mpid_file : %s\n",settings->mpid_file);
     printf("kst_file : %s\n",settings->kst_file);
     printf("precision: %d\n",settings->precision);
     printf("ramdisk: %s\n",settings->ramdisk);

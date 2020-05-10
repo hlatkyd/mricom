@@ -1,29 +1,36 @@
+all: mricom mribg mrikst blockstim analogdaq testproc 
 
-DEPS = common.h
 CC=gcc
-CFLAGS=-I.
-LLIBS=-lreadline -lm -lcomedi
-all: mricom
-
-objects := mricom.o common.o func.o blockstim.o analogdaq.o mrikst.o 
-objects += blockstim.o testproc.o
-
-mricom: ./obj/mricom.o ./obj/func.o ./obj/common.o
-	$(CC) -o mricom ./obj/mricom.o ./obj/func.o ./obj/common.o $(LLIBS)
-
-mribg: mribg.o common.o
-	$(CC) -o mribg mribg.o common.o $(LLIBS)
-
-blockstim: blockstim.o common.o 
-	$(CC) -o blockstim blockstim.o common.o $(LLIBS)
-
-analogdaq: analogdaq.o common.o
-	$(CC) -o analogdaq analogdaq.o common.o $(LLIBS)
-
-mrikst: mrikst.o common.o
-	$(CC) -o mrikst mrikst.o common.o
-
-testproc: testproc.o common.o
-	$(CC) -o testproc testproc.o common.o
+CFLAGS=-I ./src
+LIBS=-lreadline -lm -lcomedi
+OBJ=./obj
+SRC=./src
+BIN=./bin
 
 
+$(OBJ)/%.o: $(SRC)/%.c 
+	$(CC) -c $(CFLAGS) $< -o $@
+
+mricom: $(OBJ)/mricom.o $(OBJ)/common.o $(OBJ)/func.o
+	$(CC) -o mricom $(OBJ)/mricom.o $(OBJ)/common.o $(OBJ)/func.o $(LIBS)
+
+mribg: $(OBJ)/mribg.o $(OBJ)/common.o
+	$(CC) -o $(BIN)/mribg $(OBJ)/mribg.o $(OBJ)/common.o $(LIBS)
+
+mrikst: $(OBJ)/mrikst.o $(OBJ)/common.o
+	$(CC) -o $(BIN)/mrikst $(OBJ)/mrikst.o $(OBJ)/common.o $(LIBS)
+
+blockstim: $(OBJ)/blockstim.o $(OBJ)/common.o
+	$(CC) -o $(BIN)/blockstim $(OBJ)/blockstim.o $(OBJ)/common.o $(LIBS)
+
+analogdaq: $(OBJ)/analogdaq.o $(OBJ)/common.o
+	$(CC) -o $(BIN)/analogdaq $(OBJ)/analogdaq.o $(OBJ)/common.o $(LIBS)
+
+vnmrjclient: $(OBJ)/vnmrjclient.o $(OBJ)/common.o
+	$(CC) -o $(BIN)/vnmrjclient $(OBJ)/vnmrjclient.o $(OBJ)/common.o $(LIBS)
+
+testproc: $(OBJ)/testproc.o $(OBJ)/common.o
+	$(CC) -o $(BIN)/testproc $(OBJ)/testproc.o $(OBJ)/common.o $(LIBS)
+
+clean:
+	rm -f $(OBJ)/*

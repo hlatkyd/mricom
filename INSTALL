@@ -1,0 +1,2 @@
+# An environment variable containing the root mricom dir should be made
+# eg.: export MRICOMDIR=/home/david/dev/mricom

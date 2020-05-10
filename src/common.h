@@ -42,8 +42,11 @@
 #define DELIMITER "\t"  // used in data file
 
 /* settings file containing user defined stuff */
-#define SETTINGS_FILE "settings"
+#define SETTINGS_FILE "conf/settings"
 #define MPROC_FILE "mproc.log"
+#define BIN_DIR "bin/"
+#define CONF_DIR "conf/"
+#define DATA_DIR "data/"
 
 
 #ifndef COMMON_H

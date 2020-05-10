@@ -6,10 +6,9 @@
  * https://github.com/brenns10/lsh
  *
  */
-#include "common.h"
 #include "mricom.h"
+#include "common.h"
 #include "func.h"
-#include "comedifunc.h"
 
 //TODO move these into main, avoid global??
 /* init device settings struct*/

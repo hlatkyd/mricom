@@ -40,9 +40,12 @@ int main(int argc, char *argv[]){
     char devpath[16];
     int chan;
     int subdev;
+    char mricomdir[128];    // root dir, should be in environment variables
     char conf[128] = {0};// config file containing designs and defaults
     char datafile[128] = {0};// tab separated data tsv
     char metafile[128] = {0};//metadata for tsv
+    char dataf_name[] = "blockstim.tsv";
+    char metaf_name[] = "blockstim.meta";
     FILE *fp;
     FILE *fp_meta;
     char parent_name[32];
@@ -97,12 +100,11 @@ int main(int argc, char *argv[]){
     // parse settings file
     parse_dev_settings(dvs);
     // set file paths in workdir
-    strcat(conf,gs->workdir);
-    strcat(conf,"/blockstim.conf");
-    strcat(datafile,gs->workdir);
-    strcat(datafile,"/blockstim.tsv");
-    strcat(metafile,gs->workdir);
-    strcat(metafile,"/blockstim.meta");
+    strcpy(mricomdir,getenv("MRICOMDIR"));
+    snprintf(conf, sizeof(conf),"%s/%sblockstim.conf",mricomdir,CONF_DIR);
+    snprintf(datafile, sizeof(datafile),"%s/%sblockstim.tsv",mricomdir,DATA_DIR);
+    snprintf(metafile, sizeof(metafile),"%s/%sblockstim.meta",mricomdir,DATA_DIR);
+
     strcpy(devpath,dvs->devpath);
     subdev = dvs->stim_trig_subdev;
     chan = dvs->stim_trig_chan;
