@@ -5,4 +5,4 @@
 *.meta
 *.tsv
 # no backup
-bkcp*
+bckp*
