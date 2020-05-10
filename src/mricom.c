@@ -208,11 +208,18 @@ int sh_clean(int argc, char **args){
 void init(){
 
     int is_dev_ok, ret;
+    char mricomdir[128];
 
     printf("\n-----------------------------------------------\n");
     printf("mricom v%d.%d",VERSION_MAJOR,VERSION_MINOR);
     printf(" - MRI control software using comedi\n");
     printf("-----------------------------------------------\n");
+
+    // check env
+    if(getenv("MRICOMDIR") == NULL){
+        fprintf(stderr, "environment variable MRICOMDIR not set, exiting\n");
+        exit(1);
+    }
 
     // malloc for settings
     ds = malloc(sizeof(struct dev_settings));

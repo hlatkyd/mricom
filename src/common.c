@@ -358,6 +358,7 @@ int parse_gen_settings(struct gen_settings *settings){
     int i = 0; int j = 0;
     int nchan = NCHAN; // for comparing number of channel to channel names
 
+    //check if MRICOMDIR exists as env TODO
     strcpy(mricomdir,getenv("MRICOMDIR"));
     strcat(settings_file, mricomdir);
     strcat(settings_file, "/");
