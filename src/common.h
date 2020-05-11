@@ -48,6 +48,9 @@
 #define CONF_DIR "conf/"
 #define DATA_DIR "data/"
 
+// socket communication between mribg and vnmrclient
+#define PORT 8080
+#define IP "127.0.0.1"
 
 #ifndef COMMON_H
 #define COMMON_H

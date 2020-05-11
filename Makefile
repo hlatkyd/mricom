@@ -1,5 +1,7 @@
 all: mricom mribg mrikst blockstim analogdaq testproc 
 
+vnmr: vnmrclient vnmrpipe
+
 CC=gcc
 CFLAGS=-I ./src
 LIBS=-lreadline -lm -lcomedi
@@ -26,8 +28,11 @@ blockstim: $(OBJ)/blockstim.o $(OBJ)/common.o
 analogdaq: $(OBJ)/analogdaq.o $(OBJ)/common.o
 	$(CC) -o $(BIN)/analogdaq $(OBJ)/analogdaq.o $(OBJ)/common.o $(LIBS)
 
-vnmrjclient: $(OBJ)/vnmrjclient.o $(OBJ)/common.o
-	$(CC) -o $(BIN)/vnmrjclient $(OBJ)/vnmrjclient.o $(OBJ)/common.o $(LIBS)
+vnmrclient: $(OBJ)/vnmrclient.o $(OBJ)/common.o $(OBJ)/vnmrcommon.o
+	$(CC) -o $(BIN)/vnmrclient $(OBJ)/vnmrclient.o $(OBJ)/common.o $(OBJ)/vnmrcommon.o $(LIBS)
+
+vnmrpipe: $(OBJ)/vnmrpipe.o $(OBJ)/vnmrcommon.o
+	$(CC) -o $(BIN)/vnmrpipe $(OBJ)/vnmrpipe.o $(OBJ)/vnmrcommon.o
 
 testproc: $(OBJ)/testproc.o $(OBJ)/common.o
 	$(CC) -o $(BIN)/testproc $(OBJ)/testproc.o $(OBJ)/common.o $(LIBS)

@@ -1,3 +1,10 @@
+/*
+ * vnmrclient.c
+ * ------------
+ * Client program on console host, receiving message from vnmrpipe and
+ * sending it to TCP server mribg
+ */
+
 
 #include <netdb.h>
 #include <stdio.h>
@@ -9,10 +16,9 @@
 #include <arpa/inet.h>
 
 #include "common.h"
+#include "vnmrcommon.h"
 
 #define MAX 80 
-#define PORT 8080 
-#define IP "127.0.0.1"
 #define SA struct sockaddr 
 void func(int sockfd)
 {
