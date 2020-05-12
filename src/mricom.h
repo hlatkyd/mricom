@@ -25,6 +25,7 @@ int mribg_launch();
 /*  main shell functions */
 /* ----------------------*/
 void init();
+void init_msg();
 void cleanup();
 char **shell_parse_cmd(char *line);
 int shell_get_argc(char **args);

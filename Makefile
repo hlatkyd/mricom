@@ -17,7 +17,7 @@ mricom: $(OBJ)/mricom.o $(OBJ)/common.o $(OBJ)/func.o
 	$(CC) -o mricom $(OBJ)/mricom.o $(OBJ)/common.o $(OBJ)/func.o $(LIBS)
 
 mribg: $(OBJ)/mribg.o $(OBJ)/common.o
-	$(CC) -o $(BIN)/mribg $(OBJ)/mribg.o $(OBJ)/common.o $(LIBS)
+	$(CC) -o mribg $(OBJ)/mribg.o $(OBJ)/common.o $(LIBS)
 
 mrikst: $(OBJ)/mrikst.o $(OBJ)/common.o
 	$(CC) -o $(BIN)/mrikst $(OBJ)/mrikst.o $(OBJ)/common.o $(LIBS)
@@ -39,3 +39,4 @@ testproc: $(OBJ)/testproc.o $(OBJ)/common.o
 
 clean:
 	rm -f $(OBJ)/*
+	rm -f $(BIN)/*

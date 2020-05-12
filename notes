@@ -2,6 +2,7 @@ REQUIREMENTS
 ============
 On fresh Ubuntu 18.04 LTS:
 
+apt-get install libcomedi-dev libreadline-dev kst
 
 CURRENT PINS of NI-6035E on CA-1000 box
 =======================================
@@ -17,3 +18,12 @@ subdev 0:
 subdev 2:
 5 -- P0.0-D_GND
 6 -- P0.1-D_GND
+
+
+
+Useful stuff:
+---------------
+vnmrj pulse sequence statemetns:
+
+setMRIusergates
+xgate

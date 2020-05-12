@@ -4,4 +4,4 @@
  */
 
 
-#define FIFO "/home/david/dev/mricom/test/fifo"
+#define FIFO "/home/david/dev/mricom/test/vnmr.fifo"

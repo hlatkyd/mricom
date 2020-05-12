@@ -134,7 +134,7 @@ int sh_killp(int argc, char **args){
         fprintf(stderr, "killp: wrong arguments.Usage: 'killp [int process id]'\n");
     }
     procid = atoi(args[1]);
-    printf("kil id: %d\n",procid);
+    printf("kill id: %d\n",procid);
     return 1;
 }
 int sh_start(int argc, char **args){
@@ -144,7 +144,18 @@ int sh_start(int argc, char **args){
 }
 int sh_stop(int argc, char **args){
     // TODO make arguments as well, eg kst stop
-    stop();
+    
+    int ret;
+    if(argc == 2 && strcmp(args[1],"mribg") == 0){
+        ret = stop_mribg(pr->bgpid);
+        if(ret < 0){
+            fprintf(stderr, "error stopping mribg\n");
+            return 0;
+        } else if(ret == 0){
+            fprintf(stderr, "mricom: mribg stopped\n");
+        }
+        
+    }
     return 1;
 }
 int sh_list(int argc, char **args){
@@ -196,6 +207,7 @@ int sh_clean(int argc, char **args){
     if(ret == 0){
         printf(" cleaned mproc.log\n");
     }
+    ret = stop_mribg(pr->bgpid);
     return 1;
 }
 /*-----------------------------------------------------------*/
@@ -254,6 +266,10 @@ void init(){
 
     //TODO do this properly
     //launch_process("procmonitor");
+
+}
+
+void init_msg(){
 
     printf("\nType 'help' to list available commands.\n");
     printf("-----------------------------------------------\n");
@@ -413,22 +429,27 @@ int shell_execute(int argc, char **args){
 /*
  * Function: mribg_launch
  * ----------------------
- * Start background program for handling automation
+ * Start background program for handling automation.
  *
+ * mribg executable should be in MRICOMDIR environment variable
  * Uses fork for launching in background and pipe for communication
  *
  * fd pipe:
  *  1: parent writes -> child reada
  *  2: child writes -> parent reads
+ *
+ *  TODO
+ *  use named pipe ni.fifo
  */
 int mribg_launch(){
 
+    char mricomdir[LPATH] = {0};
     int fd1[2];
     int fd2[2];
     pid_t p;
 
+    strcpy(mricomdir,getenv("MRICOMDIR"));
 
-    char instr[] = "hello";
     if(pipe(fd1) == -1){
         fprintf(stderr,"mribg_launch: pipe failed");
         exit(1);
@@ -444,21 +465,23 @@ int mribg_launch(){
     // parent process, mricom
     } else if(p > 0) {
 
+        char buff[64] = {0};
+        printf("mricom: ");
         close(fd1[0]); // close read end, keep only write
         close(fd2[1]);  // close write end of 2nd pipe
-        write(fd1[1],instr,strlen(instr)+1);
-        //TODO return this somewhere
+        read(fd2[0], buff, sizeof(buff));
+        printf(" mribg pid %s\n",buff);
+        pr->bgpid = atoi(buff);
 
     // child process, mribg
     } else {
         
-        char path[128] = {0};
+        char path[LPATH] = {0};
         char *args[4];
         char pipestr1[3];
         char pipestr2[3];
         close(fd2[0]); // close read end
-        strcat(path, gs->workdir);
-        strcat(path,"/mribg");
+        snprintf(path, sizeof(path),"%s/mribg",mricomdir);
         args[0] = path;
         // send read end of pipe 1
         sprintf(pipestr1,"%d",fd1[0]);
@@ -488,7 +511,9 @@ int main(int argc_cmd, char *argv_cmd[]){
 
     init();
 
-    //ret = mribg_launch();
+    ret = mribg_launch();
+
+    init_msg();
 
     do {
 

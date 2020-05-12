@@ -47,10 +47,15 @@
 #define BIN_DIR "bin/"
 #define CONF_DIR "conf/"
 #define DATA_DIR "data/"
+// max path length
+#define LPATH 128
 
 // socket communication between mribg and vnmrclient
 #define PORT 8080
 #define IP "127.0.0.1"
+
+// named pipe between mribg and mricom in MRICOMDIR
+#define NIFIFO "ni.fifo"
 
 #ifndef COMMON_H
 #define COMMON_H
@@ -159,6 +164,7 @@ struct times{
 struct processes{
 
     int mainpid;
+    int bgpid;
     int nproc;
     int pid[MAX_ID];
     int ppid[MAX_ID];
@@ -195,6 +201,7 @@ void sighandler(int signum);
 /* util common func*/
 void remove_spaces(char *);
 void getppname(char *name);
+void getname(char *name, int pid);
 void getcmdline(char *cmd);
 void gethrtime(char *buffer, struct timeval tv);
 void clockhrtime(char *buffer, struct timespec tv);

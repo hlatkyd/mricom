@@ -149,6 +149,7 @@ void listsettings(struct gen_settings *settings){
     printf("daq_file : %s\n",settings->daq_file);
     printf("mpid_file : %s\n",settings->mpid_file);
     printf("kst_file : %s\n",settings->kst_file);
+    printf("workdir : %s\n",settings->workdir);
     printf("precision: %d\n",settings->precision);
     printf("ramdisk: %s\n",settings->ramdisk);
     printf("procpar: %s\n",settings->procpar);
@@ -217,6 +218,12 @@ void stop(){
 
     return;
 }
+int stop_mribg(int pid){
+
+    getpname()
+
+}
+
 /* Function: reset
  * ---------------
  * Kills internal processes, reinitializes acquisition settings

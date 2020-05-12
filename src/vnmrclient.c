@@ -23,6 +23,7 @@
 void func(int sockfd)
 {
     char buff[MAX];
+    char fifo[] = FIFO;
     int n;
     for (;;) {
         bzero(buff, sizeof(buff));

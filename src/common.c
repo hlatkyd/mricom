@@ -608,6 +608,29 @@ int compare_common_header(char *file1, char *file2){
     return 0;
 
 }
+/*
+ * Function: getname
+ * -----------------
+ * get process name from process pid
+ */
+void getname(char *name, int pid){
+
+    FILE *fp;
+    char path[LPATH]={0};
+    char *procname = NULL;
+    size_t len = 0; 
+    snprinf(path, sizeof(path),"/proc/%d/comm", pid);
+    fp = fopen(path,"r");
+    if(fp == NULL){
+        fprintf(stderr, "getname: 0cannot open file %s\n",path);
+        exit(1);
+    }
+    getline(&procname, &len, fp);
+    strcpy(name, procname);
+    free(procname);
+    fclose(fp);
+}
+
 /* Function: getppname
  * -------------------------
  * Find parent process name and put into string pointer input

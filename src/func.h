@@ -20,4 +20,5 @@ void catdata();
 /*main user interface funcs*/
 void start();
 void stop();
+int stop_mribg(int pid);
 void reset();
