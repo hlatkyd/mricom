@@ -44,5 +44,5 @@ int sh_killp(int argc, char **args);
 int sh_start(int argc, char **args);
 int sh_stop(int argc, char **args);
 int sh_list(int argc, char **args);
-int sh_clean(int argc, char **args);
+int sh_restart(int argc, char **args);
 

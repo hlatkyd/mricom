@@ -29,6 +29,8 @@ int main(int argc, char **argv){
     signal(SIGINT, sighandler);
     gs = malloc(sizeof(struct gen_settings));
     mp = malloc(sizeof(struct mpid));
+    memset(gs, 0, sizeof(struct gen_settings));
+    memset(mp, 0, sizeof(struct mpid));
     parse_gen_settings(gs);
     fill_mpid(mp);
     snprintf(initmsg,sizeof(initmsg),"%d",mp->pid);

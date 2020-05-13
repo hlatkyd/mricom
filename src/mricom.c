@@ -10,12 +10,12 @@
 #include "common.h"
 #include "func.h"
 
-//TODO move these into main, avoid global??
 /* init device settings struct*/
 struct gen_settings *gs;
 struct dev_settings *ds;
 struct processes *pr;
 struct mpid *mmp;
+int fd_read, fd_write; // file descriptors to communicate with mribg
 
 
 //TODO review these, less is more
@@ -30,7 +30,7 @@ char *builtin_str[] = {
     "start",
     "stop",
     "list",
-    "clean"
+    "restart"
 };
 /* functions for builtin commands*/
 /* should be same oreder as builtin_str list names*/
@@ -42,7 +42,7 @@ int (*builtin_func[]) (int, char **) = {
     &sh_start,
     &sh_stop,
     &sh_list,
-    &sh_clean
+    &sh_restart
 };
 int sh_num_builtins(){
     return sizeof(builtin_str) / sizeof(char*);
@@ -57,9 +57,6 @@ int sh_num_builtins(){
  //TODO check for unintended stop ps -ef, or something
 int sh_exit(int argc, char **args){
     
-    free(ds);
-    free(pr);
-    free(gs);
     return 0;
 }
 /* Shell function sh_help
@@ -177,12 +174,12 @@ int sh_list(int argc, char **args){
         }
     }
 }
-//TODO shut down everything else and restart mribg
 #define CLEAN_ASK 0 //TODO
-int sh_clean(int argc, char **args){
+int sh_restart(int argc, char **args){
     
     int ret;
     char c;
+    char bgline[64] = {0};
     if(CLEAN_ASK==1){
         printf("  clean: delete mproc.log contents and restart mribg? [Y/n]\n");
         scanf("%c",&c);
@@ -190,7 +187,7 @@ int sh_clean(int argc, char **args){
             if(c == 'n' || c == 'N'){
                 return 1;
             } else if(c == '\n' || c == 'y' || c == 'Y'){
-                ret = processctrl_clean(gs->mpid_file);
+                ret = processctrl_clean(gs, pr);
                 ret = processctrl_add(gs->mpid_file, mmp, "START");
                 if(ret == 0){
                     printf(" cleaned mproc.log\n");
@@ -202,12 +199,12 @@ int sh_clean(int argc, char **args){
             }
         }
     }
-    ret = processctrl_clean(gs->mpid_file);
-    ret = processctrl_add(gs->mpid_file, mmp, "START");
+    // find line for mribg
+    // clean mproc.pid
+    ret = processctrl_clean(gs, pr);
     if(ret == 0){
         printf(" cleaned mproc.log\n");
     }
-    ret = stop_mribg(pr->bgpid);
     return 1;
 }
 /*-----------------------------------------------------------*/
@@ -237,11 +234,15 @@ void init(){
     ds = malloc(sizeof(struct dev_settings));
     gs = malloc(sizeof(struct gen_settings));
     pr = malloc(sizeof(struct processes));
+    memset(ds, 0, sizeof(struct dev_settings));
+    memset(gs, 0, sizeof(struct gen_settings));
+    memset(pr, 0, sizeof(struct processes));
     pr->mainpid = getpid();
     parse_gen_settings(gs);
     parse_dev_settings(ds);
 
     mmp = malloc(sizeof(struct mpid));
+    memset(mmp, 0, sizeof(struct mpid));
     fill_mpid(mmp);
     processctrl_add(gs->mpid_file, mmp, "START");
     /* check for kst2 install and ramdisk mount and device */
@@ -282,8 +283,18 @@ void init_msg(){
  */
 void cleanup(){
 
+    char procname[16] = {0};
+    //TODO wrong pid somehow
+    getname(procname, pr->bgpid);
+    if(strcmp(procname,"mribg")==0){
+        kill(pr->bgpid, SIGTERM);
+        //printf("kill bgpid: %d\n",pr->bgpid);
+    }
     processctrl_add(gs->mpid_file, mmp, "STOP");
 
+    free(gs);
+    free(ds);
+    free(pr);
 }
 
 /* Function: shell_parse_cmd
@@ -471,7 +482,9 @@ int mribg_launch(){
         close(fd2[1]);  // close write end of 2nd pipe
         read(fd2[0], buff, sizeof(buff));
         printf(" mribg pid %s\n",buff);
-        pr->bgpid = atoi(buff);
+        //pr->bgpid = p;
+        //fd_read = fd2[0];
+        //fd_write = fd1[1];
 
     // child process, mribg
     } else {
@@ -492,7 +505,7 @@ int mribg_launch(){
         args[3] = NULL;
         execvp(path,args);
     }
-    return 0;
+    return p;
 }
 
 
@@ -507,14 +520,20 @@ int main(int argc_cmd, char *argv_cmd[]){
     int argc;
     int ret;
 
-    signal(SIGINT,sighandler);
-
     init();
 
+    // launch mribg backgorund process
     ret = mribg_launch();
+    if(ret < 0){
+        fprintf(stderr, "cannot launch mribg\n");
+    } else{
+        pr->bgpid = ret;
+    }
 
     init_msg();
 
+    signal(SIGINT,sighandler);
+    
     do {
 
         line = shell_read_cmd();

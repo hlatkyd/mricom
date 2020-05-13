@@ -194,7 +194,7 @@ int compare_common_header(char *file1, char *file2);
 void fill_mpid(struct mpid *mp);
 int processctrl_add(char *path, struct mpid *mp, char *status);
 int processctrl_get(char *path, struct processes *p);
-int processctrl_clean(char *path);
+int processctrl_clean(struct gen_settings *gs, struct processes *pr);
 int processctrl_archive(char *path, char *archive_path);
 void sighandler(int signum);
 

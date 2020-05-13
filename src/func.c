@@ -177,6 +177,7 @@ void listprocesses(struct processes *p){
     char *d = DELIMITER;
     printf("\nrunning processes:\n");
     printf("-----------------\n");
+    printf("mricom: %d, mribg: %d\n",p->mainpid, p->bgpid);
     //printf("mricom pid: %d\n",p->mainpid);
     printf("PROC%sPARENT%sNAME%sPNAME%sTIMESTAMP\n",d,d,d,d);
     for(i=0; i<p->nproc;i++){
@@ -220,8 +221,21 @@ void stop(){
 }
 int stop_mribg(int pid){
 
-    getpname()
-
+    char procname[32] = {0};
+    int ret;
+    getname(procname, pid);
+    if(strcmp(procname, "mribg")==0){
+        ret = kill(pid, SIGINT);
+        if(ret < 0){
+            perror("stop_mribg");
+            exit(1);
+        }
+        return 0;
+    } else {
+        fprintf(stderr, "stop_mribg: found non-matching process name %s\n",
+                procname);
+        return -1;
+    }
 }
 
 /* Function: reset

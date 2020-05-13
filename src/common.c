@@ -241,6 +241,7 @@ void sighandler(int signum){
     char c = '\0';
     if(signum == 2){
         mp = malloc(sizeof(struct mpid));
+        memset(mp, 0, sizeof(struct mpid));
         fill_mpid(mp);
         // if interrupting mricom shell, kill mribg as well
         // TODO seems to exit anyway
@@ -258,13 +259,14 @@ void sighandler(int signum){
 /*
  * Function: processctrl_clean()
  * -----------------------------
- * Clear contents of mproc.log  file
+ * Clear contents of mproc.log file, keep only currently running processes
  */
-int processctrl_clean(char *path){
+//TODO
+int processctrl_clean(struct gen_settings *gs, struct processes *pr){
 
     FILE *fp;
-    fp = fopen(path,"w");
-    fclose(fp);
+    //fp = fopen(gs->mpid_file,"w");
+    //fclose(fp);
     return 0;
 }
 
@@ -616,13 +618,17 @@ int compare_common_header(char *file1, char *file2){
 void getname(char *name, int pid){
 
     FILE *fp;
-    char path[LPATH]={0};
     char *procname = NULL;
+    char path[32];
+    char pidstr[8];
     size_t len = 0; 
-    snprinf(path, sizeof(path),"/proc/%d/comm", pid);
+    sprintf(pidstr, "%d",pid);
+    strcpy(path, "/proc/");
+    strcat(path, pidstr);
+    strcat(path, "/comm");
     fp = fopen(path,"r");
     if(fp == NULL){
-        fprintf(stderr, "getname: 0cannot open file %s\n",path);
+        fprintf(stderr, "getname: cannot open file %s\n",path);
         exit(1);
     }
     getline(&procname, &len, fp);
