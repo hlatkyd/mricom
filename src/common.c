@@ -119,7 +119,7 @@ int processctrl_add(char *path, struct mpid *mp, char *status){
  */
 #define N_MAX 128
 #define LLENGTH 64
-#define MRICOM_CHILD_ONLY 1
+//TODO fix, doesnt worj as intended
 int processctrl_get(char *path, struct processes *p){
 
     FILE *fp;
@@ -192,12 +192,8 @@ int processctrl_get(char *path, struct processes *p){
     k = 0;
     for(i=0;i<n; i++){
        for(j=i; j<n; j++){
-            if(lpid[i] == lpid[j] && strcmp(lstatus[i],"START")==0 && 
-              (strcmp(lstatus[j],"STOP")==0 || strcmp(lstatus[j],"INTRPT")==0)){
-                // TODO leave only child processes of mricom
-                if(MRICOM_CHILD_ONLY==1 && strcmp(lpname[i],"mricom")==0){
-                    ;
-                }
+            if(lpid[i] == lpid[j] && strncmp(lstatus[i],"START",5)==0 && 
+              (strncmp(lstatus[j],"STOP",4)==0 || strncmp(lstatus[j],"INTRPT",6)==0)){
                 remove_list[k] = i;
                 remove_list[k+1] = j;
                 k += 2;

@@ -30,7 +30,7 @@ char *builtin_str[] = {
     "start",
     "stop",
     "list",
-    "restart"
+    "clean"
 };
 /* functions for builtin commands*/
 /* should be same oreder as builtin_str list names*/
@@ -42,7 +42,7 @@ int (*builtin_func[]) (int, char **) = {
     &sh_start,
     &sh_stop,
     &sh_list,
-    &sh_restart
+    &sh_clean
 };
 int sh_num_builtins(){
     return sizeof(builtin_str) / sizeof(char*);
@@ -52,11 +52,13 @@ int sh_num_builtins(){
 
 /* Shell function: sh_exit
  * -----------------------
- * attempt to exit program gracefully
+ * attempt to exit mricom and mribg gracefully, and clean everything
  */
  //TODO check for unintended stop ps -ef, or something
 int sh_exit(int argc, char **args){
     
+    printf("exit, bgpid %d\n",pr->bgpid);
+    exit_cleanup();
     return 0;
 }
 /* Shell function sh_help
@@ -121,6 +123,7 @@ int sh_help(int argc, char **args){
 int sh_test(int argc, char **args){
     //TODO implement usage by specific arguments
     // start, stop, stim etc
+    printf("test bgpid : %d\n",pr->bgpid);
     return 1;
 }
 int sh_killp(int argc, char **args){
@@ -174,31 +177,16 @@ int sh_list(int argc, char **args){
         }
     }
 }
-#define CLEAN_ASK 0 //TODO
-int sh_restart(int argc, char **args){
+/*
+ * Function: sh_clean
+ * ------------------
+ *  clean contents of mproc.log, so that only running processes are kept
+ */
+int sh_clean(int argc, char **args){
     
     int ret;
     char c;
     char bgline[64] = {0};
-    if(CLEAN_ASK==1){
-        printf("  clean: delete mproc.log contents and restart mribg? [Y/n]\n");
-        scanf("%c",&c);
-        while(1){
-            if(c == 'n' || c == 'N'){
-                return 1;
-            } else if(c == '\n' || c == 'y' || c == 'Y'){
-                ret = processctrl_clean(gs, pr);
-                ret = processctrl_add(gs->mpid_file, mmp, "START");
-                if(ret == 0){
-                    printf(" cleaned mproc.log\n");
-                }
-                return 1;
-            } else {
-                printf("  Wrong input. Use [Y/n]");
-                scanf("%c",&c);
-            }
-        }
-    }
     // find line for mribg
     // clean mproc.pid
     ret = processctrl_clean(gs, pr);
@@ -281,13 +269,13 @@ void init_msg(){
  * -----------------
  * write mpid log, stop mribg
  */
-void cleanup(){
+void exit_cleanup(){
 
     char procname[16] = {0};
     //TODO wrong pid somehow
     getname(procname, pr->bgpid);
-    if(strcmp(procname,"mribg")==0){
-        kill(pr->bgpid, SIGTERM);
+    if(strncmp(procname,"mribg",5)==0){
+        kill(pr->bgpid, SIGINT);
         //printf("kill bgpid: %d\n",pr->bgpid);
     }
     processctrl_add(gs->mpid_file, mmp, "STOP");
@@ -333,6 +321,7 @@ char **shell_parse_cmd(char *line){
         token = strtok(NULL, ARG_DELIM);
     }
     tokens[position] = NULL;
+    free(token);
     return tokens;
 }
 
@@ -550,8 +539,6 @@ int main(int argc_cmd, char *argv_cmd[]){
         free(args);
 
     } while(res != 0);
-
-    cleanup();
 
     return EXIT_SUCCESS;
 }

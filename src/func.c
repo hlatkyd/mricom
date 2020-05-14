@@ -173,9 +173,9 @@ void listsettings(struct gen_settings *settings){
  */
 void listprocesses(struct processes *p){
 
-    int i;
+    int i,j;
     char *d = DELIMITER;
-    printf("\nrunning processes:\n");
+    printf("\nrunning processes: %d\n",p->nproc);
     printf("-----------------\n");
     printf("mricom: %d, mribg: %d\n",p->mainpid, p->bgpid);
     //printf("mricom pid: %d\n",p->mainpid);
@@ -184,6 +184,13 @@ void listprocesses(struct processes *p){
         printf("%d%s%d%s%s%s%s%s%s\n",
                 p->pid[i],d,p->ppid[i],d,p->name[i],
                 d,p->pname[i],d,p->timestamp[i]);
+    }
+    // TODO del this. only dewbug
+    printf("--------------------\n");
+    for(j=0;j<MAX_ID;j++){
+        printf("%d%s%d%s%s%s%s%s%s\n",
+                p->pid[j],d,p->ppid[j],d,p->name[j],
+                d,p->pname[j],d,p->timestamp[j]);
     }
 
 }

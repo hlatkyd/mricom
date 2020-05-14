@@ -26,7 +26,7 @@ int mribg_launch();
 /* ----------------------*/
 void init();
 void init_msg();
-void cleanup();
+void exit_cleanup();
 char **shell_parse_cmd(char *line);
 int shell_get_argc(char **args);
 char *shell_read_cmd();
@@ -44,5 +44,5 @@ int sh_killp(int argc, char **args);
 int sh_start(int argc, char **args);
 int sh_stop(int argc, char **args);
 int sh_list(int argc, char **args);
-int sh_restart(int argc, char **args);
+int sh_clean(int argc, char **args);
 
