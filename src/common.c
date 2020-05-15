@@ -130,6 +130,10 @@ int processctrl_get(char *path, struct processes *p){
     int i,j,k, n, col;
     int n_remove;
     int remove_list[N_MAX];
+
+    int start_list[N_MAX], stop_list[N_MAX], intrpt_list[N_MAX];
+    int running_list[N_MAX];
+
     char lstatus[N_MAX][8];
     int lpid[N_MAX];
     int lppid[N_MAX];
@@ -138,6 +142,12 @@ int processctrl_get(char *path, struct processes *p){
     char ltimestamp[N_MAX][32];
     char *d = DELIMITER;
     char *token;
+
+    // start_list, stop_list, intrpt_list elements are either 0 or 1 so init 0
+    memset(start_list, 0, N_MAX * sizeof(int));
+    memset(stop_list, 0, N_MAX * sizeof(int));
+    memset(intrpt_list, 0, N_MAX * sizeof(int));
+    memset(running_list, 0, N_MAX * sizeof(int));
     fp = fopen(path,"r");
     if(fp == NULL){
         printf("could not open %s\n",path);
@@ -152,39 +162,58 @@ int processctrl_get(char *path, struct processes *p){
             //replace EOL with nullbyte
             line[strlen(line)-1] = '\0';
             strcpy(filebuf[i], line);
+            // sort lines starting with START, STOP, INTRPT
+            if(strncmp(line, "START",5)==0){
+                start_list[i] = 1;    
+            } else if(strncmp(line, "STOP",4)==0){
+                stop_list[i] = 1;    
+            } else if(strncmp(line, "INTRPT",6)==0){
+                intrpt_list[i] = 1;    
+            } else {
+                fprintf(stderr, "processctrl_get: wrong line\n");
+            }
+
         }
         i++;
 
     }
+    // keep
     n = i;
-    // fill lists
+    return 0;
+    // find lines starting with START, STOP, INTRPT
+    //
+
+    /*
+    // //
     for(i=0; i<n; i++){
         strcpy(line, filebuf[i]);
-        token = strtok(line,d);
-        col = 0;
-        while(token != NULL){
-            switch(col){
-                case 0 :
-                    strcpy(lstatus[i],token);
-                    break;
-                case 1 :
-                    lpid[i] = atoi(token);
-                    break;
-                case 2 :
-                    lppid[i] = atoi(token);
-                    break;
-                case 3 :
-                    strcpy(lname[i],token);
-                    break;
-                case 4 :
-                    strcpy(lpname[i],token);
-                    break;
-                case 5 :
-                    strcpy(ltimestamp[i],token);
-                    break;
+        if(strncmp(line,"START",5)==0){
+            token = strtok(line,d);
+            col = 0;
+            while(token != NULL){
+                switch(col){
+                    case 0 :
+                        strcpy(lstatus[i],token);
+                        break;
+                    case 1 :
+                        lpid[i] = atoi(token);
+                        break;
+                    case 2 :
+                        lppid[i] = atoi(token);
+                        break;
+                    case 3 :
+                        strcpy(lname[i],token);
+                        break;
+                    case 4 :
+                        strcpy(lpname[i],token);
+                        break;
+                    case 5 :
+                        strcpy(ltimestamp[i],token);
+                        break;
+                }
+                token = strtok(NULL, d);
+                col++;
             }
-            token = strtok(NULL, d);
-            col++;
         }
 
     }
@@ -224,6 +253,7 @@ int processctrl_get(char *path, struct processes *p){
     if(line)
         free(line);
     return 0;
+    */
 }
 /*
  * Function: sighandler
