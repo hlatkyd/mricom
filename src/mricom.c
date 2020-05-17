@@ -30,7 +30,8 @@ char *builtin_str[] = {
     "start",
     "stop",
     "list",
-    "clean"
+    "clean",
+    "update"
 };
 /* functions for builtin commands*/
 /* should be same oreder as builtin_str list names*/
@@ -42,7 +43,8 @@ int (*builtin_func[]) (int, char **) = {
     &sh_start,
     &sh_stop,
     &sh_list,
-    &sh_clean
+    &sh_clean,
+    &sh_update
 };
 int sh_num_builtins(){
     return sizeof(builtin_str) / sizeof(char*);
@@ -57,7 +59,6 @@ int sh_num_builtins(){
  //TODO check for unintended stop ps -ef, or something
 int sh_exit(int argc, char **args){
     
-    printf("exit, bgpid %d\n",pr->bgpid);
     exit_cleanup();
     return 0;
 }
@@ -114,6 +115,12 @@ int sh_help(int argc, char **args){
             case 6: // list
                 printf("print settings struct\n");
                 break;
+            case 7: // clean
+                printf("clean mproc.log file, only leave current processes\n");
+                break;
+            case 8: // update
+                printf("get status update from mribg\n");
+                break;
         }
         printf("\n");
 
@@ -123,18 +130,30 @@ int sh_help(int argc, char **args){
 int sh_test(int argc, char **args){
     //TODO implement usage by specific arguments
     // start, stop, stim etc
-    printf("test bgpid : %d\n",pr->bgpid);
+
     return 1;
 }
 int sh_killp(int argc, char **args){
     //TODO
     int procid;
+    int i;
     char argin[10];
     if(argc != 2){
         fprintf(stderr, "killp: wrong arguments.Usage: 'killp [int process id]'\n");
     }
     procid = atoi(args[1]);
-    printf("kill id: %d\n",procid);
+    // check if process really is running
+    processctrl_get(gs->mpid_file, pr);
+    for(i=0;i<pr->nproc;i++){
+        if(pr->pid[i] == procid){
+
+            printf("killing process: %s\n",pr->name[i]);
+            kill(procid, SIGINT);
+            processctrl_get(gs->mpid_file, pr);
+            return 1;
+        }
+    }
+    fprintf(stderr, "mricom process %d cannot be found\n",procid);
     return 1;
 }
 int sh_start(int argc, char **args){
@@ -185,16 +204,24 @@ int sh_list(int argc, char **args){
 int sh_clean(int argc, char **args){
     
     int ret;
-    char c;
-    char bgline[64] = {0};
-    // find line for mribg
-    // clean mproc.pid
+    processctrl_get(gs->mpid_file, pr);
     ret = processctrl_clean(gs, pr);
     if(ret == 0){
         printf(" cleaned mproc.log\n");
     }
     return 1;
 }
+/*
+ * Function: sh_update
+ * -------------------
+ *  update experiment satus from mribg
+ */
+int sh_update(int argc, char **args){
+
+    return 1;
+}
+
+
 /*-----------------------------------------------------------*/
 /*                    OPAQUE PARTS                           */
 /*-----------------------------------------------------------*/
@@ -275,7 +302,7 @@ void exit_cleanup(){
     //TODO wrong pid somehow
     getname(procname, pr->bgpid);
     if(strncmp(procname,"mribg",5)==0){
-        kill(pr->bgpid, SIGINT);
+        kill(pr->bgpid, SIGTERM);
         //printf("kill bgpid: %d\n",pr->bgpid);
     }
     processctrl_add(gs->mpid_file, mmp, "STOP");
@@ -441,60 +468,71 @@ int shell_execute(int argc, char **args){
  *  TODO
  *  use named pipe ni.fifo
  */
+#define MAXBUF 80
 int mribg_launch(){
 
+    char bginfifo[LPATH]={0};
+    char bgoutfifo[LPATH]={0};
     char mricomdir[LPATH] = {0};
-    int fd1[2];
-    int fd2[2];
+
+    // for parent
+    char buf[MAXBUF];
+    memset(buf, 0, sizeof(char)*MAXBUF);
+    int rv;
+    fd_set set;
+    struct timeval timeout;
+    int fd, n, nread;
+
     pid_t p;
 
     strcpy(mricomdir,getenv("MRICOMDIR"));
 
-    if(pipe(fd1) == -1){
-        fprintf(stderr,"mribg_launch: pipe failed");
-        exit(1);
-    }
-    if(pipe(fd2) == -1){
-        fprintf(stderr,"mribg_launch: pipe failed");
-        exit(1);
-    }
     p = fork();
     if(p < 0){
         fprintf(stderr, "mribg_launch: fork failed");
         exit(1);
     // parent process, mricom
     } else if(p > 0) {
+    
+        // setup named pipes
+        snprintf(bginfifo, sizeof(bginfifo), "%s/%s",mricomdir, BGINFIFO);
+        snprintf(bgoutfifo, sizeof(bgoutfifo), "%s/%s",mricomdir, BGOUTFIFO);
+        mkfifo(bginfifo, 0666);
+        mkfifo(bgoutfifo, 0666);
+        fd = open(bgoutfifo, O_RDONLY);
+        if(fd < 0){
+            fprintf(stderr, "cannot open ngoutfifo\n");
+        }
 
-        char buff[64] = {0};
-        printf("mricom: ");
-        close(fd1[0]); // close read end, keep only write
-        close(fd2[1]);  // close write end of 2nd pipe
-        read(fd2[0], buff, sizeof(buff));
-        printf(" mribg pid %s\n",buff);
-        //pr->bgpid = p;
-        //fd_read = fd2[0];
-        //fd_write = fd1[1];
+        // setup timeout catch 
+        FD_ZERO(&set);
+        FD_SET(fd, &set);
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+        
+        rv = select(fd+1, &set, NULL, NULL, &timeout);
+        if(rv == -1)
+            perror("select");
+        else if (rv == 0)
+            fprintf(stderr, " warning: mribg timeout\n");
+        else
+            nread = read(fd, buf, sizeof(char)*MAXBUF);
+
+        printf(" received: %s\n",buf);
+        return p;
 
     // child process, mribg
     } else {
         
+        // launch mribg
         char path[LPATH] = {0};
-        char *args[4];
-        char pipestr1[3];
-        char pipestr2[3];
-        close(fd2[0]); // close read end
+        char *args[2];
         snprintf(path, sizeof(path),"%s/mribg",mricomdir);
         args[0] = path;
-        // send read end of pipe 1
-        sprintf(pipestr1,"%d",fd1[0]);
-        // send write end of pipe 2
-        sprintf(pipestr2,"%d",fd2[1]);
-        args[1] = pipestr1;
-        args[2] = pipestr2;
-        args[3] = NULL;
+        args[1] = NULL;
         execvp(path,args);
+        return 0;
     }
-    return p;
 }
 
 

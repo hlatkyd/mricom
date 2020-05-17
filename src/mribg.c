@@ -12,42 +12,50 @@ int main(int argc, char **argv){
     struct mpid *mp;
     struct gen_settings *gs;
 
-    int a = 1;
-    char mribg_log[128];
-    char buffer[8];
-    char initmsg[8];
+    char mricomdir[LPATH];
+    char bginfifo[LPATH] = {0};
+    char bgoutfifo[LPATH] = {0};
+    char init_msg[] = "mribg init successful...";
+    fd_set set; 
+    struct timeval timeout;
+    int fd, ret;
+    int rv;
 
-    int fd_r; // pipe read end
-    int fd_w; // pipe write end
 
-    // check args:
-    if(argc != 3){
-        fprintf(stderr, "mribg: wrong number of inputs on start\n");
+    if(getenv("MRICOMDIR") == NULL){
+        fprintf(stderr, "mribg: environment varieble MRICOMDIR not set\n");
         exit(1);
     }
-    printf("mribg: started\n");
-    signal(SIGINT, sighandler);
+
+    signal(SIGTERM, sighandler);
+    strcpy(mricomdir, getenv("MRICOMDIR"));
+
+    // init
     gs = malloc(sizeof(struct gen_settings));
     mp = malloc(sizeof(struct mpid));
     memset(gs, 0, sizeof(struct gen_settings));
     memset(mp, 0, sizeof(struct mpid));
     parse_gen_settings(gs);
     fill_mpid(mp);
-    snprintf(initmsg,sizeof(initmsg),"%d",mp->pid);
     processctrl_add(gs->mpid_file, mp, "START");
 
-    fd_r = atoi(argv[1]);
-    fd_w = atoi(argv[2]);
-    //read(fd_r, buffer, 5);
-    write(fd_w, initmsg, sizeof(initmsg));
-    //printf("in buffer: %s\n",buffer);
+    // init fifo
+
+    snprintf(bginfifo, sizeof(bginfifo), "%s/%s",mricomdir, BGINFIFO);
+    snprintf(bgoutfifo, sizeof(bgoutfifo), "%s/%s",mricomdir, BGOUTFIFO);
+    mkfifo(bginfifo, 0666);
+    mkfifo(bgoutfifo, 0666);
+    fd = open(bgoutfifo, O_WRONLY);
+    write(fd, init_msg, strlen(init_msg));
+    close(fd);
 
     while(1){
 
-
         sleep(5);
-        //printf("mribg report\n");
+        //printf("mribg reporting in...\n");
     }
+
+    // shutdown
     processctrl_add(gs->mpid_file, mp, "STOP");
     return 0;
 

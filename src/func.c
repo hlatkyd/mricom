@@ -175,22 +175,15 @@ void listprocesses(struct processes *p){
 
     int i,j;
     char *d = DELIMITER;
-    printf("\nrunning processes: %d\n",p->nproc);
-    printf("-----------------\n");
-    printf("mricom: %d, mribg: %d\n",p->mainpid, p->bgpid);
+    printf("\nrunning processes: %d, mricom: %d, mribg: %d\n",
+            p->nproc, p->mainpid, p->bgpid);
+    printf("--------------------------------------------------\n");
     //printf("mricom pid: %d\n",p->mainpid);
     printf("PROC%sPARENT%sNAME%sPNAME%sTIMESTAMP\n",d,d,d,d);
     for(i=0; i<p->nproc;i++){
         printf("%d%s%d%s%s%s%s%s%s\n",
                 p->pid[i],d,p->ppid[i],d,p->name[i],
                 d,p->pname[i],d,p->timestamp[i]);
-    }
-    // TODO del this. only dewbug
-    printf("--------------------\n");
-    for(j=0;j<MAX_ID;j++){
-        printf("%d%s%d%s%s%s%s%s%s\n",
-                p->pid[j],d,p->ppid[j],d,p->name[j],
-                d,p->pname[j],d,p->timestamp[j]);
     }
 
 }
@@ -226,6 +219,16 @@ void stop(){
 
     return;
 }
+/*
+ * Function: send
+ * ---------------
+ *
+ */
+void send(int fd, char *msg){
+
+    return;
+}
+
 int stop_mribg(int pid){
 
     char procname[32] = {0};

@@ -20,5 +20,6 @@ void catdata();
 /*main user interface funcs*/
 void start();
 void stop();
+void send(int fd, char *msg);
 int stop_mribg(int pid);
 void reset();

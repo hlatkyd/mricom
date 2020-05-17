@@ -16,7 +16,7 @@ int main(int argc, char **argv){
     //printf("parent: %s\n",mp->pname);
     //printf("timeval %ld\n",mp->tv.tv_sec);
     //printf("name: %s\n",mp->name);
-    sleep(6);
+    sleep(30);
     printf("Testproc finished...\n");
     //processctrl_remove(path, mp);
     processctrl_add(path, mp, "STOP");

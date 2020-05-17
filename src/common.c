@@ -119,7 +119,6 @@ int processctrl_add(char *path, struct mpid *mp, char *status){
  */
 #define N_MAX 128
 #define LLENGTH 64
-//TODO fix, doesnt worj as intended
 int processctrl_get(char *path, struct processes *p){
 
     FILE *fp;
@@ -135,13 +134,9 @@ int processctrl_get(char *path, struct processes *p){
     int running_list[N_MAX];
 
     char lstatus[N_MAX][8];
-    int lpid[N_MAX];
-    int lppid[N_MAX];
-    char lname[N_MAX][32];
-    char lpname[N_MAX][32];
-    char ltimestamp[N_MAX][32];
     char *d = DELIMITER;
     char *token;
+    int tmp_pid;
 
     // start_list, stop_list, intrpt_list elements are either 0 or 1 so init 0
     memset(start_list, 0, N_MAX * sizeof(int));
@@ -177,83 +172,70 @@ int processctrl_get(char *path, struct processes *p){
         i++;
 
     }
-    // keep
-    n = i;
-    return 0;
-    // find lines starting with START, STOP, INTRPT
-    //
-
-    /*
-    // //
-    for(i=0; i<n; i++){
-        strcpy(line, filebuf[i]);
-        if(strncmp(line,"START",5)==0){
+    // init running_list as start_list, remove elements later
+    for(i=0;i<N_MAX;i++){
+        running_list[i] = start_list[i];
+    }
+    // for 'START' lines check if there is a 'STOP' or 'INTRPT'
+    for(i=0; i < N_MAX; i++){
+        if(start_list[i] == 1){
+            // check pid
+            strcpy(line, filebuf[i]);
             token = strtok(line,d);
-            col = 0;
-            while(token != NULL){
-                switch(col){
-                    case 0 :
-                        strcpy(lstatus[i],token);
-                        break;
-                    case 1 :
-                        lpid[i] = atoi(token);
-                        break;
-                    case 2 :
-                        lppid[i] = atoi(token);
-                        break;
-                    case 3 :
-                        strcpy(lname[i],token);
-                        break;
-                    case 4 :
-                        strcpy(lpname[i],token);
-                        break;
-                    case 5 :
-                        strcpy(ltimestamp[i],token);
-                        break;
+            tmp_pid = atoi(strtok(NULL,d));
+            // check if same pid was stopped or interrupted
+            for(j=0;j<N_MAX;j++){
+                if((stop_list[j] == 1) || (intrpt_list[j] == 1)){
+                    strcpy(line, filebuf[j]);
+                    token = strtok(line,d);
+                    if(atoi(strtok(NULL,d)) == tmp_pid){
+                        running_list[i] = 0;
+                    }
+                    
                 }
-                token = strtok(NULL, d);
-                col++;
             }
+        }
+    }
+    // tokenize line where 'running_list' is 1
+    i=0;
+    p->nproc = 0;
+    for(j=0; j<N_MAX; j++){
+        if(running_list[j] == 1){
+            strcpy(line, filebuf[j]);
+            if(strncmp(line,"START",5)==0){
+                token = strtok(line,d);
+                col = 0;
+                while(token != NULL){
+                    switch(col){
+                        case 0 :
+                            strcpy(lstatus[i],token);
+                            break;
+                        case 1 :
+                            p->pid[i]=atoi(token);
+                            break;
+                        case 2 :
+                            p->ppid[i]=atoi(token);
+                            break;
+                        case 3 :
+                            strcpy(p->name[i],token);
+                            break;
+                        case 4 :
+                            strcpy(p->pname[i],token);
+                            break;
+                        case 5 :
+                            strcpy(p->timestamp[i],token);
+                            break;
+                    }
+                    token = strtok(NULL, d);
+                    col++;
+                }
+            }
+            i++;
+            p->nproc++;
         }
 
     }
-    // find removable listings
-    k = 0;
-    for(i=0;i<n; i++){
-       for(j=i; j<n; j++){
-            if(lpid[i] == lpid[j] && strncmp(lstatus[i],"START",5)==0 && 
-              (strncmp(lstatus[j],"STOP",4)==0 || strncmp(lstatus[j],"INTRPT",6)==0)){
-                remove_list[k] = i;
-                remove_list[k+1] = j;
-                k += 2;
-            }
-       } 
-    }
-    n_remove = k;
-    p->nproc = n - n_remove; 
-    // remove processes which ended (by STOP or INTRPT) and fill struct
-    i = 0;
-    for(j=0; j<n; j++){
-        for(k=0;k<n_remove;k++){
-            if(j == remove_list[k]){
-                j++;
-                k = n_remove;
-                break;
-            } else{
-                p->pid[i] = lpid[j];
-                p->ppid[i] = lppid[j];
-                strcpy(p->name[i],lname[j]);
-                strcpy(p->pname[i],lpname[j]);
-                strcpy(p->timestamp[i],ltimestamp[j]);
-                k = n_remove;
-                i++;
-            }
-        }
-    }
-    if(line)
-        free(line);
     return 0;
-    */
 }
 /*
  * Function: sighandler
@@ -265,7 +247,7 @@ void sighandler(int signum){
     struct mpid *mp;
     char path[] = MPROC_FILE;
     char c = '\0';
-    if(signum == 2){
+    if(signum == SIGINT){
         mp = malloc(sizeof(struct mpid));
         memset(mp, 0, sizeof(struct mpid));
         fill_mpid(mp);
@@ -275,24 +257,57 @@ void sighandler(int signum){
            ; 
         }
         processctrl_add(path, mp, "INTRPT");
+        fprintf(stderr,"%s exiting...\n",mp->name);
         free(mp);
-        fprintf(stderr,"\n%s exiting...\n",mp->name);
         exit(1);
     }
-
+    if(signum == SIGTERM){
+        mp = malloc(sizeof(struct mpid));
+        memset(mp, 0, sizeof(struct mpid));
+        fill_mpid(mp);
+        processctrl_add(path, mp, "INTRPT");
+        fprintf(stderr,"%s exiting...\n",mp->name);
+        free(mp);
+        exit(1);
+    }
 }
-
 /*
  * Function: processctrl_clean()
  * -----------------------------
  * Clear contents of mproc.log file, keep only currently running processes
  */
-//TODO
 int processctrl_clean(struct gen_settings *gs, struct processes *pr){
 
     FILE *fp;
-    //fp = fopen(gs->mpid_file,"w");
-    //fclose(fp);
+    int fd;
+    int i, ret;
+    char line[64];
+    char *d = DELIMITER;
+    //fd = open(gs->mpid_file);
+    fd = open(gs->mpid_file, O_RDWR);
+    if(fd < 0){
+        perror("processctrl_clean");
+        exit(1);
+    }
+    fp = fopen(gs->mpid_file,"w");
+    ret = flock(fd,LOCK_SH);
+    if(fd < 0){
+        perror("processctrl_clean");
+        exit(1);
+    }
+    for(i=0;i<pr->nproc;i++){
+        snprintf(line, 64, "START%s%d%s%d%s%s%s%s%s%s\n", d, pr->pid[i], d, 
+            pr->ppid[i], d, pr->name[i], d, pr->pname[i], d, pr->timestamp[i]);
+        fprintf(fp,"%s",line);
+    }
+    fclose(fp);
+    // unlock file access
+    ret = flock(fd,LOCK_UN);
+    if(fd < 0){
+        perror("processctrl_clean");
+        exit(1);
+    }
+    close(fd);
     return 0;
 }
 

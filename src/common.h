@@ -24,6 +24,7 @@
 #include <sys/time.h>
 #include <sys/file.h>
 #include <sys/mman.h>
+#include <sys/select.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <comedilib.h>
@@ -55,7 +56,8 @@
 #define IP "127.0.0.1"
 
 // named pipe between mribg and mricom in MRICOMDIR
-#define NIFIFO "ni.fifo"
+#define BGINFIFO "bgin.fifo"
+#define BGOUTFIFO "bgout.fifo"
 
 #ifndef COMMON_H
 #define COMMON_H
@@ -80,14 +82,18 @@ struct mpid{
 /* -------------------------------*/
 typedef struct gen_settings{
     char device[32];
-    char workdir[128];          // acquisition directory
-    char daq_file[128];         // full data file
+    char workdir[LPATH];          // acquisition directory
+    char mpid_file[LPATH];          // local process id and contorl file
+
+    char bginfifo[LPATH];
+    char bgoutfifo[LPATH];
+
+    char daq_file[LPATH];         // full data file
     FILE *fp_daq;               // FILE pointer to daq file if open
     char kst_file[128];         // only contain data for kst display window
     FILE *fp_kst;               // FILE pointer to kst window file if open
     int precision;              // decimals saved in data files
     char ramdisk[128];          // ramdisk for fast data logging
-    char mpid_file[128];          // local process id and contorl file
     char procpar[128];          // vnmrj procpar file of curexp
     char event_dir[128];        // dir of stimulation event files
     //TODO is this needed?
