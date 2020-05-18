@@ -11,7 +11,7 @@ CURRENT PINS of NI-6035E on CA-1000 box
  2 4 6
 ------------------------------------------------
 subdev 0:
-1 -- AI0-AI_GND
+1 -- AI0-AI_GND  CHECK AGAIN, NOW AREF_DIFF IS USED
 2 -- AI1-AI_GND
 3 -- AI2-AI_GND
 4 -- AI3-AI_GND
@@ -19,10 +19,37 @@ subdev 2:
 5 -- P0.0-D_GND
 6 -- P0.1-D_GND
 
+need ~6 more
 
+Automation draft
+========================================================
+mricom mribg communication
+--------------------------
+mricom gives control to mribg upon instruction via pipe
+mricom takes back upon instruction via interrupt signal
+mribg gives back control if expriment is done
+
+stimulation control
+-------------------
+if contrl is at mribg, full automation mode
+    user_go calls vnmrpipe
+    vnmrpipe sends message (procpar params, etc) to vnmrclient via pipe
+    vnmrclient sends message to mribg via socket
+    mribg sends message to vnmrclient (ok) => vnmrclient waits again for pipe
+    mribg calls blockstim/eventstim
+    mribg calls ttlctrl, if blockstim/eventstim is st up (maybe ttl back?)
+    ttlctrl reads 3 digit from console output
+    if match, send ttl to console (waiting with xgate) and blockstim
+    
+automation interrupt handling
+------------------------------
+maybe 'aa' and send through vnmrpipe, vnmrclient
+then mribg aborts blockstim/eventstim and ttlctrl, and waits for vnmrclient msg
+    
+        
 
 Useful stuff:
----------------
+------------------------------------------------
 vnmrj pulse sequence statemetns:
 
 setMRIusergates

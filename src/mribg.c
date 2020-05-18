@@ -9,9 +9,11 @@
 
 int main(int argc, char **argv){
 
+    // pid setup
     struct mpid *mp;
     struct gen_settings *gs;
 
+    // fifo setup
     char mricomdir[LPATH];
     char bginfifo[LPATH] = {0};
     char bgoutfifo[LPATH] = {0};
@@ -21,6 +23,8 @@ int main(int argc, char **argv){
     int fd, ret;
     int rv;
 
+    //socket setup
+    
 
     if(getenv("MRICOMDIR") == NULL){
         fprintf(stderr, "mribg: environment varieble MRICOMDIR not set\n");
