@@ -25,6 +25,9 @@
 #include <sys/file.h>
 #include <sys/mman.h>
 #include <sys/select.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <comedilib.h>
@@ -52,7 +55,7 @@
 #define LPATH 128
 
 // socket communication between mribg and vnmrclient
-#define PORT 8080
+#define BGSPORT 8080
 #define IP "127.0.0.1"
 
 // named pipe between mribg and mricom in MRICOMDIR

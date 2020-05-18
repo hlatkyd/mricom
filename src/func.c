@@ -219,15 +219,6 @@ void stop(){
 
     return;
 }
-/*
- * Function: send
- * ---------------
- *
- */
-void send(int fd, char *msg){
-
-    return;
-}
 
 int stop_mribg(int pid){
 

@@ -6,7 +6,7 @@
  */
 
 #include "mribg.h"
-
+#define BUFS 256
 int main(int argc, char **argv){
 
     // pid setup
@@ -23,8 +23,13 @@ int main(int argc, char **argv){
     int fd, ret;
     int rv;
 
-    //socket setup
-    
+    //socket declare
+    int sockfd, newsockfd, portno, clilen;
+    char buffer[BUFS];
+    struct sockaddr_in serv_addr, cli_addr;
+    int nread;
+
+
 
     if(getenv("MRICOMDIR") == NULL){
         fprintf(stderr, "mribg: environment varieble MRICOMDIR not set\n");
@@ -44,6 +49,7 @@ int main(int argc, char **argv){
     processctrl_add(gs->mpid_file, mp, "START");
 
     // init fifo
+    // TODO make obsolete, do this with unix socket
 
     snprintf(bginfifo, sizeof(bginfifo), "%s/%s",mricomdir, BGINFIFO);
     snprintf(bgoutfifo, sizeof(bgoutfifo), "%s/%s",mricomdir, BGOUTFIFO);
@@ -53,11 +59,45 @@ int main(int argc, char **argv){
     write(fd, init_msg, strlen(init_msg));
     close(fd);
 
-    while(1){
-
-        sleep(5);
-        //printf("mribg reporting in...\n");
+    // socket setup
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if(sockfd < 0){
+        perror("mribg: error opening socket");
+        exit(1);
     }
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    portno = BGSPORT;
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(portno);
+    // bind socket
+    if(bind(sockfd, (struct sockaddr * ) &serv_addr, sizeof(serv_addr))<0){
+        perror("mribg: error binding socket");
+        exit(1);
+    }
+    // start listening
+    listen(sockfd, 5);
+    clilen = sizeof(cli_addr);
+
+    // accept connection request
+    while(1){
+        memset(buffer, 0, sizeof(buffer));
+        newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+        if(newsockfd < 0){
+            perror("mribg: error on accept");
+            exit(1);
+        }
+        char msg_back[] = "got it, thanks!";
+        memset(buffer, 0, sizeof(buffer));
+        nread = read(newsockfd, buffer, BUFS-1);
+        printf("got message: %s\n",buffer);
+        write(newsockfd, msg_back, sizeof(msg_back));
+        close(newsockfd);
+        sleep(1);
+    }
+
+
 
     // shutdown
     processctrl_add(gs->mpid_file, mp, "STOP");
