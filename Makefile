@@ -37,3 +37,6 @@ testproc: $(OBJ)/testproc.o $(OBJ)/common.o
 clean:
 	rm -f $(OBJ)/*
 	rm -f $(BIN)/*
+
+count:
+	find . -name '*.c' | xargs wc -l
