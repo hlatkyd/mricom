@@ -8,6 +8,7 @@
  */
 #include "mricom.h"
 #include "common.h"
+#include "socketcomm.h"
 #include "func.h"
 
 /* init device settings struct*/

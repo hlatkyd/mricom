@@ -24,10 +24,6 @@
 #include <sys/time.h>
 #include <sys/file.h>
 #include <sys/mman.h>
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <comedilib.h>
@@ -53,10 +49,6 @@
 #define DATA_DIR "data/"
 // max path length
 #define LPATH 128
-
-// socket communication between mribg and vnmrclient
-#define BGSPORT 8080
-#define IP "127.0.0.1"
 
 // named pipe between mribg and mricom in MRICOMDIR
 #define BGINFIFO "bgin.fifo"
