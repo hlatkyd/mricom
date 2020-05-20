@@ -4,6 +4,7 @@
 #define VERBOSE_BLOCKSTIM 0
 #define LOG_TTL_LEADING 1   // log the rising edge of TTL
 #define LOG_SEC 1           // write log file in sec format
+#define USE_DEFAULT 1 // set 1 to use default design on wrong input, 0 to exit
 
 /* This is a digital triggering solution without addititive timing error
  * and microsec resolution.
@@ -29,7 +30,8 @@ int main(int argc, char *argv[]){
      * run: start_delay,(block) x n_cycles, end_delay
      *
      * ARGS:
-     *      1 - ?? TODO
+     *      1: the string 'design'
+     *      2: design name in config file
      */
 
     comedi_t *dev;
@@ -72,6 +74,16 @@ int main(int argc, char *argv[]){
     
     int procadd = 0;                      // 0, or 1 if proc added to local pid
 
+    // input check
+    if(argc != 3){
+        fprintf(stderr, "blockstim: wrong numnber of input arguments, exiting\n");
+        exit(1);
+    }
+    if(strcmp(argv[1],"design") != 0){
+        fprintf(stderr, "blockstim: input arguments, exiting\n");
+        exit(1);
+    }
+
     signal(SIGINT, sighandler);
 
     mp = malloc(sizeof(struct mpid));
@@ -80,15 +92,6 @@ int main(int argc, char *argv[]){
     getppname(parent_name);
     fill_mpid(mp);
     ret = processctrl_add(gs->mpid_file, mp, "START");
-    if(strcmp(parent_name, "mricom") == 0 || BLOCKSTIM_TESTING == 1){
-        is_mricom_child = 1;
-        //TODO local pid control here
-        /*
-        ret = processctrl_add(gs->mpid_file, mp, "START");
-        if(ret == 0){
-            procadd = 1;
-        */
-    }
     h = malloc(sizeof(struct header));
     t = malloc(sizeof(struct times));
     gettimeofday(&start_tv,NULL);
@@ -114,11 +117,19 @@ int main(int argc, char *argv[]){
 
     if (argc == 3 && strcmp(argv[1], "design") == 0){
         //strcpy(design,argv[2]);
-        parse_bstim_conf(bs, conf, argv[2]);
+        ret = parse_bstim_conf(bs, conf, argv[2]);
+        if(ret == 0){
+            fprintf(stderr, "blockstim: cannot find design '%s'\n",argv[2]);
+            ret = processctrl_add(gs->mpid_file, mp, "STOP");
+            if(ret != 0){
+                printf("blockstim: processctrl_remove error");
+            }
+            exit(1);
+        }
         if(strncmp(argv[2], "test", 4) == 0){
             TEST = 1; // set to not save csv and log
         }
-    } else {
+    } else if(USE_DEFAULT == 1){
         // default to design 1
         parse_bstim_conf(bs, conf, "default");
     }
@@ -206,6 +217,10 @@ int main(int argc, char *argv[]){
     if(ret != 0){
         printf("blockstim: processctrl_remove error");
     }
+    free(mp);
+    free(gs);
+    free(h);
+    free(t);
     return 0;
 }
 // append column names and units in 2 rows
@@ -357,6 +372,6 @@ int parse_bstim_conf(struct blockstim_settings *bs, char *conffile, char *n){
             continue;
         }
     }
-    return 0;
+    return start;
 }
 

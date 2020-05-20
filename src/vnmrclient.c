@@ -39,12 +39,12 @@ int main(int argc, char **argv) {
        exit(1);
     }
 
+    server = gethostbyname(MRIBGHOST);
     if (server == NULL) {
        fprintf(stderr,"ERROR, no such host\n");
        exit(0);
     }
 
-    server = gethostbyname(MRIBGHOST);
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     bcopy((char *)server->h_addr,
@@ -57,11 +57,6 @@ int main(int argc, char **argv) {
        perror("ERROR connecting");
        exit(1);
     }
-
-    /* Now ask for a message from the user, this message
-       * will be read by server
-    */
-     
 
     /* Send message to the server */
 
@@ -87,6 +82,9 @@ int main(int argc, char **argv) {
         }
         return 0;
     } else if(strncmp(buffer, MSG_REJECT, strlen(MSG_REJECT)) == 0){
+        if(VERBOSE > 0){
+            printf("%s\n",buffer);
+        }
 
         fprintf(stderr, "vnmrclient: message was not processed by server\n");
         return 1;

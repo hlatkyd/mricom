@@ -239,6 +239,7 @@ int stop_mribg(int pid){
     }
 }
 
+
 /* Function: reset
  * ---------------
  * Kills internal processes, reinitializes acquisition settings

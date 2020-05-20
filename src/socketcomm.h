@@ -16,7 +16,10 @@
 
 #define MSG_ACCEPT "ACCEPTED"
 #define MSG_REJECT "REJECTED"
+#define MAXARG 16 // maximum number of arguments in socket message
+#define MAXLEN 64 // maximum length of an argument in msg (**argv)
 
 int make_msg(char *msg, int argc, char **argv);
 int parse_msg(char *msg, char **argv);
 
+int send_mribg(char *msg);

@@ -6,7 +6,6 @@
  */
 
 #include "mribg.h"
-#include "socketcomm.h"
 
 #define VERBOSE 1
 
@@ -18,13 +17,7 @@ int main(int argc, char **argv){
 
     // fifo setup
     char mricomdir[LPATH];
-    char bginfifo[LPATH] = {0};
-    char bgoutfifo[LPATH] = {0};
-    char init_msg[] = "mribg init successful...";
-    fd_set set; 
-    struct timeval timeout;
-    int fd, ret;
-    int rv;
+    int ret;
 
     //socket declare
     int sockfd, newsockfd, portno, clilen;
@@ -54,14 +47,6 @@ int main(int argc, char **argv){
     fill_mpid(mp);
     processctrl_add(gs->mpid_file, mp, "START");
 
-    // init fifo
-    // TODO make obsolete, do this with unix socket
-
-    snprintf(bginfifo, sizeof(bginfifo), "%s/%s",mricomdir, BGINFIFO);
-    snprintf(bgoutfifo, sizeof(bgoutfifo), "%s/%s",mricomdir, BGOUTFIFO);
-    mkfifo(bginfifo, 0666);
-    mkfifo(bgoutfifo, 0666);
-
     // socket setup
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(sockfd < 0){
@@ -86,10 +71,6 @@ int main(int argc, char **argv){
         perror("mribg: error binding socket");
         exit(1);
     }
-    //signal back to mricom
-    fd = open(bgoutfifo, O_WRONLY);
-    write(fd, init_msg, strlen(init_msg));
-    close(fd);
 
     // start listening
     listen(sockfd, 5);
@@ -104,24 +85,23 @@ int main(int argc, char **argv){
         }
         nread = read(newsockfd, buffer, BUFS-1);
         if(VERBOSE > 0){
-            fprintf(stderr, "\n[mribg]: incoming request: '%s'",buffer);
+            fprintf(stderr, "[mribg]: incoming request: '%s'\n",buffer);
         }
 
         // do processing
-        //ret = process_request(buffer);
-        ret = 0;
+        ret = process_request(buffer);
 
         // signal back
         if(ret < 0){
+            if(VERBOSE > 0){
+                fprintf(stderr, "[mribg]: request denied\n");
+            }
             write(newsockfd, msg_reject, sizeof(msg_reject));
+        } else if(ret > 0){
             if(VERBOSE > 0){
-                fprintf(stderr, "\n[mribg]: request denied");
+                fprintf(stderr, "[mribg]: request accepted\n");
             }
-        } else if(ret == 0){
             write(newsockfd, msg_accept, sizeof(msg_accept));
-            if(VERBOSE > 0){
-                fprintf(stderr, "\n[mribg]: request accepted");
-            }
         }
         close(newsockfd);
 
@@ -142,15 +122,75 @@ int main(int argc, char **argv){
  *  General client request handling function
  */
 
-#define MAXARG 16
-#define MAXLEN 16
 int process_request(char *msg){
 
     int argc;
     char **argv;
-    argv = malloc(sizeof(char) * MAXARG * MAXLEN);
-    memset(argv, 0, sizeof(char) * MAXARG * MAXLEN);
+    char **cmdargv;
+    int i;
+    pid_t pid;
+
+    argv = calloc(MAXARG,sizeof(char*));
+    for(i=0; i< MAXARG; i++){
+        argv[i] = calloc(MAXLEN,sizeof(char));
+    }
+    // this is for passing as command line arguments
+    cmdargv = calloc(MAXARG,sizeof(char*));
+    for(i=0; i< MAXARG; i++){
+        cmdargv[i] = calloc(MAXLEN,sizeof(char));
+    }
 
     argc = parse_msg(msg, argv);
-    return 0;
+    // check input
+    
+    printf("argv1 %s, argv2 %s",argv[1],argv[2]);
+    if(strcmp(argv[1],"start") == 0){
+        if(strcmp(argv[2], "blockstim")==0){
+            for(i=0;i<argc;i++){
+                strcpy(cmdargv[i],argv[i+2]);
+            }
+            fork_blockstim(cmdargv);
+        }
+            
+    }
+    return 1;
+}
+
+/*
+ * Function: frok_blockstim
+ * ------------------------
+ *  Launch blockstim with arguments
+ */
+int fork_blockstim(char **args){
+
+    char path[LPATH];
+    char mricomdir[LPATH] = {0};
+    strcpy(mricomdir,getenv("MRICOMDIR"));
+    pid_t p;
+    snprintf(path, sizeof(path),"%s/%s/blockstim",mricomdir,BIN_DIR);
+
+    fprintf(stderr, "path %s",path);
+    p = fork();
+
+    if(p < 0){
+        fprintf(stderr, "mribg_launch: fork failed");
+        exit(1);
+    // parent process
+    } else if(p > 0) {
+
+        return p;
+
+    // child process
+    } else {
+
+        // launch
+        char *cmdargs[4];
+        //fprintf(stderr, "path %s",path);
+        strcpy(cmdargs[0],path);
+        strcpy(cmdargs[1],"design");
+        strcpy(cmdargs[2],args[2]);
+        cmdargs[2] = NULL;
+        execvp(path,args);
+        return 0;
+    }
 }

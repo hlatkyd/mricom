@@ -50,10 +50,6 @@
 // max path length
 #define LPATH 128
 
-// named pipe between mribg and mricom in MRICOMDIR
-#define BGINFIFO "bgin.fifo"
-#define BGOUTFIFO "bgout.fifo"
-
 #ifndef COMMON_H
 #define COMMON_H
 

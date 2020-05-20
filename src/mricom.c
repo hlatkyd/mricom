@@ -32,7 +32,8 @@ char *builtin_str[] = {
     "stop",
     "list",
     "clean",
-    "update"
+    "update",
+    "send"
 };
 /* functions for builtin commands*/
 /* should be same oreder as builtin_str list names*/
@@ -45,7 +46,9 @@ int (*builtin_func[]) (int, char **) = {
     &sh_stop,
     &sh_list,
     &sh_clean,
-    &sh_update
+    &sh_update,
+    &sh_send
+
 };
 int sh_num_builtins(){
     return sizeof(builtin_str) / sizeof(char*);
@@ -222,6 +225,26 @@ int sh_update(int argc, char **args){
     return 1;
 }
 
+/*
+ * Function: sh_send
+ * -------------------
+ *  Send message to mribg
+ */
+#define BUFSIZE 256
+int sh_send(int argc, char **args){
+
+    char buf[BUFSIZE] = {0};
+    // input check
+    if(argc != 2){
+        fprintf(stderr, " Incorrect number of arguments. Usage: send [string msg]");
+        return 1;
+    }
+    // TODO allow multiple args, and concat them to proper form
+    
+    strcpy(buf, args[1]);
+    send_mribg(buf);
+    return 1;
+}
 
 /*-----------------------------------------------------------*/
 /*                    OPAQUE PARTS                           */
@@ -460,14 +483,9 @@ int shell_execute(int argc, char **args){
  * Start background program for handling automation.
  *
  * mribg executable should be in MRICOMDIR environment variable
- * Uses fork for launching in background and pipe for communication
+ * Uses fork for launching in background and socket for communication
  *
- * fd pipe:
- *  1: parent writes -> child reada
- *  2: child writes -> parent reads
  *
- *  TODO
- *  use named pipe ni.fifo
  */
 #define MAXBUF 80
 int mribg_launch(){
@@ -475,14 +493,6 @@ int mribg_launch(){
     char bginfifo[LPATH]={0};
     char bgoutfifo[LPATH]={0};
     char mricomdir[LPATH] = {0};
-
-    // for parent
-    char buf[MAXBUF];
-    memset(buf, 0, sizeof(char)*MAXBUF);
-    int rv;
-    fd_set set;
-    struct timeval timeout;
-    int fd, n, nread;
 
     pid_t p;
 
@@ -495,31 +505,6 @@ int mribg_launch(){
     // parent process, mricom
     } else if(p > 0) {
     
-        // setup named pipes
-        snprintf(bginfifo, sizeof(bginfifo), "%s/%s",mricomdir, BGINFIFO);
-        snprintf(bgoutfifo, sizeof(bgoutfifo), "%s/%s",mricomdir, BGOUTFIFO);
-        mkfifo(bginfifo, 0666);
-        mkfifo(bgoutfifo, 0666);
-        fd = open(bgoutfifo, O_RDONLY);
-        if(fd < 0){
-            fprintf(stderr, "cannot open ngoutfifo\n");
-        }
-
-        // setup timeout catch 
-        FD_ZERO(&set);
-        FD_SET(fd, &set);
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
-        
-        rv = select(fd+1, &set, NULL, NULL, &timeout);
-        if(rv == -1)
-            perror("select");
-        else if (rv == 0)
-            fprintf(stderr, " warning: mribg timeout\n");
-        else
-            nread = read(fd, buf, sizeof(char)*MAXBUF);
-
-        printf(" received: %s\n",buf);
         return p;
 
     // child process, mribg
