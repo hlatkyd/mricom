@@ -65,4 +65,10 @@ ANALOG_CH_NAMES=RESP,PULSOX,ECG,TEMP
 STIM_TRIG_SUBDEV=2
 # digital channel for stimulus TTL
 STIM_TRIG_CHAN=0
+# subdev used by ttlctrl (usually the same digital io subdev)
+TTLCTRL_SUBDEV=2
+# ttlctrl output channel, which triggers stimulation start, etc
+TTLCTRL_OUT_CHAN=2
+# ttlctrl input from console user interface (3 bit)
+TTLCTRL_IN_CHANLIST=4,5,6
 

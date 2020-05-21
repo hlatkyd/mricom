@@ -35,12 +35,11 @@ int make_msg(char *msg, int argc, char **argv){
  * ------------------
  *  Sort delimited string into string array, return number of strings
  */
-int parse_msg(char *msg, char **argv){
+int parse_msg(char *msg, char **argv, char *delim){
 
 
     char msgbuf[BUFS] = {0};
     char *token;
-    const char delim[] = ",";
     int i;
     int ret;
     strcpy(msgbuf, msg);

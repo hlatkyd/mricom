@@ -526,6 +526,8 @@ int parse_dev_settings(struct dev_settings *ds){
             strcpy(ds->devpath, token);
             continue;
         }
+        // analog input
+        // -------------------------------------------
         if(strcmp(line, "IS_ANALOG_DIFFERENTIAL") == 0){
             token = strtok(NULL,"=");
             ds->is_analog_differential = atoi(token);
@@ -539,16 +541,6 @@ int parse_dev_settings(struct dev_settings *ds){
         if(strcmp(line, "ANALOG_IN_SUBDEV") == 0){
             token = strtok(NULL,"=");
             ds->analog_in_subdev = atoi(token);
-            continue;
-        }
-        if(strcmp(line, "STIM_TRIG_SUBDEV") == 0){
-            token = strtok(NULL,"=");
-            ds->stim_trig_subdev = atoi(token);
-            continue;
-        }
-        if(strcmp(line, "STIM_TRIG_CHAN") == 0){
-            token = strtok(NULL,"=");
-            ds->stim_trig_chan = atoi(token);
             continue;
         }
         if(strcmp(line, "ANALOG_CH_NAMES") == 0){
@@ -575,6 +567,42 @@ int parse_dev_settings(struct dev_settings *ds){
                 token = strtok(NULL,",");
             }
             //TODO check if number is same as NAICHAN
+            i = 0; // set 0 again, just to be sure
+        }
+        // digital stim
+        // -----------------------------------------
+        if(strcmp(line, "STIM_TRIG_SUBDEV") == 0){
+            token = strtok(NULL,"=");
+            ds->stim_trig_subdev = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "STIM_TRIG_CHAN") == 0){
+            token = strtok(NULL,"=");
+            ds->stim_trig_chan = atoi(token);
+            continue;
+        }
+        // ttlctrl
+        //----------------------------------------------
+        if(strcmp(line, "TTLCTRL_SUBDEV") == 0){
+            token = strtok(NULL,"=");
+            ds->ttlctrl_subdev = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "TTLCTRL_OUT_CHAN") == 0){
+            token = strtok(NULL,"=");
+            ds->ttlctrl_out_chan = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "TTLCTRL_IN_CHANLIST") == 0){
+            i=0;
+            token = strtok(NULL,"=");
+            strcpy(buf, token);
+            token = strtok(buf, ",");
+            while(token != NULL){
+                ds->ttlctrl_in_chanlist[i] = (int)atoi(token);
+                i++;
+                token = strtok(NULL,",");
+            }
             i = 0; // set 0 again, just to be sure
         }
     }

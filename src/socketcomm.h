@@ -20,6 +20,6 @@
 #define MAXLEN 64 // maximum length of an argument in msg (**argv)
 
 int make_msg(char *msg, int argc, char **argv);
-int parse_msg(char *msg, char **argv);
+int parse_msg(char *msg, char **argv, char *delim);
 
 int send_mribg(char *msg);

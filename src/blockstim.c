@@ -50,8 +50,7 @@ int main(int argc, char *argv[]){
     char metaf_name[] = "blockstim.meta";
     FILE *fp;
     FILE *fp_meta;
-    char parent_name[32];
-    int is_mricom_child = 0; // set to 1 later if true
+
     struct header *h;
     char cmdl[64]; // command line call to process in /proc/pid/cmdline
 
@@ -89,7 +88,6 @@ int main(int argc, char *argv[]){
     mp = malloc(sizeof(struct mpid));
     gs = malloc(sizeof(struct gen_settings));
     parse_gen_settings(gs);
-    getppname(parent_name);
     fill_mpid(mp);
     ret = processctrl_add(gs->mpid_file, mp, "START");
     h = malloc(sizeof(struct header));
@@ -113,7 +111,6 @@ int main(int argc, char *argv[]){
     chan = dvs->stim_trig_chan;
 
     strcpy(h->proc, argv[0]);
-    // check if parent is mricom
 
     if (argc == 3 && strcmp(argv[1], "design") == 0){
         //strcpy(design,argv[2]);
@@ -171,6 +168,21 @@ int main(int argc, char *argv[]){
         exit(1);
     }
     comedi_dio_config(dev, subdev, chan, COMEDI_OUTPUT);
+
+    // wait for TTL input
+    if(bs->trig_on == 1){
+        if(chan == bs->trig_chan){
+            fprintf(stderr, "blockstim error: wrong trigger channel given\n");
+            exit(1);
+        }
+        // set to receive
+        comedi_dio_config(dev, subdev, bs->trig_chan, COMEDI_INPUT);
+        int bit = 0;
+        while(bit == 0){
+            comedi_dio_read(dev, subdev, bs->trig_chan, &bit);
+            usleep(1);
+        }
+    }
 
     usec_start = 0;
     gettimeofday(&action_tv,NULL);
@@ -287,9 +299,8 @@ void printf_bs(struct blockstim_settings *bs){
  * Args:
  */
 
+#define N_PARS 8            // number of params set in conf file
 int parse_bstim_conf(struct blockstim_settings *bs, char *conffile, char *n){
-
-    #define N_PARS 6            // number of params set in conf file
 
     FILE *fp;
     char line[128];
@@ -366,6 +377,16 @@ int parse_bstim_conf(struct blockstim_settings *bs, char *conffile, char *n){
             if (strcmp(token,"N_BLOCKS") == 0){
                 token = strtok(NULL,"=");
                 bs->n_blocks = atoi(token);
+                continue;
+            }
+            if (strcmp(token,"TRIG_ON") == 0){
+                token = strtok(NULL,"=");
+                bs->trig_on = atoi(token);
+                continue;
+            }
+            if (strcmp(token,"TRIG_CHAN") == 0){
+                token = strtok(NULL,"=");
+                bs->trig_chan = atoi(token);
                 continue;
             }
         } else {

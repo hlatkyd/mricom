@@ -15,6 +15,8 @@ struct blockstim_settings{
     int ttl_usecw;
     double ttl_freq;
     int n_blocks;
+    int trig_on;
+    int trig_chan;
 
 };
 

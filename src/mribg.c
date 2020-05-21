@@ -140,20 +140,20 @@ int process_request(char *msg){
         cmdargv[i] = calloc(MAXLEN,sizeof(char));
     }
 
-    argc = parse_msg(msg, argv);
+    argc = parse_msg(msg, argv, ",");
     // check input
     
-    printf("argv1 %s, argv2 %s",argv[1],argv[2]);
-    if(strcmp(argv[1],"start") == 0){
-        if(strcmp(argv[2], "blockstim")==0){
+    if(strncmp(argv[0],"start",5) == 0){
+        if(strncmp(argv[1], "blockstim",9)==0){
             for(i=0;i<argc;i++){
-                strcpy(cmdargv[i],argv[i+2]);
+                strcpy(cmdargv[i],argv[i+1]);
             }
             fork_blockstim(cmdargv);
+            return 1;
         }
             
     }
-    return 1;
+    return -1;
 }
 
 /*
@@ -166,10 +166,11 @@ int fork_blockstim(char **args){
     char path[LPATH];
     char mricomdir[LPATH] = {0};
     strcpy(mricomdir,getenv("MRICOMDIR"));
+    int ret;
     pid_t p;
-    snprintf(path, sizeof(path),"%s/%s/blockstim",mricomdir,BIN_DIR);
+    snprintf(path, sizeof(path),"%s/%sblockstim",mricomdir,BIN_DIR);
 
-    fprintf(stderr, "path %s",path);
+    //fprintf(stderr, "path %s\n",path);
     p = fork();
 
     if(p < 0){
@@ -185,12 +186,15 @@ int fork_blockstim(char **args){
 
         // launch
         char *cmdargs[4];
-        //fprintf(stderr, "path %s",path);
-        strcpy(cmdargs[0],path);
-        strcpy(cmdargs[1],"design");
-        strcpy(cmdargs[2],args[2]);
-        cmdargs[2] = NULL;
-        execvp(path,args);
+        cmdargs[0] = path;
+        cmdargs[1] = "design";
+        cmdargs[2] = args[2];
+        cmdargs[3] = NULL;
+        ret = execvp(path,cmdargs);
+        if(ret < 0){
+            perror("fork_blockstim: execvp");
+            exit(1);
+        }
         return 0;
     }
 }

@@ -1,4 +1,4 @@
-all: mricom mribg mrikst blockstim vnmrclient analogdaq testproc 
+all: mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq testproc 
 
 vnmr: vnmrclient
 
@@ -31,6 +31,9 @@ analogdaq: $(OBJ)/analogdaq.o $(OBJ)/common.o
 vnmrclient: $(OBJ)/vnmrclient.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 	$(CC) -o $(BIN)/vnmrclient $(OBJ)/vnmrclient.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)
 
+ttlctrl: $(OBJ)/ttlctrl.o $(OBJ)/common.o $(OBJ)/socketcomm.o
+	$(CC) -o $(BIN)/ttlctrl $(OBJ)/ttlctrl.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)
+
 testproc: $(OBJ)/testproc.o $(OBJ)/common.o
 	$(CC) -o $(BIN)/testproc $(OBJ)/testproc.o $(OBJ)/common.o $(LIBS)
 
@@ -40,3 +43,4 @@ clean:
 
 count:
 	find . -name '*.c' | xargs wc -l
+	find . -name '*.h' | xargs wc -l
