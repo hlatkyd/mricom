@@ -279,7 +279,12 @@ void init(){
     pr->mainpid = getpid();
     parse_gen_settings(gs);
     parse_dev_settings(ds);
-
+    // clear contents of mproc.log
+    if(CLEAR_MPROC_LOG == 1){
+        FILE *fp;
+        fp = fopen(gs->mpid_file,"w");
+        fclose(fp);
+    }
     mmp = malloc(sizeof(struct mpid));
     memset(mmp, 0, sizeof(struct mpid));
     fill_mpid(mmp);

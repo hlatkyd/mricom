@@ -148,18 +148,16 @@ struct times{
     struct timeval stop;
 
     // TODO use with clock_gettime()
-    /*
     struct timespec cstart;
     struct timespec caction;
     struct timespec cstop;
-    */
 };
 
 /* -------------------------------*/
 /*      running processes         */
 /* -------------------------------*/
 
-#define MAX_ID 32 // maximum number of processes
+#define MAX_ID 64 // maximum number of processes
 #define MAX_NAME_LENGTH 32 // maximum process name length
 /* procerss struct to keep track of local child processes*/
 struct processes{
@@ -175,17 +173,14 @@ struct processes{
 };
 
 #endif
-//TODO maybe move part of func here?
 /*------------------------------*/
 /*      common function declare */
 /*------------------------------*/
 
 int parse_procpar();
 int search_procpar(char *parname, char *command);
-int parse_settings(struct gen_settings *, struct dev_settings *);
 int parse_dev_settings(struct dev_settings *);
 int parse_gen_settings(struct gen_settings *);
-//int parse_blockstim_conf(struct blockstim_settings *bs, char *file, char *d);
 int fprintf_common_header(FILE *fp, struct header *h, int argc, char **args);
 void fprintf_times_meta(FILE *fp, struct times *t);
 int compare_common_header(char *file1, char *file2);
@@ -205,7 +200,7 @@ void getppname(char *name);
 void getname(char *name, int pid);
 void getcmdline(char *cmd);
 void gethrtime(char *buffer, struct timeval tv);
-void clockhrtime(char *buffer, struct timespec tv);
+void getclockhrtime(char *buffer, struct timespec tv);
 int getusecdelay(struct timeval tv1);
 int clockusecdelay(struct timespec tv1);
 double getsecdiff(struct timeval tv1, struct timeval tv2);

@@ -800,7 +800,7 @@ void gethrtime(char *outbuf, struct timeval tv){
  * Copy timeval into human readable string buffer
  * example: 2020-04-28 20:07:34.992715
  */
-void clockhrtime(char *outbuf, struct timespec tv){
+void getclockhrtime(char *outbuf, struct timespec tv){
 
     time_t nowtime;
     struct tm *nowtm;

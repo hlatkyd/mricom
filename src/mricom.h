@@ -8,6 +8,8 @@
 #define MAX_HISTORY_LENGTH 64 // command history elements
 #define MAX_CMD_LENGTH 128 // command length to story in history
 
+#define CLEAR_MPROC_LOG 1 // delete contents of mproc.log upon start
+
 /* ----------------------*/
 /*     shell constants   */
 /* ----------------------*/
