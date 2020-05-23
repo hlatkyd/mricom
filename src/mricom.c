@@ -99,31 +99,34 @@ int sh_help(int argc, char **args){
         switch (n)
         {
             case 0: // exit
-                printf("exit mricom gracefully\n");
+                printf("Exit mricom gracefully\n");
                 break;
             case 1: // help
-                printf("print available commands or get help for a command\n");
+                printf("Print available commands or get help for a command\n");
                 break;
             case 2: // killp
-                printf("kill mricom childprocess by id\n");
+                printf("Kill mricom childprocess by id\n");
                 break;
             case 3: // test
-                printf("test everything?\n");
+                printf("Sest everything?\n");
                 break;
             case 4: // start
-                printf("start data acquisition\n");
+                printf("Start data acquisition\n");
                 break;
             case 5: // stop
-                printf("stop data acquisition\n");
+                printf("Stop data acquisition\n");
                 break;
             case 6: // list
-                printf("print settings struct\n");
+                printf("Print settings struct\n");
                 break;
             case 7: // clean
-                printf("clean mproc.log file, only leave current processes\n");
+                printf("Clean mproc.log file, only leave current processes\n");
                 break;
             case 8: // update
-                printf("get status update from mribg\n");
+                printf("Get status update from mribg\n");
+                break;
+            case 9: // send
+                printf("Send command to mribg\n");
                 break;
         }
         printf("\n");
@@ -162,6 +165,16 @@ int sh_killp(int argc, char **args){
 }
 int sh_start(int argc, char **args){
     //TODO make arguments useful, eg kst start
+    //
+
+    // 'start kst' - start kst2 with default settings
+    if(argc == 2 && strcmp(args[1],"kst")==0){
+        ; 
+    }
+    // 'start auto' - set mribg to automated mode
+    if(argc == 2 && strcmp(args[1],"auto") == 0){
+        ;
+    }
 
     return 1;
 }

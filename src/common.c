@@ -245,8 +245,11 @@ int processctrl_get(char *path, struct processes *p){
 void sighandler(int signum){
     // accepts no argument, so set up mpid again
     struct mpid *mp;
-    char path[] = MPROC_FILE;
     char c = '\0';
+    char path[LPATH] = {0};
+
+    strcpy(path, getenv("MRICOMDIR"));
+    snprintf(path, sizeof(path),"%s/%s",getenv("MRICOMDIR"),MPROC_FILE);
     if(signum == SIGINT){
         mp = malloc(sizeof(struct mpid));
         memset(mp, 0, sizeof(struct mpid));

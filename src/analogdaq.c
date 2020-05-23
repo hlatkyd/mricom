@@ -6,7 +6,7 @@
 #include "analogdaq.h"
 
 #define DIGITALTRIG 1
-#define VERBOSE 0
+#define VERBOSE 2 // 1 is standard, 2 is data, 3 is all
 #define ANALOGDAQ_TESTING 1
 
 #define CONF_NAME "/analogdaq.conf"
@@ -31,7 +31,8 @@ int main(int argc, char **argv){
 
     // timing, log
     struct times *t;
-    struct timeval tv;
+    struct timeval tv; // TODO remove this
+    struct timespec ts; // for clock_gettime
     struct header *h; // common header for subprocesses
     struct mpid *mp;    // process id struct
     // device and command setup
@@ -64,9 +65,12 @@ int main(int argc, char **argv){
     unsigned int i;
     int ret;
 
-    signal(SIGINT, sighandler);
     comedi_set_global_oor_behavior(COMEDI_OOR_NUMBER);
     gettimeofday(&tv, NULL);
+    clock_gettime(CLOCK_REALTIME, &ts);
+
+    // setup interrupt handling
+    signal(SIGINT, sighandler);
 
     //as = malloc(sizeof(struct ai_settings));
     ds = malloc(sizeof(struct dev_settings));
@@ -81,10 +85,15 @@ int main(int argc, char **argv){
     parse_gen_settings(gs);
     parse_dev_settings(ds);
     fill_mpid(mp);
-    t->start = tv;
+    t->start = tv; //TODO remove gettime stuff
+    t->cstart = ts;
     h->timestamp = tv;
+    h->timestamp2 = ts;
     strcpy(h->proc, argv[0]);
 
+
+    // add to mproc.log
+    processctrl_add(gs->mpid_file, mp,"START");
     // file setup
     strcpy(mricomdir, getenv("MRICOMDIR"));
     snprintf(conf, sizeof(conf),"%s/%s%s",mricomdir,CONF_DIR,CONF_NAME);
@@ -208,7 +217,9 @@ int main(int argc, char **argv){
 
     // launch command
     gettimeofday(&tv,NULL);
+    clock_gettime(CLOCK_REALTIME, &ts);
     t->action = tv;
+    t->caction = ts;
     ret = comedi_command(dev, cmd);
     if(ret < 0){
         comedi_perror("comedi_command");
@@ -228,7 +239,7 @@ int main(int argc, char **argv){
         front += ret;
         nsamples = (front - back) / sample_size;
         front = back + nsamples * sample_size;
-        if(VERBOSE > 1){
+        if(VERBOSE > 2){
             fprintf(stderr, "front = %u, back = %u, samples = %u\n",
                     front, back, nsamples);
         }
@@ -274,10 +285,14 @@ int main(int argc, char **argv){
     }
 
     gettimeofday(&tv,NULL);
+    clock_gettime(CLOCK_REALTIME, &ts);
     t->stop = tv;
+    t->cstop = ts;
     fprintf_analogdaq_meta(fp_meta, as);
     fprintf_analogdaq_cmd(fp_meta, cmd);
     fprintf_times_meta(fp_meta, t);
+    // add STOP instance to process ctrl
+    processctrl_add(gs->mpid_file, mp,"STOP");
     // finish
     free(ds);
     free(gs);
@@ -373,8 +388,8 @@ int prepare_cmd(comedi_t *dev, comedi_cmd *cmd, struct ai_settings *as){
 	 * find a device that allows something else, but it would
 	 * be strange. */
 
-    cmd->stop_src = TRIG_COUNT;
-    cmd->stop_arg = 1000;
+    cmd->stop_src = TRIG_NONE;
+    cmd->stop_arg = 0;
 	/* The end of acquisition is controlled by stop_src and
 	 * stop_arg.
 	 * TRIG_COUNT:  stop acquisition after stop_arg scans.

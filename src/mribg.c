@@ -9,6 +9,16 @@
 
 #define VERBOSE 1
 
+
+char status[33] = {0};
+//TODO
+/* possible values:
+ * "ready"
+ * "auto_experiment_running"
+ * "auto_waiting"
+ * 
+ */
+
 int main(int argc, char **argv){
 
     // pid setup

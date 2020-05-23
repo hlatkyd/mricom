@@ -135,6 +135,7 @@ struct header{
     char proc[16];
     char args[16][32];
     struct timeval timestamp;
+    struct timespec timestamp2;
 
     char names[32][32];
     char units[32][32];
