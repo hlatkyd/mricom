@@ -1,5 +1,12 @@
-#include "common.h"
+/* blockstim.h
+ *
+ * This is an OK digital triggering solution without addititive timing error
+ * and microsec resolution.
+ *
+ *
+ */
 
+#include "common.h"
 
 /* ---------------------------------*/
 /*       comedi subprogram settings */
@@ -19,19 +26,11 @@ struct blockstim_settings{
     int trig_chan;
 
 };
-
-
-/* This is an OK digital triggering solution without addititive timing error
- * and microsec resolution.
- *
- *
- */
-
 void append_bs_data(FILE *fp, int n, int b, int time, int usec_ttl1);
 void append_bs_chdata(FILE *fp, struct blockstim_settings *bs);
 int parse_bstim_conf(struct blockstim_settings *bs, char *file, char *d);
-void fprintf_bstim_meta(FILE *fp, struct header *h,
-                        struct blockstim_settings *bs, struct times *t);
+void fprintf_bstim_meta(FILE *fp, struct header *h, struct blockstim_settings *bs);
+void fprintf_bstim_times(FILE *fp, struct times *t);
 
 // troubleshooting
 void printf_bs(struct blockstim_settings *bs);

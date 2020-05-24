@@ -12,9 +12,9 @@
 
 int mribg_status = 0;
 /* possible value meanings:
- * "1 - ready"
+ * "0 - manual control from mricom"
+ * "1 - automated and waiting"
  * "2 - automated and experiment_running"
- * "3 - automated and waiting"
  * 
  */
 
@@ -144,9 +144,18 @@ int main(int argc, char **argv){
  *  Currently handled requests:
  *      start
  *      get
+ *      set
  *
  *  Return 1 if request is accepted, -1 if denied
  *  Return 0 if request was a query, and fill response
+ *
+ *  General format of messages:
+ *  [sender name],[request][]
+ *  examples:
+ *      vnmrclient,start,blockstim,design,test
+ *      mricom,get,status
+ *      mricom,set,status,1
+ *
  */
 
 int process_request(char *msg, char *msg_response){
@@ -154,7 +163,7 @@ int process_request(char *msg, char *msg_response){
     int argc;
     char **argv;
     char **cmdargv;
-    int i;
+    int i, ret;
     pid_t pid;
 
     argv = calloc(MAXARG,sizeof(char*));
@@ -170,21 +179,60 @@ int process_request(char *msg, char *msg_response){
     argc = parse_msg(msg, argv, ",");
     // check input
     
-    if(strncmp(argv[0],"start",5) == 0){
-        if(strncmp(argv[1], "blockstim",9)==0){
+    // ---------------- START ----------------------
+    if(strcmp(argv[1],"start") == 0){
+        // check if mribg is in auto mode
+        ret = mribg_status_check();
+        if(ret < 0){
+            return -1;
+        }
+        if(strcmp(argv[2], "blockstim")==0){
             for(i=0;i<argc;i++){
-                strcpy(cmdargv[i],argv[i+1]);
+                // blockstim doesnt need the first 2 argument
+                strcpy(cmdargv[i],argv[i+2]);
             }
             fork_blockstim(cmdargv);
             return 1;
         }
+        if(strcmp(argv[2], "analogdaq")==0){
+            for(i=0;i<argc;i++){
+                // blockstim doesnt need the first 2 argument
+                strcpy(cmdargv[i],argv[i+2]);
+            }
+            fork_analogdaq(cmdargv);
+            return 1;
+        }
             
     }
-    if(strncmp(argv[0],"get",3) == 0){
-        if(strncmp(argv[1], "status",6)==0){
+    
+    // ---------------- STOP ----------------------
+    if(strcmp(argv[1],"stop") == 0){
+        // check if mribg is in auto mode
+        ret = mribg_status_check();
+        if(ret < 0){
+            return -1;
+        }
+        if(strcmp(argv[2], "blockstim")==0){
+            return 1;
+        }
+            
+    }
+
+    // ---------------- GET ----------------------
+    if(argc == 3 && strcmp(argv[1],"get") == 0){
+        if(strcmp(argv[2], "status")==0){
             memset(msg_response, 0, sizeof(char)*BUFS);
             snprintf(msg_response, BUFS, "%d",mribg_status);
             return 0;
+        }
+            
+    }
+    // ---------------- SET ----------------------
+    if( argc == 4 && strcmp(argv[1],"set") == 0){
+        if(strcmp(argv[2], "status")==0){
+
+            mribg_status = atoi(argv[3]);
+            return 1;
         }
             
     }
@@ -192,7 +240,7 @@ int process_request(char *msg, char *msg_response){
 }
 
 /*
- * Function: frok_blockstim
+ * Function: fork_blockstim
  * ------------------------
  *  Launch blockstim with arguments
  */
@@ -230,6 +278,68 @@ int fork_blockstim(char **args){
             perror("fork_blockstim: execvp");
             exit(1);
         }
+        return 0;
+    }
+}
+
+/*
+ * Function: fork_analogdaq
+ * ------------------------
+ *  Launch analogdaq with arguments
+ */
+int fork_analogdaq(char **args){
+
+    char path[LPATH];
+    char mricomdir[LPATH] = {0};
+    strcpy(mricomdir,getenv("MRICOMDIR"));
+    int ret;
+    pid_t p;
+    snprintf(path, sizeof(path),"%s/%sanalogdaq",mricomdir,BIN_DIR);
+    printf("path: %s\n",path);
+
+    //fprintf(stderr, "path %s\n",path);
+    p = fork();
+
+    if(p < 0){
+        fprintf(stderr, "mribg_launch: fork failed");
+        exit(1);
+    // parent process
+    } else if(p > 0) {
+
+        return p;
+
+    // child process
+    } else {
+
+        // launch
+        char *cmdargs[2];
+        cmdargs[0] = path;
+
+        //cmdargs[1] = "design"; // why do this again??
+        //cmdargs[2] = args[2];
+        cmdargs[1] = NULL;
+        ret = execvp(path,cmdargs);
+        if(ret < 0){
+            perror("fork_analogdaq: execvp");
+            exit(1);
+        }
+        return 0;
+    }
+}
+/*
+ * Function: mribg_status_check
+ * ----------------------------
+ *  Return -1 if mribg is set to automated mode
+ */
+//TODO use if things get more complicated
+int mribg_status_check(){
+
+    // mribg_status
+    // 0 = manual
+    // 1 = auto
+    // 2 = auto and experiment running
+    if(mribg_status == 0){
+
         return 0;
     }
 }

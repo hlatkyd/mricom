@@ -184,13 +184,11 @@ struct processes{
 /*      common function declare */
 /*------------------------------*/
 
-int parse_procpar();
-int search_procpar(char *parname, char *command);
+int parse_procpar();//TODO why?
+int search_procpar(char *parname, char *command); //TODO check again
 int parse_dev_settings(struct dev_settings *);
 int parse_gen_settings(struct gen_settings *);
-int fprintf_common_header(FILE *fp, struct header *h, int argc, char **args);
-void fprintf_times_meta(FILE *fp, struct times *t);
-int compare_common_header(char *file1, char *file2);
+void fprintf_times_meta(FILE *fp, struct times *t); // TODO remove,add types
 
 /* process control */
 
@@ -212,3 +210,23 @@ int getusecdelay(struct timeval tv1);
 int clockusecdelay(struct timespec tv1);
 double getsecdiff(struct timeval tv1, struct timeval tv2);
 double clocksecdiff(struct timespec tv1, struct timespec tv2);
+
+/* data file management */
+
+void fprintf_meta_times(FILE *fp, struct times *t, char *type);
+int fprintf_common_header(FILE *fp, struct header *h, int argc, char **args);
+int compare_common_header(char *file1, char *file2);
+
+
+/* archiving and finishing up experiment session*/
+//TODO everything here
+int finalize_session(); // maain function at the end of experiment
+// can run these after a seqeunce has finished
+int sort_analogdaq_data(); // separate analog input data for each sequence
+int sort_blockstim_data(); 
+int sort_eventstim_data(); // TODO eventstim sometime
+//TODO maybe run xrecon here and not from vnmrj?
+
+//
+int bash_call();
+

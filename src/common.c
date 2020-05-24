@@ -261,15 +261,6 @@ void sighandler(int signum){
         free(mp);
         exit(1);
     }
-    // interrupt 
-    /*
-    if(signum == SIGTERM && strcmp(mp->name, "mribg")==0){
-        processctrl_add(path, mp, "INTRPT");
-        fprintf(stderr,"%s exiting...\n",mp->name);
-        free(mp);
-        exit(1);
-    }
-    */
     if(signum == SIGUSR1 && strcmp(mp->name, "mribg")==0){
         mribg_status = 1;
     }

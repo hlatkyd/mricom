@@ -221,7 +221,8 @@ int main(int argc, char *argv[]){
     t->stop = stop_tv;
     // close tsv data file
     fclose(fp);
-    fprintf_bstim_meta(fp_meta, h, bs, t);
+    fprintf_bstim_meta(fp_meta, h, bs);
+    fprintf_bstim_times(fp_meta, t);
     fclose(fp_meta);
     comedi_close(dev);
 
@@ -258,19 +259,22 @@ void append_bs_data(FILE *fp, int n, int b, int time, int usec_ttl1){
 }
 void fprintf_bstim_meta(FILE *fp, 
                         struct header *h,
-                        struct blockstim_settings *bs, 
-                        struct times *t){
+                        struct blockstim_settings *bs){
 
-    char *buf;
-    buf = malloc(sizeof(char)*64);
     fprintf(fp, "\n%% BLOCKSTIM SETTINGS\n");
-    fprintf(fp, "device=%s\n",bs->device);
+    //fprintf(fp, "device=%s\n",bs->device);
     fprintf(fp, "start_delay=%lf\n",bs->start_delay);
     fprintf(fp, "on_time=%lf\n",bs->on_time);
     fprintf(fp, "off_time=%lf\n",bs->off_time);
     fprintf(fp, "ttl_usecw=%d\n",bs->ttl_usecw);
     fprintf(fp, "ttl_freq=%lf\n",bs->ttl_freq);
     fprintf(fp, "n_blocks=%d\n",bs->n_blocks);
+}
+
+void fprintf_bstim_times(FILE *fp, struct times *t){
+
+    char *buf;
+    buf = malloc(sizeof(char)*64);
     fprintf(fp, "\n%% TIMING\n");
     gethrtime(buf, t->start);
     fprintf(fp, "start=%s\n",buf);

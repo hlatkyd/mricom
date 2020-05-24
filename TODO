@@ -1,0 +1,4 @@
+1. switch timings to clock_gettime
+2. mock sequence run test
+3. archive functions
+4. analogdaq data slicing functions based on times

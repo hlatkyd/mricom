@@ -215,6 +215,9 @@ int main(int argc, char **argv){
         exit(1);
     }
 
+    // fprint meta
+    fprintf_analogdaq_meta(fp_meta, as);
+    fprintf_analogdaq_cmd(fp_meta, cmd);
     // launch command
     gettimeofday(&tv,NULL);
     clock_gettime(CLOCK_REALTIME, &ts);
@@ -288,8 +291,7 @@ int main(int argc, char **argv){
     clock_gettime(CLOCK_REALTIME, &ts);
     t->stop = tv;
     t->cstop = ts;
-    fprintf_analogdaq_meta(fp_meta, as);
-    fprintf_analogdaq_cmd(fp_meta, cmd);
+    // finish meta with times
     fprintf_times_meta(fp_meta, t);
     // add STOP instance to process ctrl
     processctrl_add(gs->mpid_file, mp,"STOP");
@@ -577,9 +579,9 @@ void append_analogdaq_chdata(FILE *fp, struct dev_settings *ds){
     char *d = DELIMITER;
     int i;
     // print TIME channela s welll
-    for(i=0;i<NAICHAN+1;i++){
+    for(i=0;i<NAICHAN;i++){
         if(i==0)
-            fprintf(fp,"TIME");
+            fprintf(fp,"TIME%s%s",d,ds->analog_ch_names[i]);
         else
             fprintf(fp,"%s%s",d,ds->analog_ch_names[i]);
     }

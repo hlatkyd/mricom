@@ -26,8 +26,11 @@ int main(int argc, char **argv) {
     char msg[BUFS];
     int ret;
 
+    // change argv[0] to simply 'vnmrclient'
+    strcpy(argv[0],"vnmrclient");
     // input check
     ret = make_msg(msg, argc, argv);
+    printf("msg : %s\n",msg);
 
     portno = MRIBGPORT; // 8080
 
@@ -86,7 +89,7 @@ int main(int argc, char **argv) {
             printf("%s\n",buffer);
         }
 
-        fprintf(stderr, "vnmrclient: message was not processed by server\n");
+        fprintf(stderr, "vnmrclient: message was rejected by server\n");
         return 1;
 
     } else{

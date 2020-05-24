@@ -137,7 +137,12 @@ int sh_help(int argc, char **args){
 int sh_test(int argc, char **args){
     //TODO implement usage by specific arguments
     // start, stop, stim etc
-
+    //
+    char buf[BUFS] = {0};
+    if(argc == 2 && strcmp(args[1],"stim")==0){
+        snprintf(buf, sizeof(buf),"mricom,start,blockstim,design,test");
+        send_mribg(buf);
+    }
     return 1;
 }
 int sh_killp(int argc, char **args){
@@ -241,7 +246,10 @@ int sh_update(int argc, char **args){
 /*
  * Function: sh_send
  * -------------------
- *  Send direct message to mribg
+ *  Send direct message to mribg. This is mainly for test purposes, this level
+ *  of manual control should be avoided in production.
+ *
+ *  example: >>> send mricom,start,blockstim,design,test
  */
 #define BUFSIZE 256
 int sh_send(int argc, char **args){
