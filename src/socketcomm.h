@@ -11,7 +11,7 @@
 
 #define BUFS 256
 #define MRIBGPORT 8080
-#define MRIBGHOST "r155806"
+#define MRIBGHOST "127.0.0.1" // r155806, use localhost only for dev
 #define MRIBGLOG "mribg.log"
 
 #define MSG_ACCEPT "ACCEPTED"

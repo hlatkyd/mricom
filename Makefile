@@ -1,6 +1,6 @@
-all: mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq testproc 
-
-vnmr: vnmrclient
+# Run make all
+#
+#
 
 CC=gcc
 CFLAGS=-I ./src
@@ -8,7 +8,16 @@ LIBS=-lreadline -lm -lcomedi
 OBJ=./obj
 SRC=./src
 BIN=./bin
+DAT=./data
 
+all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq testproc 
+
+dir: 
+	mkdir -p $(OBJ)
+	mkdir -p $(BIN)
+	mkdir -p $(DAT)
+
+vnmr: dir vnmrclient
 
 $(OBJ)/%.o: $(SRC)/%.c 
 	$(CC) -c $(CFLAGS) $< -o $@

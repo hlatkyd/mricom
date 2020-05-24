@@ -1,8 +1,13 @@
 # no object files
 *.o
-
 # no tsv data and metadata files
 *.meta
 *.tsv
 # no backup
 bckp*
+
+mproc.log
+# no bin
+mricom
+mribg
+bin/

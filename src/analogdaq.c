@@ -9,9 +9,9 @@
 #define VERBOSE 2 // 1 is standard, 2 is data, 3 is all
 #define ANALOGDAQ_TESTING 1
 
-#define CONF_NAME "/analogdaq.conf"
-#define DATAF_NAME "/analogdaq.tsv"
-#define METAF_NAME "/analogdaq.meta"
+#define CONF_NAME "analogdaq.conf"
+#define DATAF_NAME "analogdaq.tsv"
+#define METAF_NAME "analogdaq.meta"
 
 int main(int argc, char **argv){
 

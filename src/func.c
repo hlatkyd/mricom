@@ -179,9 +179,10 @@ void listprocesses(struct processes *p){
             p->nproc, p->mainpid, p->bgpid);
     printf("--------------------------------------------------\n");
     //printf("mricom pid: %d\n",p->mainpid);
-    printf("PROC%sPARENT%sNAME%sPNAME%sTIMESTAMP\n",d,d,d,d);
+    printf("PROC%s%s%s%-8s%s%-8s%sTIMESTAMP\n",
+            d,"PARENT",d,"NAME",d,"PNAME",d);
     for(i=0; i<p->nproc;i++){
-        printf("%d%s%d%s%s%s%s%s%s\n",
+        printf("%d%s%d%s%-8s%s%-8s%s%s\n",
                 p->pid[i],d,p->ppid[i],d,p->name[i],
                 d,p->pname[i],d,p->timestamp[i]);
     }

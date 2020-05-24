@@ -109,23 +109,24 @@ int send_mribg(char *msg){
        perror("ERROR writing to socket");
        exit(1);
     }
+    // accepted
     if(strncmp(buffer, MSG_ACCEPT, strlen(MSG_ACCEPT)) == 0){
         if(SEND_VERBOSE > 0){
             printf("%s\n",buffer);
         }
-        return 0;
-
+        return 1;
+    //rejected
     } else if(strncmp(buffer, MSG_REJECT, strlen(MSG_REJECT)) == 0){
         if(SEND_VERBOSE > 0){
             printf("%s\n",buffer);
         }
 
         fprintf(stderr, "send_mribg: message was not processed by server\n");
-        return 1;
-
-    } else{
-
         return -1;
+    // responseto query
+    } else{
+        printf("[mribg]: %s\n",buffer);
+        return 0;
     }
 }
 

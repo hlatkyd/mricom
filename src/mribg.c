@@ -10,12 +10,11 @@
 #define VERBOSE 1
 
 
-char status[33] = {0};
-//TODO
-/* possible values:
- * "ready"
- * "auto_experiment_running"
- * "auto_waiting"
+int mribg_status = 0;
+/* possible value meanings:
+ * "1 - ready"
+ * "2 - automated and experiment_running"
+ * "3 - automated and waiting"
  * 
  */
 
@@ -38,6 +37,7 @@ int main(int argc, char **argv){
 
     char msg_accept[] = MSG_ACCEPT;
     char msg_reject[] = MSG_REJECT;
+    char msg_back[BUFS] = {0};
 
 
     if(getenv("MRICOMDIR") == NULL){
@@ -45,7 +45,9 @@ int main(int argc, char **argv){
         exit(1);
     }
 
-    signal(SIGTERM, sighandler);
+    signal(SIGINT, sighandler);
+    signal(SIGUSR1, sighandler);
+
     strcpy(mricomdir, getenv("MRICOMDIR"));
 
     // init
@@ -99,19 +101,27 @@ int main(int argc, char **argv){
         }
 
         // do processing
-        ret = process_request(buffer);
+        ret = process_request(buffer, msg_back);
 
-        // signal back
+        // signal back if accepted
         if(ret < 0){
             if(VERBOSE > 0){
                 fprintf(stderr, "[mribg]: request denied\n");
             }
             write(newsockfd, msg_reject, sizeof(msg_reject));
+        // signal back if rejected
         } else if(ret > 0){
             if(VERBOSE > 0){
                 fprintf(stderr, "[mribg]: request accepted\n");
             }
             write(newsockfd, msg_accept, sizeof(msg_accept));
+
+        // write direct message if message was a query
+        } else if(ret == 0){
+            if(VERBOSE > 0){
+                fprintf(stderr, "[mribg]: %s\n",msg_back);
+            }
+            write(newsockfd, msg_back, sizeof(msg_back));
         }
         close(newsockfd);
 
@@ -130,9 +140,16 @@ int main(int argc, char **argv){
  * Function: process_request
  * -------------------------
  *  General client request handling function
+ *
+ *  Currently handled requests:
+ *      start
+ *      get
+ *
+ *  Return 1 if request is accepted, -1 if denied
+ *  Return 0 if request was a query, and fill response
  */
 
-int process_request(char *msg){
+int process_request(char *msg, char *msg_response){
 
     int argc;
     char **argv;
@@ -160,6 +177,14 @@ int process_request(char *msg){
             }
             fork_blockstim(cmdargv);
             return 1;
+        }
+            
+    }
+    if(strncmp(argv[0],"get",3) == 0){
+        if(strncmp(argv[1], "status",6)==0){
+            memset(msg_response, 0, sizeof(char)*BUFS);
+            snprintf(msg_response, BUFS, "%d",mribg_status);
+            return 0;
         }
             
     }

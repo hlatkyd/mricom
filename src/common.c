@@ -250,30 +250,32 @@ void sighandler(int signum){
 
     strcpy(path, getenv("MRICOMDIR"));
     snprintf(path, sizeof(path),"%s/%s",getenv("MRICOMDIR"),MPROC_FILE);
+    mp = malloc(sizeof(struct mpid));
+    // process name, mp->name
+    memset(mp, 0, sizeof(struct mpid));
+    fill_mpid(mp);
+    // general interrupt
     if(signum == SIGINT){
-        mp = malloc(sizeof(struct mpid));
-        memset(mp, 0, sizeof(struct mpid));
-        fill_mpid(mp);
-        // if interrupting mricom shell, kill mribg as well
-        // TODO seems to exit anyway
-        if(strcmp(mp->name, "mricom")==0){
-           ; 
-        }
         processctrl_add(path, mp, "INTRPT");
         fprintf(stderr,"%s exiting...\n",mp->name);
         free(mp);
         exit(1);
     }
-    if(signum == SIGTERM){
-        mp = malloc(sizeof(struct mpid));
-        memset(mp, 0, sizeof(struct mpid));
-        fill_mpid(mp);
+    // interrupt 
+    /*
+    if(signum == SIGTERM && strcmp(mp->name, "mribg")==0){
         processctrl_add(path, mp, "INTRPT");
         fprintf(stderr,"%s exiting...\n",mp->name);
         free(mp);
         exit(1);
+    }
+    */
+    if(signum == SIGUSR1 && strcmp(mp->name, "mribg")==0){
+        mribg_status = 1;
     }
 }
+
+
 /*
  * Function: processctrl_clean()
  * -----------------------------

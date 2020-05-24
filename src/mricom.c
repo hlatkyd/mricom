@@ -241,7 +241,7 @@ int sh_update(int argc, char **args){
 /*
  * Function: sh_send
  * -------------------
- *  Send message to mribg
+ *  Send direct message to mribg
  */
 #define BUFSIZE 256
 int sh_send(int argc, char **args){
@@ -344,7 +344,7 @@ void exit_cleanup(){
     //TODO wrong pid somehow
     getname(procname, pr->bgpid);
     if(strncmp(procname,"mribg",5)==0){
-        kill(pr->bgpid, SIGTERM);
+        kill(pr->bgpid, SIGINT);
         //printf("kill bgpid: %d\n",pr->bgpid);
     }
     processctrl_add(gs->mpid_file, mmp, "STOP");

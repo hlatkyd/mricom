@@ -8,7 +8,9 @@ int main(int argc, char **argv){
     signal(SIGINT, sighandler);
     struct mpid *mp;
     // get path from settings??
-    char path[] = "mproc.log";
+    char path[LPATH] = {0};
+    snprintf(path, sizeof(path), "%s/%s",getenv("MRICOMDIR"),MPROC_FILE);
+    printf("path %s\n",path);
     mp = malloc(sizeof(struct mpid));
     fill_mpid(mp);
     processctrl_add(path, mp, "START");

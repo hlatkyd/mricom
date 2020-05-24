@@ -9,5 +9,5 @@
 #define EXPFILE "experiment"
 
 int parse_vnmrclient_msg(char *msg, int *argc, char **args);
-int process_request(char *msg);
+int process_request(char *msg, char *msg_response);
 int fork_blockstim(char **args);
