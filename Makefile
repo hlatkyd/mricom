@@ -10,7 +10,8 @@ SRC=./src
 BIN=./bin
 DAT=./data
 
-all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq testproc 
+all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq
+tests: test_proc test_console
 
 dir: 
 	mkdir -p $(OBJ)
@@ -43,8 +44,11 @@ vnmrclient: $(OBJ)/vnmrclient.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 ttlctrl: $(OBJ)/ttlctrl.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 	$(CC) -o $(BIN)/ttlctrl $(OBJ)/ttlctrl.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)
 
-testproc: $(OBJ)/testproc.o $(OBJ)/common.o
-	$(CC) -o $(BIN)/testproc $(OBJ)/testproc.o $(OBJ)/common.o $(LIBS)
+test_proc: $(OBJ)/test_proc.o $(OBJ)/common.o
+	$(CC) -o $(BIN)/test_proc $(OBJ)/test_proc.o $(OBJ)/common.o $(LIBS)
+
+test_console: $(OBJ)/test_console.o $(OBJ)/common.o $(OBJ)/socketcomm.o
+	$(CC) -o $(BIN)/test_console $(OBJ)/test_console.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)
 
 clean:
 	rm -f $(OBJ)/*

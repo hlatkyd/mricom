@@ -247,7 +247,7 @@ void sighandler(int signum){
     struct mpid *mp;
     char c = '\0';
     char path[LPATH] = {0};
-
+    char metaf[LPATH] = {0};
     strcpy(path, getenv("MRICOMDIR"));
     snprintf(path, sizeof(path),"%s/%s",getenv("MRICOMDIR"),MPROC_FILE);
     mp = malloc(sizeof(struct mpid));
@@ -256,15 +256,32 @@ void sighandler(int signum){
     fill_mpid(mp);
     // general interrupt
     if(signum == SIGINT){
+        // blockstim additional interrupt handling
+        if(strcmp(mp->name,"blockstim")==0){
+            snprintf(metaf, sizeof(metaf),
+                    "%s/%sblockstim.meta",getenv("MRICOMDIR"),DATA_DIR);
+            printf("metaf %s\n",metaf);
+            fprintf_meta_intrpt(metaf);
+        }
+        // blockstim additional interrupt handling
+        if(strcmp(mp->name,"eventstim")==0){
+            ;
+            //TODO
+        }
+        // blockstim additional interrupt handling
+        if(strcmp(mp->name,"analogdaq")==0){
+            
+        }
         processctrl_add(path, mp, "INTRPT");
         fprintf(stderr,"%s exiting...\n",mp->name);
         free(mp);
         exit(1);
     }
+    // mribg status control
     if(signum == SIGUSR1 && strcmp(mp->name, "mribg")==0){
         mribg_status = 1;
     }
-}
+}   
 
 
 /*
@@ -584,18 +601,23 @@ int parse_dev_settings(struct dev_settings *ds){
             ds->ttlctrl_subdev = atoi(token);
             continue;
         }
+        if(strcmp(line, "TTLCTRL_IN_CHAN") == 0){
+            token = strtok(NULL,"=");
+            ds->ttlctrl_in_chan = atoi(token);
+            continue;
+        }
         if(strcmp(line, "TTLCTRL_OUT_CHAN") == 0){
             token = strtok(NULL,"=");
             ds->ttlctrl_out_chan = atoi(token);
             continue;
         }
-        if(strcmp(line, "TTLCTRL_IN_CHANLIST") == 0){
+        if(strcmp(line, "TTLCTRL_USR_CHAN") == 0){
             i=0;
             token = strtok(NULL,"=");
             strcpy(buf, token);
             token = strtok(buf, ",");
             while(token != NULL){
-                ds->ttlctrl_in_chanlist[i] = (int)atoi(token);
+                ds->ttlctrl_usr_chan[i] = (int)atoi(token);
                 i++;
                 token = strtok(NULL,",");
             }
@@ -661,8 +683,61 @@ void fprintf_times_meta(FILE *fp, struct times *t){
     free(buf);
 
 }
+/*
+ * Function fprintf_times_meta
+ * ---------------------------
+ * Log times struct in a common format in metadata files.
+ *
+ * Element represents one element of the times struct
+ */
 
 
+void fprintf_meta_times(char *p, struct times *t, char *element){
+
+    char *buf;
+    FILE *fp;
+    fp = fopen(p,"a");
+    buf = malloc(sizeof(char)*64); // for human readable time
+
+    if(strcmp(element, "start")==0){
+        fprintf(fp, "\n%% TIMING\n");
+        gethrtime(buf, t->start);
+        fprintf(fp, "start=%s\n",buf);
+        free(buf);
+    } else if(strcmp(element, "action")==0){
+        gethrtime(buf, t->action);
+        fprintf(fp, "action=%s\n",buf);
+        free(buf);
+    } else if(strcmp(element,"stop")==0){
+        gethrtime(buf, t->stop);
+        fprintf(fp, "stop=%s\n",buf);
+        free(buf);
+    } else {
+        fprintf(stderr, "fprintf_meta_times: wrong input\n");
+        free(buf);
+    }
+    fclose(fp);
+
+}
+
+void fprintf_meta_intrpt(char *p){
+
+    char *buf;
+    FILE *fp;
+    struct timeval tv; // TODO replace with timespec
+    struct timespec ts;
+    int ret;
+    fp = fopen(p,"a");
+    buf = malloc(sizeof(char)*64); // for human readable time
+    gettimeofday(&tv,NULL);
+    //clock_gettime(CLOKC_REALTIME, &ts);
+    gethrtime(buf, tv);
+    printf("buf: %s\n",buf);
+    ret = fprintf(fp, "intrpt=%s\n",buf);
+    printf("ret: %d\n",ret);
+    free(buf);
+    fclose(fp);
+}
 
 /*
  * Function: compare_common_header

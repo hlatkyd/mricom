@@ -169,6 +169,10 @@ int main(int argc, char *argv[]){
     }
     comedi_dio_config(dev, subdev, chan, COMEDI_OUTPUT);
 
+    // fprintf available meta
+    fprintf_bstim_meta(fp_meta, h, bs);
+    fprintf_meta_times(fp_meta, t, "start");
+
     // wait for TTL input
     if(bs->trig_on == 1){
         if(chan == bs->trig_chan){
@@ -188,6 +192,9 @@ int main(int argc, char *argv[]){
     gettimeofday(&action_tv,NULL);
     gettimeofday(&tv,NULL);
     t->action = action_tv;
+
+    fprintf_meta_times(fp_meta, t, "action");
+
     //printf("setup time: %lf\n",diff);
     usec_target = usec_start + (int)(bs->start_delay * 1000000.0);
     //printf("starting...\n");
@@ -221,8 +228,7 @@ int main(int argc, char *argv[]){
     t->stop = stop_tv;
     // close tsv data file
     fclose(fp);
-    fprintf_bstim_meta(fp_meta, h, bs);
-    fprintf_bstim_times(fp_meta, t);
+    fprintf_meta_times(fp_meta, t, "stop");
     fclose(fp_meta);
     comedi_close(dev);
 

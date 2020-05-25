@@ -125,8 +125,9 @@ typedef struct dev_settings{
     int stim_trig_subdev;//subdev of  digital stim channel
     int stim_trig_chan;// digital stim channel (0 in settings)
     int ttlctrl_subdev;
+    int ttlctrl_in_chan;
     int ttlctrl_out_chan;
-    int ttlctrl_in_chanlist[3];
+    int ttlctrl_usr_chan[3];
 
 
 } dev_settings;
@@ -213,7 +214,8 @@ double clocksecdiff(struct timespec tv1, struct timespec tv2);
 
 /* data file management */
 
-void fprintf_meta_times(FILE *fp, struct times *t, char *type);
+void fprintf_meta_times(char *p, struct times *t, char *element);
+void fprintf_meta_intrpt(char *p);
 int fprintf_common_header(FILE *fp, struct header *h, int argc, char **args);
 int compare_common_header(char *file1, char *file2);
 

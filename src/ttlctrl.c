@@ -63,7 +63,7 @@ int main(int argc, char **argv){
     chan = ds->ttlctrl_out_chan; 
 
     for(i=0;i<N_USER_BITS;i++){
-        inchan[i] = ds->ttlctrl_in_chanlist[i];
+        inchan[i] = ds->ttlctrl_usr_chan[i];
     }
 
     // channel setup
