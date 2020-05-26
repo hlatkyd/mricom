@@ -32,11 +32,11 @@ int prepare_cmd(comedi_t *dev, comedi_cmd *cmd, struct ai_settings *as);
 void parse_analogdaq_conf(struct ai_settings *as, char *conf);
 void append_analogdaq_chdata(FILE *fp, struct dev_settings *ds);
 void append_analogdaq_data(FILE *fp, struct ai_settings *as, double *samples);
-void fprintf_analogdaq_meta(FILE *fp, struct ai_settings *as);
-void fprintf_analogdaq_cmd(FILE *fp, comedi_cmd *cmd);
+void fprintf_analogdaq_meta(char *p, struct ai_settings *as);
+void fprintf_analogdaq_cmd(char *p, comedi_cmd *cmd);
 
 void print_ai_settings(struct ai_settings *as);
 double to_physical(unsigned int sample, struct ai_settings *as, int ch);
 //util grabbed from comedilib demos
-void dump_cmd(FILE *out, comedi_cmd *cmd);
+void fprintf_cmd(char *out, comedi_cmd *cmd);
 char *cmd_src(int src, char *buf);

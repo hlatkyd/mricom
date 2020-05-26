@@ -100,7 +100,7 @@ int main(int argc, char **argv){
             fprintf(stderr, "[mribg]: incoming request: '%s'\n",buffer);
         }
 
-        // do processing
+        // do processing, start subprograms, etc
         ret = process_request(buffer, msg_back);
 
         // signal back if accepted

@@ -52,5 +52,7 @@ Useful stuff:
 ------------------------------------------------
 vnmrj pulse sequence statemetns:
 
-setMRIusergates
-xgate
+setMRIusergates -- 3 bit output
+xgate -- wait for gate input
+macro:
+werr -- specify processing on error

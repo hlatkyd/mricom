@@ -115,6 +115,7 @@ int main(int argc, char **argv){
     fprintf_common_header(fp, h, argc, argv);
     append_analogdaq_chdata(fp,ds);
     fprintf_common_header(fp_meta, h, argc, argv);
+    fclose(fp_meta); //TODO this is disgusting, fix sometime
 
 
     // device setup
@@ -207,7 +208,6 @@ int main(int argc, char **argv){
     ret = comedi_command_test(dev, cmd);
 
     if(VERBOSE==1){
-        dump_cmd(stdout,cmd);
         print_ai_settings(as);
     }
     if(ret < 0){
@@ -216,13 +216,17 @@ int main(int argc, char **argv){
     }
 
     // fprint meta
-    fprintf_analogdaq_meta(fp_meta, as);
-    fprintf_analogdaq_cmd(fp_meta, cmd);
+    fprintf_analogdaq_meta(metafile, as);
+    fprintf_cmd(metafile, cmd);
+    fprintf_meta_times(metafile, t, "start");
     // launch command
     gettimeofday(&tv,NULL);
     clock_gettime(CLOCK_REALTIME, &ts);
     t->action = tv;
     t->caction = ts;
+    // fprintf action metadata
+    fprintf_meta_times(metafile, t,"action");
+
     ret = comedi_command(dev, cmd);
     if(ret < 0){
         comedi_perror("comedi_command");
@@ -292,7 +296,7 @@ int main(int argc, char **argv){
     t->stop = tv;
     t->cstop = ts;
     // finish meta with times
-    fprintf_times_meta(fp_meta, t);
+    fprintf_meta_times(metafile, t,"stop");
     // add STOP instance to process ctrl
     processctrl_add(gs->mpid_file, mp,"STOP");
     // finish
@@ -426,10 +430,15 @@ int prepare_cmd_lib(comedi_t *dev, comedi_cmd *cmd, struct ai_settings *as){
     return 0;
 }
 
-void dump_cmd(FILE *out,comedi_cmd *cmd){
+void fprintf_cmd(char *metafile, comedi_cmd *cmd){
 
+    FILE *out;
 	char buf[100];
-
+    out = fopen(metafile,"a");
+    if(out == NULL){
+        perror("analogdaq: fprintf_cmd");
+    }
+    fprintf(out, "\n%%ANALOGDAQ_CMD\n");
 	fprintf(out,"subdevice:      %d\n",
 		cmd->subdev);
 
@@ -452,6 +461,7 @@ void dump_cmd(FILE *out,comedi_cmd *cmd){
 	fprintf(out,"stop:       %-8s %d\n",
 		cmd_src(cmd->stop_src,buf),
 		cmd->stop_arg);
+    fclose(out);
 }
 
 char *cmd_src(int src,char *buf)
@@ -479,23 +489,15 @@ char *cmd_src(int src,char *buf)
 	return buf;
 }
 
-void print_ai_settings(struct ai_settings *as){
 
-    int i;
-    printf("\nstruct ai_settings:\n");
-    printf("-------------------\n");
-    printf("subdev: %d\n",as->subdev);
-    printf("naichan: %d\n",as->naichan);
-    printf("aref: %d\n",as->aref);
-    printf("chanlist: ");
-    for(i=0;i<as->naichan;i++)
-        printf("%d,",as->chanlist[i]);
-    printf("\nn_scan: %d\n",as->n_scan);
-    printf("period_ns: %d\n",as->period_ns);
-}
+void fprintf_analogdaq_meta(char *p, struct ai_settings *as){
 
-void fprintf_analogdaq_meta(FILE *fp, struct ai_settings *as){
-
+    FILE *fp;
+    fp = fopen(p,"a");
+    if(fp == NULL){
+        perror("analogdaq fopen");
+    }
+    // daq settings
     fprintf(fp,"\n%% ANALOGDAQ_SETTINGS\n");
     fprintf(fp,"subdev=%d\n",as->subdev);
     fprintf(fp,"naichan=%d\n",as->naichan);
@@ -503,11 +505,25 @@ void fprintf_analogdaq_meta(FILE *fp, struct ai_settings *as){
     fprintf(fp,"sampling_rate=%d\n",as->sampling_rate);
     fprintf(fp,"precision=%d\n",as->precision);
     fprintf(fp,"refresh_rate_usec=%d\n",as->refresh_rate_usec);
+    fclose(fp);
 }
 
-void fprintf_analogdaq_cmd(FILE *fp, comedi_cmd *cmd){
+void fprintf_analogdaq_cmd(char *p, comedi_cmd *cmd){
 
+    FILE *fp;
+    fp = fopen(p,"a");
+    if(fp == NULL){
+        perror("analogdaq: fopen");
+    }
     fprintf(fp,"\n%% CMD_SETTINGS\n");
+    fprintf(fp,"subdev=\n");
+    fprintf(fp,"start=\n");
+    fprintf(fp,"scan_begin=\n");
+    fprintf(fp,"convert=\n");
+    fprintf(fp,"scan_end=\n");
+    fprintf(fp,"stop=\n");
+    fclose(fp);
+
 
 }
 double to_physical(unsigned int sample, struct ai_settings *as, int ch){
@@ -600,4 +616,19 @@ void append_analogdaq_data(FILE *fp, struct ai_settings *as, double *samples){
             fprintf(fp,"%s%.*lf",d, as->precision, samples[i]);
     }
     fprintf(fp,"\n");
+}
+
+void print_ai_settings(struct ai_settings *as){
+
+    int i;
+    printf("\nstruct ai_settings:\n");
+    printf("-------------------\n");
+    printf("subdev: %d\n",as->subdev);
+    printf("naichan: %d\n",as->naichan);
+    printf("aref: %d\n",as->aref);
+    printf("chanlist: ");
+    for(i=0;i<as->naichan;i++)
+        printf("%d,",as->chanlist[i]);
+    printf("\nn_scan: %d\n",as->n_scan);
+    printf("period_ns: %d\n",as->period_ns);
 }

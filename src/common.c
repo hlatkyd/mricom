@@ -270,6 +270,10 @@ void sighandler(int signum){
         }
         // blockstim additional interrupt handling
         if(strcmp(mp->name,"analogdaq")==0){
+            snprintf(metaf, sizeof(metaf),
+                    "%s/%sanalogdaq.meta",getenv("MRICOMDIR"),DATA_DIR);
+            printf("metaf %s\n",metaf);
+            fprintf_meta_intrpt(metaf);
             
         }
         processctrl_add(path, mp, "INTRPT");
@@ -622,6 +626,23 @@ int parse_dev_settings(struct dev_settings *ds){
                 token = strtok(NULL,",");
             }
             i = 0; // set 0 again, just to be sure
+        }
+        // test_console
+        // ------------------------------------------
+        if(strcmp(line, "TEST_CONSOLE_SUBDEV") == 0){
+            token = strtok(NULL,"=");
+            ds->test_console_subdev = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "TEST_CONSOLE_OUT_CHAN") == 0){
+            token = strtok(NULL,"=");
+            ds->test_console_out_chan = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "TEST_CONSOLE_IN_CHAN") == 0){
+            token = strtok(NULL,"=");
+            ds->test_console_in_chan = atoi(token);
+            continue;
         }
     }
     return 0;

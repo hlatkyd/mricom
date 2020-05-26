@@ -128,6 +128,9 @@ typedef struct dev_settings{
     int ttlctrl_in_chan;
     int ttlctrl_out_chan;
     int ttlctrl_usr_chan[3];
+    int test_console_subdev;
+    int test_console_out_chan; //only for testing
+    int test_console_in_chan; //only for testing
 
 
 } dev_settings;

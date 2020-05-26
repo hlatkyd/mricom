@@ -74,3 +74,9 @@ TTLCTRL_OUT_CHAN=2
 # ttlctrl input from console user interface (3 bit)
 TTLCTRL_USR_CHAN=4,5,6
 
+# test_console
+# works in conjuction with ttlctrl in place of console for testing
+TEST_CONSOLE_SUBDEV=2
+TEST_CONSOLE_IN_CHAN=4
+TEST_CONSOLE_OUT_CHAN=7
+

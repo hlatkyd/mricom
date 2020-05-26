@@ -144,17 +144,18 @@ int main(int argc, char *argv[]){
         perror("fopen");
         exit(1);
     }
+    // prepare header
+    fprintf_common_header(fp,h, argc, argv);
+    append_bs_chdata(fp, bs);
+    // write metadata file
     fp_meta = fopen(metafile,"w");
     if(fp_meta == NULL){
         printf("blockstim: cannot open %s\n",metafile);
         exit(1);
     }
-    // prepare header
-    fprintf_common_header(fp,h, argc, argv);
-    append_bs_chdata(fp, bs);
-    // write metadata file
     // print same header for metadata file as well
     fprintf_common_header(fp_meta, h, argc, argv);
+    fclose(fp_meta);
     // device setup
     dev = comedi_open(devpath);
     if(dev == NULL){
@@ -170,8 +171,8 @@ int main(int argc, char *argv[]){
     comedi_dio_config(dev, subdev, chan, COMEDI_OUTPUT);
 
     // fprintf available meta
-    fprintf_bstim_meta(fp_meta, h, bs);
-    fprintf_meta_times(fp_meta, t, "start");
+    fprintf_bstim_meta(metafile, h, bs);
+    fprintf_meta_times(metafile, t, "start");
 
     // wait for TTL input
     if(bs->trig_on == 1){
@@ -193,7 +194,7 @@ int main(int argc, char *argv[]){
     gettimeofday(&tv,NULL);
     t->action = action_tv;
 
-    fprintf_meta_times(fp_meta, t, "action");
+    fprintf_meta_times(metafile, t, "action");
 
     //printf("setup time: %lf\n",diff);
     usec_target = usec_start + (int)(bs->start_delay * 1000000.0);
@@ -228,7 +229,7 @@ int main(int argc, char *argv[]){
     t->stop = stop_tv;
     // close tsv data file
     fclose(fp);
-    fprintf_meta_times(fp_meta, t, "stop");
+    fprintf_meta_times(metafile, t, "stop");
     fclose(fp_meta);
     comedi_close(dev);
 
@@ -263,10 +264,15 @@ void append_bs_data(FILE *fp, int n, int b, int time, int usec_ttl1){
     fprintf(fp,"%d%s%d%s%d\n",n, d, time, d, b);
 
 }
-void fprintf_bstim_meta(FILE *fp, 
+void fprintf_bstim_meta(char *p, 
                         struct header *h,
                         struct blockstim_settings *bs){
 
+    FILE *fp;
+    fp = fopen(p,"a");
+    if(fp == NULL){
+        perror("fopen");
+    }
     fprintf(fp, "\n%% BLOCKSTIM SETTINGS\n");
     //fprintf(fp, "device=%s\n",bs->device);
     fprintf(fp, "start_delay=%lf\n",bs->start_delay);
@@ -275,20 +281,7 @@ void fprintf_bstim_meta(FILE *fp,
     fprintf(fp, "ttl_usecw=%d\n",bs->ttl_usecw);
     fprintf(fp, "ttl_freq=%lf\n",bs->ttl_freq);
     fprintf(fp, "n_blocks=%d\n",bs->n_blocks);
-}
-
-void fprintf_bstim_times(FILE *fp, struct times *t){
-
-    char *buf;
-    buf = malloc(sizeof(char)*64);
-    fprintf(fp, "\n%% TIMING\n");
-    gethrtime(buf, t->start);
-    fprintf(fp, "start=%s\n",buf);
-    gethrtime(buf, t->action);
-    fprintf(fp, "action=%s\n",buf);
-    gethrtime(buf, t->stop);
-    fprintf(fp, "stop=%s\n",buf);
-    free(buf);
+    fclose(fp);
 }
 
 void printf_bs(struct blockstim_settings *bs){
