@@ -122,8 +122,9 @@ typedef struct dev_settings{
     char analog_ch_names[16][16]; // names of analog chs for data files, etc
     int analog_in_subdev; // analog subdevice number (0 on ni-6035e)
     int analog_in_chan[8];// analog channels, usually 0,1,2,....
-    int stim_trig_subdev;//subdev of  digital stim channel
-    int stim_trig_chan;// digital stim channel (0 in settings)
+    int stim_subdev;//subdev of  digital stim channel
+    int stim_trig_chan;// digital trigger for stim start (1 usually)
+    int stim_ttl_chan;// digital stim channel (0 in settings)
     int ttlctrl_subdev;
     int ttlctrl_in_chan;
     int ttlctrl_out_chan;

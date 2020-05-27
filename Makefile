@@ -10,7 +10,7 @@ SRC=./src
 BIN=./bin
 DAT=./data
 
-all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq
+all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq test_proc test_console
 tests: test_proc test_console
 
 dir: 

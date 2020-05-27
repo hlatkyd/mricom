@@ -5,9 +5,17 @@
  * parameters as input, and sending them to TCP server mribg
  *
  * 
+ * Example:
  *
+ *  an instance in a vnmr macro calling vnmrclient may look like:
+ *      shell(vnmrclient start blockstim, design 3)
  *
+ *  From the argument a comma separated message created for mribg
+ *      'vnmrclient,start,blockstim,design,3'
  *
+ *  mribg parses the message and proceeds with giving out the appropriate
+ *  commands. In this instance, launches blockstim with arguments 'design 3'
+ *  and since the first 2 element signals sequence start, launches ttlctrl.
  */
 
 

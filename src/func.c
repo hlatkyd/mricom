@@ -130,8 +130,9 @@ void listdevsettings(struct dev_settings *devsettings){
     for(i;i<4;i++){
         printf("%d,",devsettings->analog_in_chan[i]);
     }
-    printf("\nstim_trig_subdev: %d\n",devsettings->stim_trig_subdev);
+    printf("\nstim_trig_subdev: %d\n",devsettings->stim_subdev);
     printf("stim_trig_chan: %d\n",devsettings->stim_trig_chan);
+    printf("stim_ttl_chan: %d\n",devsettings->stim_ttl_chan);
 }
 /*
  * Function: listsettings

@@ -21,7 +21,7 @@
 #define TESTING 0
 #define VERBOSE 2
 
-#define OPTION 1 //TODO do liek in description for clarity
+#define OPTION 1
 
 //TODO as well
 #define MPIDLOG 0 // save instance in mpid.log
@@ -35,7 +35,7 @@ int main(int argc, char **argv){
 
     comedi_t *dev;
     char mricomdir[LPATH];
-    int subdev, outchan, inchan;
+    int subdev, outchan, outchan2, inchan;
     int usrchan[N_USER_BITS];
     int i, ret;
     int waitbits; // console start confir signal int between 0-2**N_USER_BITS
@@ -75,10 +75,13 @@ int main(int argc, char **argv){
     subdev = ds->ttlctrl_subdev;
     inchan  = ds->ttlctrl_in_chan;
     outchan = ds->ttlctrl_out_chan; 
+    outchan2 = ds->ttlctrl_usr_chan[2];
 
+    /*
     for(i=0;i<N_USER_BITS;i++){
         usrchan[i] = ds->ttlctrl_usr_chan[i];
     }
+    */
     // print settings
     //
     if(VERBOSE > 0){
@@ -100,44 +103,53 @@ int main(int argc, char **argv){
 
     //init channels
     comedi_dio_config(dev, subdev, outchan, COMEDI_OUTPUT);
+    comedi_dio_config(dev, subdev, outchan2, COMEDI_OUTPUT);
     comedi_dio_config(dev, subdev, inchan, COMEDI_INPUT);
     comedi_dio_write(dev, subdev, outchan , 0);
+    comedi_dio_write(dev, subdev, outchan2 , 0);
 
-    // wait for confirmation bits from console
-    if(TESTING != 1){
-        for(i=0;i<N_USER_BITS;i++){
-            comedi_dio_config(dev, subdev, usrchan[i],COMEDI_INPUT);
-        }
-        // wait either for user bits or ttl signal
-        //ret = wait_user_bits(dev, subdev, usrchan, waitbits);
-        //ret = wait_console_ttl(dev, subdev, inchan);
-        if(wait_for_handshake == 1)
-            ret = wait_console_handshake(dev, subdev, inchan, outchan);
-        if(ret == 0){
-            // send TTL signal both to console and blockstim
-            comedi_dio_write(dev, subdev, outchan , 1);
-            usleep(ttl_w);
-            comedi_dio_write(dev, subdev, outchan , 0);
-
-        } else if(ret == -1){
-            fprintf(stderr, "ttlctrl: console timeout error\n");
-        } else {
-            //TODO
-            fprintf(stderr, "unknown err\n");
-            exit(1);
-        }
+    //----------------------------------------------
     // in testing case only ask for user getchar
-    } else {
+    if(TESTING == 1){
         printf("TESTING=1; press ENTER\n");
         getchar();
         comedi_dio_write(dev, subdev, outchan , 1);
         usleep(ttl_w);
         comedi_dio_write(dev, subdev, outchan , 0);
+        free(gs);
+        free(ds);
+        return 0;
+    }
+    //----------------------------------------------
+
+    // wait for confirmation bits from console
+    // wait either for user bits or ttl signal
+    //ret = wait_user_bits(dev, subdev, usrchan, waitbits);
+    //ret = wait_console_ttl(dev, subdev, inchan);
+    if(OPTION == 1)
+        ret = wait_console_handshake(dev, subdev, inchan, outchan);
+
+    if(ret == 0){
+        // send TTL signal both to console and blockstim
+        if(VERBOSE > 0)
+            fprintf(stderr, "sending launch TTL\n");
+        comedi_dio_write(dev, subdev, outchan , 1);
+        comedi_dio_write(dev, subdev, outchan2 , 1);
+        usleep(ttl_w);
+        comedi_dio_write(dev, subdev, outchan , 0);
+        comedi_dio_write(dev, subdev, outchan2 , 0);
+
+    } else if(ret == -1){
+        fprintf(stderr, "ttlctrl: console timeout error\n");
+    } else {
+        //TODO
+        fprintf(stderr, "unknown err\n");
+        exit(1);
     }
     
-    // wait input from console
+    // wait pulsesequence finish signal input from console
     
-    // trig
+    // send message to mribg
 
     free(gs);
     free(ds);
@@ -216,6 +228,7 @@ int wait_console_handshake(comedi_t *dev, int subdev, int inchan, int outchan){
 
     int ret, bit;
     int usec = 2; // sent TTL width in microsec
+    int usec_wait = 10;
     struct timeval tv1, tv2, tv3;
     gettimeofday(&tv1, NULL);
     // wait for first TTL in
@@ -235,7 +248,7 @@ int wait_console_handshake(comedi_t *dev, int subdev, int inchan, int outchan){
             comedi_dio_write(dev, subdev, outchan, 0);
             if(VERBOSE > 1)
                 fprintf(stderr, "TTL output on ch %d\n",outchan);
-            usleep(usec);
+            usleep(usec_wait);
             //wait for TTL response from console
             while(1){
                 gettimeofday(&tv3, NULL);
@@ -247,14 +260,12 @@ int wait_console_handshake(comedi_t *dev, int subdev, int inchan, int outchan){
                 if((tv3.tv_sec - tv2.tv_sec) > HANDSHAKE_TIMEOUT_SEC){
                     return -1;
                 }
-                usleep(5);
             }
             return 0;
         }
         if((tv2.tv_sec - tv1.tv_sec) > TIMEOUT_SEC){
             return -1;
         }
-        usleep(5);
     }
 }
 

@@ -7,6 +7,7 @@
  */
 
 #include "common.h"
+#include "socketcomm.h" // signal mribg of successful setup
 
 /* ---------------------------------*/
 /*       comedi subprogram settings */
@@ -23,7 +24,6 @@ struct blockstim_settings{
     double ttl_freq;
     int n_blocks;
     int trig_on;
-    int trig_chan;
 
 };
 void append_bs_data(FILE *fp, int n, int b, int time, int usec_ttl1);
@@ -33,3 +33,5 @@ void fprintf_bstim_meta(char *p, struct header *h, struct blockstim_settings *bs
 
 // troubleshooting
 void printf_bs(struct blockstim_settings *bs);
+
+int notify_mribg(char *message);

@@ -1,5 +1,9 @@
 #include "blockstim.h"
 
+#define N_PARS 7            // *IMPORTANT* number of params set in conf file
+
+#define MSG_MRIBG 1         // send socket msg to mribg about being ready
+
 #define BLOCKSTIM_TESTING 1
 #define VERBOSE_BLOCKSTIM 0
 #define LOG_TTL_LEADING 1   // log the rising edge of TTL
@@ -107,8 +111,8 @@ int main(int argc, char *argv[]){
     snprintf(metafile, sizeof(metafile),"%s/%sblockstim.meta",mricomdir,DATA_DIR);
 
     strcpy(devpath,dvs->devpath);
-    subdev = dvs->stim_trig_subdev;
-    chan = dvs->stim_trig_chan;
+    subdev = dvs->stim_subdev;
+    chan = dvs->stim_ttl_chan;
 
     strcpy(h->proc, argv[0]);
 
@@ -176,15 +180,15 @@ int main(int argc, char *argv[]){
 
     // wait for TTL input
     if(bs->trig_on == 1){
-        if(chan == bs->trig_chan){
+        if(chan == dvs->stim_trig_chan){
             fprintf(stderr, "blockstim error: wrong trigger channel given\n");
             exit(1);
         }
         // set to receive
-        comedi_dio_config(dev, subdev, bs->trig_chan, COMEDI_INPUT);
+        comedi_dio_config(dev, subdev, dvs->stim_trig_chan, COMEDI_INPUT);
         int bit = 0;
         while(bit == 0){
-            comedi_dio_read(dev, subdev, bs->trig_chan, &bit);
+            comedi_dio_read(dev, subdev, dvs->stim_trig_chan, &bit);
             usleep(1);
         }
     }
@@ -302,7 +306,6 @@ void printf_bs(struct blockstim_settings *bs){
  * Args:
  */
 
-#define N_PARS 8            // number of params set in conf file
 int parse_bstim_conf(struct blockstim_settings *bs, char *conffile, char *n){
 
     FILE *fp;
@@ -387,11 +390,6 @@ int parse_bstim_conf(struct blockstim_settings *bs, char *conffile, char *n){
                 bs->trig_on = atoi(token);
                 continue;
             }
-            if (strcmp(token,"TRIG_CHAN") == 0){
-                token = strtok(NULL,"=");
-                bs->trig_chan = atoi(token);
-                continue;
-            }
         } else {
             continue;
         }
@@ -399,3 +397,8 @@ int parse_bstim_conf(struct blockstim_settings *bs, char *conffile, char *n){
     return start;
 }
 
+
+int notify_mribg(char *msg){
+
+    return 0;
+}

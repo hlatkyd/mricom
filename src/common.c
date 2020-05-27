@@ -588,14 +588,19 @@ int parse_dev_settings(struct dev_settings *ds){
         }
         // digital stim
         // -----------------------------------------
-        if(strcmp(line, "STIM_TRIG_SUBDEV") == 0){
+        if(strcmp(line, "STIM_SUBDEV") == 0){
             token = strtok(NULL,"=");
-            ds->stim_trig_subdev = atoi(token);
+            ds->stim_subdev = atoi(token);
             continue;
         }
         if(strcmp(line, "STIM_TRIG_CHAN") == 0){
             token = strtok(NULL,"=");
             ds->stim_trig_chan = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "STIM_TTL_CHAN") == 0){
+            token = strtok(NULL,"=");
+            ds->stim_ttl_chan = atoi(token);
             continue;
         }
         // ttlctrl

@@ -179,6 +179,12 @@ int process_request(char *msg, char *msg_response){
     argc = parse_msg(msg, argv, ",");
     // check input
     
+    // -----------------VNMRCLIENT-------------------
+    // TODO
+    if(strcmp(argv[0],"vnmrclient") == 0){
+        // launch ttlctrl
+        ;
+    }
     // ---------------- START ----------------------
     if(strcmp(argv[1],"start") == 0){
         // check if mribg is in auto mode
@@ -326,6 +332,11 @@ int fork_analogdaq(char **args){
         return 0;
     }
 }
+
+int fork_ttlctrl(char **args){
+    return 0;
+}
+
 /*
  * Function: mribg_status_check
  * ----------------------------

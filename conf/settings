@@ -62,21 +62,23 @@ ANALOG_SAMPLING_RATE=200
 # analog channel names
 ANALOG_CH_NAMES=RESP,PULSOX,ECG,TEMP
 # digital subdev for stimulus TTL
-STIM_TRIG_SUBDEV=2
+STIM_SUBDEV=2
 # digital channel for stimulus TTL
-STIM_TRIG_CHAN=0
+STIM_TTL_CHAN=0
+# digital channel for stimulus start trigger
+STIM_TRIG_CHAN=1
 # subdev used by ttlctrl (usually the same digital io subdev)
 TTLCTRL_SUBDEV=2
-# ttlctrl input channel TODO: no usecase yet
-TTLCTRL_IN_CHAN=1
+# ttlctrl input channel (communication with console)
+TTLCTRL_IN_CHAN=4
 # ttlctrl output channel, which triggers stimulation start, etc
-TTLCTRL_OUT_CHAN=2
-# ttlctrl input from console user interface (3 bit)
+TTLCTRL_OUT_CHAN=5
+# ttlctrl input from console user interface (3 bit) /CURRENTLY NOT USED/
 TTLCTRL_USR_CHAN=4,5,6
 
 # test_console
 # works in conjuction with ttlctrl in place of console for testing
 TEST_CONSOLE_SUBDEV=2
-TEST_CONSOLE_IN_CHAN=4
+TEST_CONSOLE_IN_CHAN=3
 TEST_CONSOLE_OUT_CHAN=7
 

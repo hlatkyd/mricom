@@ -18,4 +18,5 @@ int parse_vnmrclient_msg(char *msg, int *argc, char **args);
 int process_request(char *msg, char *msg_response);
 int fork_blockstim(char **args);
 int fork_analogdaq(char **args);
+int fork_ttlctrl(char **args);
 int mribg_status_check();
