@@ -11,6 +11,7 @@
 
 
 int mribg_status = 0;
+//TODO define macros, so things are readable
 /* possible value meanings:
  * "0 - manual control from mricom"
  * "1 - automated and waiting"
@@ -179,11 +180,20 @@ int process_request(char *msg, char *msg_response){
     argc = parse_msg(msg, argv, ",");
     // check input
     
+    //------------------TTLCTRL-----------------------
+    if(strcmp(argv[0],"ttlctrl") == 0){
+        // ttlctrl signals end of sequence, change status
+        if(strcmp(argv[1],"stop") == 0){
+            mribg_status = 1;
+        }
+    }
+
     // -----------------VNMRCLIENT-------------------
     // TODO
     if(strcmp(argv[0],"vnmrclient") == 0){
         // launch ttlctrl
-        ;
+        fork_ttlctrl(NULL);
+        mribg_status = 2;
     }
     // ---------------- START ----------------------
     if(strcmp(argv[1],"start") == 0){
@@ -333,8 +343,46 @@ int fork_analogdaq(char **args){
     }
 }
 
+/*
+ * Function: fork_ttlctrl
+ * ----------------------
+ *  Launch ttlctrl in the background with arguments
+ */ 
 int fork_ttlctrl(char **args){
-    return 0;
+
+    char path[LPATH];
+    char mricomdir[LPATH] = {0};
+    int ret;
+
+    strcpy(mricomdir,getenv("MRICOMDIR"));
+    snprintf(path, sizeof(path),"%s/%sttlctrl",mricomdir,BIN_DIR);
+
+    pid_t p;
+
+    p = fork();
+
+    if(p < 0){
+        fprintf(stderr, "mribg_launch: fork failed");
+        exit(1);
+    // parent process
+    } else if(p > 0) {
+
+        return p;
+
+    // child process
+    } else {
+
+        // launch
+        char *cmdargs[2];
+        cmdargs[0] = path;
+        cmdargs[1] = NULL;
+        ret = execvp(path,cmdargs);
+        if(ret < 0){
+            perror("fork_analogdaq: execvp");
+            exit(1);
+        }
+        return 0;
+    }
 }
 
 /*

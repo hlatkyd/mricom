@@ -56,7 +56,12 @@ int parse_msg(char *msg, char **argv, char *delim){
 /*
  * Function: send_mribg
  * --------------------
- *  Send string message to mribg via socket
+ *  Send comma delimited string message to mribg via socket
+ *
+ *  Example usage:
+ *      send_mribg("ttlctrl,stop");
+ *      send_mribg("vnmrclient,start,blockstim,design,test");
+ *
  */
 
 #define SEND_VERBOSE 1

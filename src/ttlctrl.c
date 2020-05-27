@@ -13,6 +13,8 @@
  * OPTION 2:
  * TTL handshake: ttlctrl waits for TTL input from console, if received
  * sends TTL back. Pulse sequence is started when TTL response is received
+ *
+ * TODO use the 3bit usr input for error handling?
  */
 
 
@@ -49,7 +51,9 @@ int main(int argc, char **argv){
     }
     if(argc == 1){
         wait_for_handshake = 1;
+
     } else if(argc == 2) {
+        // /this is not implemented/
         wait_for_handshake = 0;
         waitbits = atoi(argv[1]);
         if(waitbits < 0 || waitbits > (int)pow(2,N_USER_BITS)){
@@ -148,8 +152,12 @@ int main(int argc, char **argv){
     }
     
     // wait pulsesequence finish signal input from console
+    // TODO maybe use a different input??
+    ret = wait_console_end_signal(dev, subdev, inchan);
+    ret = send_console_end_signal(dev, subdev, outchan);
     
     // send message to mribg
+    send_mribg("ttlctrl,stop");
 
     free(gs);
     free(ds);
@@ -189,6 +197,30 @@ int wait_user_bits(comedi_t *dev, int subdev, int chan[N_USER_BITS], int num){
 }
 
 /*
+ * Function: wait_console_end_signal
+ * ---------------------------------
+ */
+int wait_console_end_signal(comedi_t *dev, int subdev, int inchan){
+
+    int bit = 0;
+    while(bit != 1){
+        comedi_dio_read(dev, subdev, inchan, &bit);
+    }
+    return 0;
+}
+/*
+ * Function: send_console_end_signal
+ * ---------------------------------
+ */
+int send_console_end_signal(comedi_t *dev, int subdev, int outchan){
+
+    comedi_dio_write(dev, subdev, outchan, 1);
+    usleep(5);
+    comedi_dio_write(dev, subdev, outchan, 0);
+    return 0;
+}
+
+/*
  * Function: wait_console_ttl
  * --------------------------
  *  Wait for TTL singal on one channel, return 0 on success, -1 on timeout.
@@ -207,7 +239,6 @@ int wait_console_ttl(comedi_t *dev, int subdev, int chan){
         if((tv2.tv_sec - tv1.tv_sec) > TIMEOUT_SEC){
             return -1;
         }
-        usleep(5);
     }
 }
 
