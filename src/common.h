@@ -79,16 +79,12 @@ struct mpid{
 /* -------------------------------*/
 typedef struct gen_settings{
     char device[32];
-    char workdir[LPATH];          // acquisition directory
-    char mpid_file[LPATH];          // local process id and contorl file
+    char workdir[LPATH];        // acquisition directory
+    char study_data_dir[LPATH]; // study prearchive
+    char mpid_file[LPATH];      // local process id and contorl file
 
-    char bginfifo[LPATH];
-    char bgoutfifo[LPATH];
-
-    char daq_file[LPATH];         // full data file
-    FILE *fp_daq;               // FILE pointer to daq file if open
+    //char daq_file[LPATH];       // full data file
     char kst_file[128];         // only contain data for kst display window
-    FILE *fp_kst;               // FILE pointer to kst window file if open
     int precision;              // decimals saved in data files
     char ramdisk[128];          // ramdisk for fast data logging
     char procpar[128];          // vnmrj procpar file of curexp
@@ -99,11 +95,7 @@ typedef struct gen_settings{
     char kst_path[128];         // path to kst2, found while init
     int channels;               // number of channels to save data from
     char channel_names[16][16]; // channel names in kst and data file
-    // 0 or 1 to signal if acquisition is ongoing and prohibit some functions
-    // for example test data generation, etc...
-    // TODO remove these, make settings struct stable...
-    int is_daq_on;
-    int is_kst_on;              // 1 if a kst instance was started
+    int mribg_init_status;
 
 }daq_settings;
 
@@ -183,6 +175,21 @@ struct processes{
     char pname[MAX_ID][MAX_NAME_LENGTH];
     char timestamp[MAX_ID][MAX_NAME_LENGTH];
 };
+
+/* -------------------------------*/
+/*         current study          */
+/* -------------------------------*/
+#define MAX_SEQ_NUM
+#define MAX_NAME_LEN
+struct study{
+
+    int seqnum;                               // current number of sequences
+    char name[MAX_NAME_LEN];                  //name of study, eg:s_2020052701
+    char sequence[MAX_SEQ_NUM][MAX_NAME_LEN]; //name of sequences, eg: epip_hd_02
+    char events[MAX_SEQ_NUM][MAX_NAME_LEN];   // stimulation, args as comma separated
+
+};
+
 
 #endif
 /*------------------------------*/

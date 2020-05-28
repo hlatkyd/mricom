@@ -21,7 +21,7 @@
 #include "ttlctrl.h"
 
 #define TESTING 0
-#define VERBOSE 2
+#define VERBOSE 0
 
 #define OPTION 1
 
@@ -49,6 +49,8 @@ int main(int argc, char **argv){
         fprintf(stderr, "ttlctrl: no MRICOMDIR in environment\n");
         exit(1);
     }
+    signal(SIGINT, sighandler);
+
     if(argc == 1){
         wait_for_handshake = 1;
 
@@ -72,9 +74,15 @@ int main(int argc, char **argv){
 
     gs = malloc(sizeof(struct gen_settings));
     ds = malloc(sizeof(struct dev_settings));
+    mp = malloc(sizeof(struct mpid));
+    memset(gs, 0, sizeof(struct gen_settings));
+    memset(ds, 0, sizeof(struct dev_settings));
+    memset(mp, 0, sizeof(struct mpid));
 
     parse_gen_settings(gs);
     parse_dev_settings(ds);
+    fill_mpid(mp);
+    processctrl_add(gs->mpid_file, mp, "START");
 
     subdev = ds->ttlctrl_subdev;
     inchan  = ds->ttlctrl_in_chan;
@@ -159,8 +167,10 @@ int main(int argc, char **argv){
     // send message to mribg
     send_mribg("ttlctrl,stop");
 
+    processctrl_add(gs->mpid_file, mp, "STOP");
     free(gs);
     free(ds);
+    free(mp);
     return 0;
 }
 
@@ -285,7 +295,8 @@ int wait_console_handshake(comedi_t *dev, int subdev, int inchan, int outchan){
                 gettimeofday(&tv3, NULL);
                 comedi_dio_read(dev, subdev, inchan, &bit);
                 if(bit == 1){
-                    fprintf(stderr, "TTL input on ch %d\n",inchan);
+                    if(VERBOSE > 1)
+                        fprintf(stderr, "TTL input on ch %d\n",inchan);
                     return 0;
                 }
                 if((tv3.tv_sec - tv2.tv_sec) > HANDSHAKE_TIMEOUT_SEC){

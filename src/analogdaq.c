@@ -5,8 +5,8 @@
 
 #include "analogdaq.h"
 
-#define DIGITALTRIG 1
-#define VERBOSE 2 // 1 is standard, 2 is data, 3 is all
+#define DIGITALTRIG 1 // not used yet
+#define VERBOSE 0 // 1 is standard, 2 is data, 3 is all
 #define ANALOGDAQ_TESTING 1
 
 #define CONF_NAME "analogdaq.conf"

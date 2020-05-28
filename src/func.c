@@ -147,7 +147,7 @@ void listsettings(struct gen_settings *settings){
     printf("struct gen_settings:\n");
     printf("--------------------\n");
     printf("device : %s\n",settings->device);
-    printf("daq_file : %s\n",settings->daq_file);
+    //printf("daq_file : %s\n",settings->daq_file);
     printf("mpid_file : %s\n",settings->mpid_file);
     printf("kst_file : %s\n",settings->kst_file);
     printf("workdir : %s\n",settings->workdir);
@@ -163,8 +163,6 @@ void listsettings(struct gen_settings *settings){
         printf("%s,",settings->channel_names[i]);
     }
     printf("\n");
-    printf("is_daq_on: %d\n",settings->is_daq_on);
-    printf("is_kst_on: %d\n",settings->is_kst_on);
 }
 
 /*

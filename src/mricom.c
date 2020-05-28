@@ -178,7 +178,10 @@ int sh_start(int argc, char **args){
     }
     // 'start auto' - set mribg to automated mode
     if(argc == 2 && strcmp(args[1],"auto") == 0){
-        ;
+        send_mribg("mricom,set,status,1");
+    }
+    if(argc == 2 && strcmp(args[1],"analogdaq") == 0){
+        send_mribg("mricom,start,analogdaq");
     }
 
     return 1;
@@ -187,6 +190,7 @@ int sh_stop(int argc, char **args){
     // TODO make arguments as well, eg kst stop
     
     int ret;
+    // stop mribg
     if(argc == 2 && strcmp(args[1],"mribg") == 0){
         ret = stop_mribg(pr->bgpid);
         if(ret < 0){
@@ -196,6 +200,10 @@ int sh_stop(int argc, char **args){
             fprintf(stderr, "mricom: mribg stopped\n");
         }
         
+    }
+    // stop mribg automated mode
+    if(argc == 2 && strcmp(args[1],"auto")==0){
+        send_mribg("mricom,set,status,0");
     }
     return 1;
 }

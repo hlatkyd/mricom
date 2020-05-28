@@ -10,14 +10,12 @@
 #define VERBOSE 1
 
 
+#define STATUS_MANUAL 0
+#define STATUS_AUTO_WAITING 1
+#define STATUS_AUTO_RUNNING 2
+/* status controls mribg accept/reject behaviour*/
 int mribg_status = 0;
-//TODO define macros, so things are readable
-/* possible value meanings:
- * "0 - manual control from mricom"
- * "1 - automated and waiting"
- * "2 - automated and experiment_running"
- * 
- */
+int is_analogdaq_on = 0;
 
 int main(int argc, char **argv){
 
@@ -59,6 +57,7 @@ int main(int argc, char **argv){
     parse_gen_settings(gs);
     fill_mpid(mp);
     processctrl_add(gs->mpid_file, mp, "START");
+    mribg_status = gs->mribg_init_status;
 
     // socket setup
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -156,6 +155,8 @@ int main(int argc, char **argv){
  *      vnmrclient,start,blockstim,design,test
  *      mricom,get,status
  *      mricom,set,status,1
+ *      vnmrclient,set,study,s_2020052701
+ *      vnmrclient,set,seqname,epip_01
  *
  */
 
@@ -179,22 +180,48 @@ int process_request(char *msg, char *msg_response){
 
     argc = parse_msg(msg, argv, ",");
     // check input
-    
-    //------------------TTLCTRL-----------------------
+
+    // ------------------------------------
+    // Checking first argument, sender name
+    // ------------------------------------
+
+    // MRICOM
+    if(strcmp(argv[0], "mricom") == 0){
+        ;
+    }
+    // TTLCTRL
     if(strcmp(argv[0],"ttlctrl") == 0){
         // ttlctrl signals end of sequence, change status
         if(strcmp(argv[1],"stop") == 0){
-            mribg_status = 1;
+            // datahandler
+
+            mribg_status = STATUS_AUTO_WAITING;
+            return 1;
         }
     }
 
-    // -----------------VNMRCLIENT-------------------
-    // TODO
+    // VNMRCLIENT
     if(strcmp(argv[0],"vnmrclient") == 0){
         // launch ttlctrl
-        fork_ttlctrl(NULL);
-        mribg_status = 2;
+        if(mribg_status == STATUS_AUTO_WAITING){
+            fork_ttlctrl(NULL);
+            mribg_status = STATUS_AUTO_RUNNING;
+            // don't return here yet, check second arg
+        } else if(mribg_status == STATUS_AUTO_RUNNING){
+
+            fprintf(stderr, "request rejected: sequence running\n");
+            return -1;
+        } else {
+
+            fprintf(stderr, "request rejected: mode is set to manual\n");
+            return -1;
+        }
+
     }
+    // ------------------------------------
+    // Checking second argument, action
+    // ------------------------------------
+
     // ---------------- START ----------------------
     if(strcmp(argv[1],"start") == 0){
         // check if mribg is in auto mode
@@ -211,12 +238,14 @@ int process_request(char *msg, char *msg_response){
             return 1;
         }
         if(strcmp(argv[2], "analogdaq")==0){
-            for(i=0;i<argc;i++){
-                // blockstim doesnt need the first 2 argument
-                strcpy(cmdargv[i],argv[i+2]);
+            if(is_analogdaq_on == 0){
+                ret = fork_analogdaq(cmdargv);
+                is_analogdaq_on = ret; // child pid is returned
+                return 1;
+            } else{
+                fprintf(stderr, "analodag already running\n");
+                return -1;
             }
-            fork_analogdaq(cmdargv);
-            return 1;
         }
             
     }
@@ -305,6 +334,7 @@ int fork_blockstim(char **args){
  */
 int fork_analogdaq(char **args){
 
+    // TODO arguments not supported yet
     char path[LPATH];
     char mricomdir[LPATH] = {0};
     strcpy(mricomdir,getenv("MRICOMDIR"));

@@ -62,6 +62,8 @@ int main(int argc, char **argv){
     xgate(dev, subdev, inchan,1);
     spx_off(dev, subdev, outchan);
 
+    fprintf(stderr, "sequence running ...\n");
+    sleep(10);
     // simulate end of sequence
     spx_on(dev, subdev, outchan);
     usleep(30);

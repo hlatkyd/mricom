@@ -458,11 +458,13 @@ int parse_gen_settings(struct gen_settings *settings){
             strcpy(settings->workdir, token);
             continue;
         }
+        /*
         if(strcmp(token, "DAQ_FILE") == 0){
             token = strtok(NULL,"=");
             strcpy(settings->daq_file, token);
             continue;
         }
+        */
         if(strcmp(token, "PID_FILE") == 0){
             token = strtok(NULL,"=");
             strcpy(tmpbuf, token);
@@ -491,6 +493,11 @@ int parse_gen_settings(struct gen_settings *settings){
         if(strcmp(line, "RAMDISK") == 0){
             token = strtok(NULL,"=");
             strcpy(settings->ramdisk, token);
+            continue;
+        }
+        if(strcmp(line, "MRIBG_INIT_STATUS") == 0){
+            token = strtok(NULL,"=");
+            settings->mribg_init_status = atoi(token);
             continue;
         }
     }
