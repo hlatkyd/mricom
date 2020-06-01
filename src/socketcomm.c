@@ -1,6 +1,7 @@
 /*
  * socketcomm.c
  *
+ * Funcions for communicationg between mricom subprocesses via socket
  */
 #include "common.h"
 #include "socketcomm.h"

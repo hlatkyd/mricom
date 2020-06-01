@@ -10,8 +10,8 @@ SRC=./src
 BIN=./bin
 DAT=./data
 
-all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq test_proc test_console
-tests: test_proc test_console
+all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq test_proc test_console test_create
+tests: test_proc test_console test_create
 
 dir: 
 	mkdir -p $(OBJ)
@@ -50,6 +50,8 @@ test_proc: $(OBJ)/test_proc.o $(OBJ)/common.o
 test_console: $(OBJ)/test_console.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 	$(CC) -o $(BIN)/test_console $(OBJ)/test_console.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)
 
+test_create: $(OBJ)/test_create.o $(OBJ)/common.o
+	$(CC) -o $(BIN)/test_create $(OBJ)/test_create.o $(OBJ)/common.o $(LIBS)
 clean:
 	rm -f $(OBJ)/*
 	rm -f $(BIN)/*

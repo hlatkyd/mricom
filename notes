@@ -6,20 +6,6 @@ apt-get install libcomedi-dev libreadline-dev kst
 
 CURRENT PINS of NI-6035E on CA-1000 box
 =======================================
-------------------------------------------------
-1 3 5
- 2 4 6
-------------------------------------------------
-subdev 0:
-1 -- AI0-AI_GND  CHECK AGAIN, NOW AREF_DIFF IS USED
-2 -- AI1-AI_GND
-3 -- AI2-AI_GND
-4 -- AI3-AI_GND
-subdev 2:
-5 -- P0.0-D_GND
-6 -- P0.1-D_GND
-
-need ~6 more
 
 Automation draft
 ========================================================
@@ -38,8 +24,9 @@ if contrl is at mribg, full automation mode
     mribg sends message to vnmrclient (ok) => vnmrclient waits again for pipe
     mribg calls blockstim/eventstim
     mribg calls ttlctrl, if blockstim/eventstim is st up (maybe ttl back?)
-    ttlctrl reads 3 digit from console output
-    if match, send ttl to console (waiting with xgate) and blockstim
+    ttlctrl and console doeas a handshake via TTL signals
+    send ttl to console (waiting with xgate) and blockstim
+    ttlctrl waits until sequence is finished and console signals with TTL
     
 automation interrupt handling
 ------------------------------
@@ -54,5 +41,7 @@ vnmrj pulse sequence statemetns:
 
 setMRIusergates -- 3 bit output
 xgate -- wait for gate input
+spXon
+spXoff
 macro:
 werr -- specify processing on error

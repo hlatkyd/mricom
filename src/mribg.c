@@ -16,6 +16,7 @@
 /* status controls mribg accept/reject behaviour*/
 int mribg_status = 0;
 int is_analogdaq_on = 0;
+struct study study;
 
 int main(int argc, char **argv){
 
