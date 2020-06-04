@@ -1,8 +1,8 @@
 # no object files
 *.o
 # no tsv data and metadata files
-*.meta
-*.tsv
+#*.meta
+#*.tsv
 # no backup
 bckp*
 

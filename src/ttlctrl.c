@@ -165,6 +165,7 @@ int main(int argc, char **argv){
     ret = send_console_end_signal(dev, subdev, outchan);
     
     // send message to mribg
+    // mribg starts handling sequence specific data files
     send_mribg("ttlctrl,stop");
 
     processctrl_add(gs->mpid_file, mp, "STOP");

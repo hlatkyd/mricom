@@ -1,0 +1,12 @@
+# cmd=./analogdaq args=NULL Mricom v0.1
+# timestamp=2020-05-24 20:56:48.554887
+
+% ANALOGDAQ_SETTINGS
+subdev=0
+naichan=3
+aref=2
+sampling_rate=200
+precision=3
+refresh_rate_usec=5000
+
+% CMD_SETTINGS

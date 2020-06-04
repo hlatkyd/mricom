@@ -184,7 +184,7 @@ struct processes{
 struct study{
 
     int seqnum;                               // current number of sequences
-    char name[MAX_NAME_LEN];                  //name of study, eg:s_2020052701
+    char id[MAX_NAME_LEN];                    //name of study, eg:s_2020052701
     char sequence[MAX_SEQ_NUM][MAX_NAME_LEN]; //name of sequences, eg: epip_hd_02
     char events[MAX_SEQ_NUM][MAX_NAME_LEN];   // stimulation, args as comma separated
 

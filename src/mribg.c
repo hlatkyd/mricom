@@ -195,7 +195,7 @@ int process_request(char *msg, char *msg_response){
         // ttlctrl signals end of sequence, change status
         if(strcmp(argv[1],"stop") == 0){
             // datahandler
-
+            //fork_mriarch()
             mribg_status = STATUS_AUTO_WAITING;
             return 1;
         }

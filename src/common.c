@@ -775,10 +775,31 @@ void fprintf_meta_intrpt(char *p){
 /*
  * Function: compare_common_header
  * --------------------------------
- * Return 1 if the 2-line headers are the same in the 2 files (.tsv and .meta)
+ * Return 0 if the 2-line headers are the same in the 2 files (.tsv and .meta)
+ * -1 othervise
  * 
  */
 int compare_common_header(char *file1, char *file2){
+
+    FILE *fp;
+    char buf1[2][64];
+    char buf2[2][64];
+    int count, ret;
+    count = 0;
+    // read first two lines into buffers
+    fp = fopen(file1,"r");
+    fgets(buf1[0], 64, fp);
+    fgets(buf1[1], 64, fp);
+    flcose(fp);
+    fp = fopen(file2,"r");
+    fgets(buf2[0], 64, fp);
+    fgets(buf2[1], 64, fp);
+    flcose(fp);
+    // check if equal
+    if(strcmp(buf1[0], buf2[0]) != 0)
+        return -1;
+    if(strcmp(buf1[1], buf2[1]) != 0)
+        return -1;
 
     return 0;
 
