@@ -144,6 +144,7 @@ int main(int argc, char **argv){
  *
  *  Currently handled requests:
  *      start
+ *      stop
  *      get
  *      set
  *
@@ -154,11 +155,23 @@ int main(int argc, char **argv){
  *  [sender name],[request][]
  *  examples:
  *      vnmrclient,start,blockstim,design,test
+ *      vnmrclient,start
  *      mricom,get,status
  *      mricom,set,status,1
  *      vnmrclient,set,study,s_2020052701
  *      vnmrclient,set,seqname,epip_01
+ *      ttlctrl,stop
  *
+ *
+ * General rules
+ * - 'start' only comes from vnmrclient or mricom
+ * - 'start' should signal the start of a sequence
+ * - 'start' accept/reject is decided based on sender and status
+ * - 'set' is used to modify mribg global variables, eg: struct study, status
+ * - 'get' is used to ask for global variables to be sent over
+ * - 'stop' is mainly sent by ttlctrl when sequence finishes OK
+ *   TODO:
+ * - 'abort' can be sent by vnmrclient on sequence abort 
  */
 
 int process_request(char *msg, char *msg_response){
@@ -180,11 +193,95 @@ int process_request(char *msg, char *msg_response){
     }
 
     argc = parse_msg(msg, argv, ",");
+
+
+    // -----------------------------------
+    //              START
+    // -----------------------------------
+    if(strcmp(argv[1], "start")==0){
+        
+        // start from vmrclient
+        // --------------------
+        if(strcmp(argv[0],"vnmrclient")==0){
+            // status check
+            if(mribg_status_check(0) == 0){
+                // fork ttlctrl from here
+                fork_ttlctrl(NULL);
+                mribg_status = STATUS_AUTO_RUNNING;
+            } else {
+                return -1;
+            }
+
+        }
+        // start from mricom
+        // -----------------
+        else if(strcmp(argv[0],"mricom")==0){
+        
+            // status check
+            if(mribg_status_check(1) == 0){
+                ;
+
+            } else {
+                return -1;
+            }
+        }
+        // neither 
+        else {
+            fprintf(stderr,"start can only be called from here\n");
+            return -1;
+        }
+        // if checks passed start stim or daq process
+        // ------------------------------------------
+        if(strcmp(argv[2], "blockstim")==0){
+            for(i=0;i<argc;i++){
+                // blockstim doesnt need the first 2 argument
+                strcpy(cmdargv[i],argv[i+2]);
+            }
+            fork_blockstim(cmdargv);
+        }
+        else if(strcmp(argv[2], "analogdaq")==0){
+            if(is_analogdaq_on == 0){
+                ret = fork_analogdaq(cmdargv);
+                is_analogdaq_on = ret; // child pid is returned
+            } else{
+                fprintf(stderr, "analodag already running\n");
+                return -1;
+            }
+        }
+        else {
+            fprintf(stderr,"action not supported\n");
+            return -1;
+        }
+        return 1;
+    }
+
+    // -----------------------------------
+    //              STOP
+    // -----------------------------------
+
+    
+    if(strcmp(argv[1],"stop") == 0){
+        // check if mribg is in auto mode
+
+        // stop from ttlctrl
+        // --------------------
+        ret = mribg_status_check();
+        if(ret < 0){
+            return -1;
+        }
+        if(strcmp(argv[2], "blockstim")==0){
+            return 1;
+        }
+            
+    }
+
     // check input
 
     // ------------------------------------
     // Checking first argument, sender name
     // ------------------------------------
+
+    /*
 
     // MRICOM
     if(strcmp(argv[0], "mricom") == 0){
@@ -283,6 +380,7 @@ int process_request(char *msg, char *msg_response){
             
     }
     return -1;
+    */
 }
 
 /*
@@ -419,17 +517,33 @@ int fork_ttlctrl(char **args){
 /*
  * Function: mribg_status_check
  * ----------------------------
- *  Return -1 if mribg is set to automated mode
+ *  Return 0 if process_request is allowed to proceed, -1 othervise
+ *
+ *  The input 'state' represents the possible scenarios
+ *  
+ *  state
+ *      0 - start request from vnmrclient
+ *      1 - start request from mricom
  */
-//TODO use if things get more complicated
-int mribg_status_check(){
+int mribg_status_check(int state){
 
-    // mribg_status
-    // 0 = manual
-    // 1 = auto
-    // 2 = auto and experiment running
-    if(mribg_status == 0){
+    switch (state){
 
-        return 0;
+        case 0:
+            if(mribg_status == STATUS_AUTO_WAITING){
+                return 0;
+            } else if(mribg_status == STATUS_AUTO_RUNNING){
+                fprintf(stderr, "mribg start error: sequence already running");
+                return -1;
+            } else if(mribg_status == STATUS_MANUAL){
+                fprintf(stderr, "mribg start error: set status to manual");
+                return -1;
+            }
+            break;
+        case 1:
+            break;
+        case 2:
+            break;
+
     }
 }
