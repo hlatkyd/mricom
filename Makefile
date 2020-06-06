@@ -24,8 +24,8 @@ vnmr: dir vnmrclient
 $(OBJ)/%.o: $(SRC)/%.c 
 	$(CC) -c $(CFLAGS) $< -o $@
 
-mricom: $(OBJ)/mricom.o $(OBJ)/common.o $(OBJ)/func.o $(OBJ)/socketcomm.o
-	$(CC) -o mricom $(OBJ)/mricom.o $(OBJ)/common.o $(OBJ)/func.o $(OBJ)/socketcomm.o $(LIBS)
+mricom: $(OBJ)/mricom.o $(OBJ)/common.o $(OBJ)/func.o $(OBJ)/socketcomm.o $(OBJ)/help.o
+	$(CC) -o mricom $(OBJ)/mricom.o $(OBJ)/common.o $(OBJ)/func.o $(OBJ)/socketcomm.o $(OBJ)/help.o $(LIBS)
 
 mribg: $(OBJ)/mribg.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 	$(CC) -o mribg $(OBJ)/mribg.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)

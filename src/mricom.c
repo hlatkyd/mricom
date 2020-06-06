@@ -10,6 +10,7 @@
 #include "common.h"
 #include "socketcomm.h"
 #include "func.h"
+#include "help.h"
 
 /* init device settings struct*/
 struct gen_settings *gs;
@@ -94,39 +95,39 @@ int sh_help(int argc, char **args){
             printf("No such command as '%s'\n",args[1]);
             return 1;
         }
-        printf("COMMAND: %s\n", cmdname);
+        printf("\nCOMMAND: %s\n", cmdname);
         printf("---------------\n");
         switch (n)
         {
             case 0: // exit
-                printf("Exit mricom gracefully\n");
+                printf_help_exit();
                 break;
             case 1: // help
-                printf("Print available commands or get help for a command\n");
+                printf_help_help();
                 break;
             case 2: // killp
-                printf("Kill mricom childprocess by id\n");
+                printf_help_killp();
                 break;
             case 3: // test
-                printf("Sest everything?\n");
+                printf_help_test();
                 break;
             case 4: // start
-                printf("Start data acquisition\n");
+                printf_help_start();
                 break;
             case 5: // stop
-                printf("Stop data acquisition\n");
+                printf_help_stop();
                 break;
             case 6: // list
-                printf("Print settings struct\n");
+                printf_help_list();
                 break;
             case 7: // clean
-                printf("Clean mproc.log file, only leave current processes\n");
+                printf_help_clean();
                 break;
             case 8: // update
-                printf("Get status update from mribg\n");
+                printf_help_update();
                 break;
             case 9: // send
-                printf("Send command to mribg\n");
+                printf_help_send();
                 break;
         }
         printf("\n");

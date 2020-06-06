@@ -16,7 +16,7 @@
 /* status controls mribg accept/reject behaviour*/
 int mribg_status = 0;
 int is_analogdaq_on = 0;
-struct study study;
+struct study *study;
 
 int main(int argc, char **argv){
 
@@ -59,6 +59,8 @@ int main(int argc, char **argv){
     fill_mpid(mp);
     processctrl_add(gs->mpid_file, mp, "START");
     mribg_status = gs->mribg_init_status;
+    study = malloc(sizeof(struct study));
+    memset(study,0,sizeof(struct study));
 
     // socket setup
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -265,15 +267,68 @@ int process_request(char *msg, char *msg_response){
 
         // stop from ttlctrl
         // --------------------
-        ret = mribg_status_check();
-        if(ret < 0){
-            return -1;
+        if(strcmp(argv[0],"ttlctrl")==0){
+            ret = mribg_status_check(2);
+            if(ret < 0){
+                return -1;
+            }
+            // TODO data handling
+            fork_mriarch(NULL);
+            mribg_status = STATUS_AUTO_WAITING;
+        }   
+        // stop from mricom
+        // --------------------
+        else if(strcmp(argv[0],"mricom")==0){
+            ;
+            if(strcmp(argv[2], "blockstim")==0){
+                //TODO kill blockstim??
+                return 1;
+            }
         }
-        if(strcmp(argv[2], "blockstim")==0){
-            return 1;
+    }
+
+    // -----------------------------------
+    //              SET
+    // -----------------------------------
+    if( argc == 4 && strcmp(argv[1],"set") == 0){
+        // setting mribg_status from mricom
+        if(strcmp(argv[0],"mricom")==0){
+
+            if(strcmp(argv[2], "status")==0){
+
+                ret = mribg_status_check(3);
+                if(ret < 0){
+                    return -1;
+                }
+                mribg_status = atoi(argv[3]);
+                return 1;
+            }
+            // setting study struct, usually from vnmrclient
+            // study id, eg: s_2020050401
+            else if(strcmp(argv[2],"study_id")==0){
+                strcpy(study->id, argv[3]);
+            }
+            // sequence fid directory name, eg: epip_hd
+            else if(strcmp(argv[2],"study_sequence")==0){
+                strcpy(study->id, argv[3]);
+            }
         }
             
     }
+
+    // -----------------------------------
+    //              GET
+    // -----------------------------------
+    if(argc == 3 && strcmp(argv[1],"get") == 0){
+        if(strcmp(argv[2], "status")==0){
+            memset(msg_response, 0, sizeof(char)*BUFS);
+            snprintf(msg_response, BUFS, "%d",mribg_status);
+            return 0;
+        }
+        //TODO maybe get studyid, sequence, etc
+            
+    }
+
 
     // check input
 
@@ -515,6 +570,15 @@ int fork_ttlctrl(char **args){
 }
 
 /*
+ * Function: fork_mriarch
+ * ----------------------
+ * Launch mriarch for data management
+ */
+int fork_mriarch(char **args){
+    return 0;
+}
+
+/*
  * Function: mribg_status_check
  * ----------------------------
  *  Return 0 if process_request is allowed to proceed, -1 othervise
@@ -524,6 +588,8 @@ int fork_ttlctrl(char **args){
  *  state
  *      0 - start request from vnmrclient
  *      1 - start request from mricom
+ *      2 - stop request from ttlctrl at sequence end
+ *      3 - setting status from mricom
  */
 int mribg_status_check(int state){
 
@@ -543,7 +609,24 @@ int mribg_status_check(int state){
         case 1:
             break;
         case 2:
+            if(mribg_status == STATUS_AUTO_RUNNING){
+                return 0;
+            } else if(mribg_status == STATUS_AUTO_WAITING){
+                fprintf(stderr, "error: wrong mribg_status");
+                return -1;
+            } else if(mribg_status == STATUS_MANUAL){
+                fprintf(stderr, "error: wrong mribg_status");
+                return -1;
+            }
             break;
 
+        case 3:
+            //TODO
+            if(mribg_status == STATUS_AUTO_RUNNING){
+                return 0;
+            } else {
+                return 0;
+            }
+            break;
     }
 }

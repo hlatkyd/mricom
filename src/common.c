@@ -790,11 +790,11 @@ int compare_common_header(char *file1, char *file2){
     fp = fopen(file1,"r");
     fgets(buf1[0], 64, fp);
     fgets(buf1[1], 64, fp);
-    flcose(fp);
+    fclose(fp);
     fp = fopen(file2,"r");
     fgets(buf2[0], 64, fp);
     fgets(buf2[1], 64, fp);
-    flcose(fp);
+    fclose(fp);
     // check if equal
     if(strcmp(buf1[0], buf2[0]) != 0)
         return -1;
