@@ -321,7 +321,8 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             }
             // sequence fid directory name, eg: epip_hd
             else if(strcmp(argv[2],"study_sequence")==0){
-                strcpy(study->id, argv[3]);
+                strcpy(study->sequence[study->seqnum], argv[3]);
+                (study->seqnum)++;
                 return 1;
             }
         }
@@ -337,8 +338,8 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             }
             // sequence fid directory name, eg: epip_hd
             else if(strcmp(argv[2],"study_sequence")==0){
-                (study->seqnum)++;
                 strcpy(study->sequence[study->seqnum], argv[3]);
+                (study->seqnum)++;
                 return 1;
             }
         }
@@ -583,6 +584,16 @@ int mribg_status_check(int state){
             break;
     }
 }
+
+/*
+ * Function: datahandler
+ * ---------------------
+ */
+int datahandler(struct gen_settings *gs, struct study *st, char *action){
+
+    return 0;
+}
+
 /*
  * Function: create_study_dir
  * --------------------------
@@ -617,3 +628,5 @@ void create_sequence_dir(struct gen_settings *gs, struct study *stud){
     }
 
 }
+
+

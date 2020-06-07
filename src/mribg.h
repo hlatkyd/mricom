@@ -23,7 +23,7 @@ int fork_ttlctrl(char **args);
 int fork_mriarch(char **args);
 
 // main data util
-int datahandler(struct gen_settings, struct study *st, char *action);
+int datahandler(struct gen_settings *gs, struct study *st, char *action);
 // util
 void create_study_dir(struct gen_settings *gs, struct study *stud);
 void create_sequnce_dir(struct gen_settings *gs, struct study *stud);
