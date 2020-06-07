@@ -14,8 +14,8 @@ WORKDIR=/home/david/dev/mricom
 # process control file always inside WORKDIR
 # real time data save dir
 DATA_DIR=/home/david/dev/mricom/data
-# data is moved here after each sequence
-STUDY_DATA_DIR=/home/david/studies
+# study data root dir, phyus, etc data moved here after each sequence 
+STUDIES_DIR=/home/david/dev/mricom/studies
 # also use define for this
 PID_FILE=mproc.log
 # real time data collection file

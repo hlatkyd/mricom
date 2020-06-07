@@ -458,13 +458,11 @@ int parse_gen_settings(struct gen_settings *settings){
             strcpy(settings->workdir, token);
             continue;
         }
-        /*
-        if(strcmp(token, "DAQ_FILE") == 0){
+        if(strcmp(token,"STUDIES_DIR") == 0){
             token = strtok(NULL,"=");
-            strcpy(settings->daq_file, token);
+            strcpy(settings->studies_dir, token);
             continue;
         }
-        */
         if(strcmp(token, "PID_FILE") == 0){
             token = strtok(NULL,"=");
             strcpy(tmpbuf, token);

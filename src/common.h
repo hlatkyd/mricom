@@ -80,7 +80,7 @@ struct mpid{
 typedef struct gen_settings{
     char device[32];
     char workdir[LPATH];        // acquisition directory
-    char study_data_dir[LPATH]; // study prearchive
+    char studies_dir[LPATH]; // study prearchive
     char mpid_file[LPATH];      // local process id and contorl file
 
     //char daq_file[LPATH];       // full data file

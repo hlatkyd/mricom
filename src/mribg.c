@@ -3,6 +3,10 @@
  *
  * Background control program for mricom automation
  *
+ *
+ *
+ * Managing a study
+ *
  */
 
 #include "mribg.h"
@@ -59,8 +63,12 @@ int main(int argc, char **argv){
     fill_mpid(mp);
     processctrl_add(gs->mpid_file, mp, "START");
     mribg_status = gs->mribg_init_status;
+
+    // init global study struct
     study = malloc(sizeof(struct study));
     memset(study,0,sizeof(struct study));
+    study->seqnum = 0;
+    strcpy(study->id,"NONE");
 
     // socket setup
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -104,7 +112,7 @@ int main(int argc, char **argv){
         }
 
         // do processing, start subprograms, etc
-        ret = process_request(buffer, msg_back);
+        ret = process_request(gs,buffer, msg_back);
 
         // signal back if accepted
         if(ret < 0){
@@ -170,13 +178,14 @@ int main(int argc, char **argv){
  * - 'start' should signal the start of a sequence
  * - 'start' accept/reject is decided based on sender and status
  * - 'set' is used to modify mribg global variables, eg: struct study, status
+ * - 'set' can be called before 'start' by vnmrclient to signal for new sequence
  * - 'get' is used to ask for global variables to be sent over
  * - 'stop' is mainly sent by ttlctrl when sequence finishes OK
  *   TODO:
  * - 'abort' can be sent by vnmrclient on sequence abort 
  */
 
-int process_request(char *msg, char *msg_response){
+int process_request(struct gen_settings *gs,char *msg, char *msg_response){
 
     int argc;
     char **argv;
@@ -265,7 +274,7 @@ int process_request(char *msg, char *msg_response){
     if(strcmp(argv[1],"stop") == 0){
         // check if mribg is in auto mode
 
-        // stop from ttlctrl
+        // stop from ttlctrl, this mean sequence has finished properly
         // --------------------
         if(strcmp(argv[0],"ttlctrl")==0){
             ret = mribg_status_check(2);
@@ -273,15 +282,16 @@ int process_request(char *msg, char *msg_response){
                 return -1;
             }
             // TODO data handling
-            fork_mriarch(NULL);
             mribg_status = STATUS_AUTO_WAITING;
+            datahandler(gs, study, "stop");
+            return 1;
         }   
         // stop from mricom
         // --------------------
         else if(strcmp(argv[0],"mricom")==0){
             ;
             if(strcmp(argv[2], "blockstim")==0){
-                //TODO kill blockstim??
+                //TODO simply interrupt blockstim??
                 return 1;
             }
         }
@@ -307,11 +317,34 @@ int process_request(char *msg, char *msg_response){
             // study id, eg: s_2020050401
             else if(strcmp(argv[2],"study_id")==0){
                 strcpy(study->id, argv[3]);
+                return 1;
             }
             // sequence fid directory name, eg: epip_hd
             else if(strcmp(argv[2],"study_sequence")==0){
                 strcpy(study->id, argv[3]);
+                return 1;
             }
+        }
+        // setting study struct from vnmrclient
+        else if(strcmp(argv[0],"vnmrclient")==0){
+            // setting study struct, usually from vnmrclient
+            // study id, eg: s_2020050401
+            if(strcmp(argv[2],"study_id")==0){
+                //TODO create new dir
+                strcpy(study->id, argv[3]);
+                create_study_dir(gs, study);
+                return 1;
+            }
+            // sequence fid directory name, eg: epip_hd
+            else if(strcmp(argv[2],"study_sequence")==0){
+                (study->seqnum)++;
+                strcpy(study->sequence[study->seqnum], argv[3]);
+                return 1;
+            }
+        }
+        // request anywhere else are rejected TODO mayzbe ttlctrl?
+        else {
+            return -1;
         }
             
     }
@@ -325,117 +358,37 @@ int process_request(char *msg, char *msg_response){
             snprintf(msg_response, BUFS, "%d",mribg_status);
             return 0;
         }
-        //TODO maybe get studyid, sequence, etc
-            
-    }
-
-
-    // check input
-
-    // ------------------------------------
-    // Checking first argument, sender name
-    // ------------------------------------
-
-    /*
-
-    // MRICOM
-    if(strcmp(argv[0], "mricom") == 0){
-        ;
-    }
-    // TTLCTRL
-    if(strcmp(argv[0],"ttlctrl") == 0){
-        // ttlctrl signals end of sequence, change status
-        if(strcmp(argv[1],"stop") == 0){
-            // datahandler
-            //fork_mriarch()
-            mribg_status = STATUS_AUTO_WAITING;
-            return 1;
+        else if(strcmp(argv[2], "study_id")==0){
+            memset(msg_response, 0, sizeof(char)*BUFS);
+            snprintf(msg_response, BUFS, "%s",study->id);
+            return 0;
         }
-    }
-
-    // VNMRCLIENT
-    if(strcmp(argv[0],"vnmrclient") == 0){
-        // launch ttlctrl
-        if(mribg_status == STATUS_AUTO_WAITING){
-            fork_ttlctrl(NULL);
-            mribg_status = STATUS_AUTO_RUNNING;
-            // don't return here yet, check second arg
-        } else if(mribg_status == STATUS_AUTO_RUNNING){
-
-            fprintf(stderr, "request rejected: sequence running\n");
-            return -1;
-        } else {
-
-            fprintf(stderr, "request rejected: mode is set to manual\n");
-            return -1;
+        else if(strcmp(argv[2], "study_seqnum")==0){
+            memset(msg_response, 0, sizeof(char)*BUFS);
+            snprintf(msg_response, BUFS, "%d",study->seqnum);
+            return 0;
         }
-
-    }
-    // ------------------------------------
-    // Checking second argument, action
-    // ------------------------------------
-
-    // ---------------- START ----------------------
-    if(strcmp(argv[1],"start") == 0){
-        // check if mribg is in auto mode
-        ret = mribg_status_check();
-        if(ret < 0){
-            return -1;
-        }
-        if(strcmp(argv[2], "blockstim")==0){
-            for(i=0;i<argc;i++){
-                // blockstim doesnt need the first 2 argument
-                strcpy(cmdargv[i],argv[i+2]);
-            }
-            fork_blockstim(cmdargv);
-            return 1;
-        }
-        if(strcmp(argv[2], "analogdaq")==0){
-            if(is_analogdaq_on == 0){
-                ret = fork_analogdaq(cmdargv);
-                is_analogdaq_on = ret; // child pid is returned
-                return 1;
-            } else{
-                fprintf(stderr, "analodag already running\n");
+        else if(strcmp(argv[2], "study_sequence")==0){
+            if(study->seqnum > 0){
+                memset(msg_response, 0, sizeof(char)*BUFS);
+                snprintf(msg_response, BUFS, "%s",study->sequence[study->seqnum-1]);
+                return 0;
+            } else {
+                fprintf(stderr, "There was no sequence started yet\n");
                 return -1;
             }
         }
-            
-    }
-    
-    // ---------------- STOP ----------------------
-    if(strcmp(argv[1],"stop") == 0){
-        // check if mribg is in auto mode
-        ret = mribg_status_check();
-        if(ret < 0){
-            return -1;
-        }
-        if(strcmp(argv[2], "blockstim")==0){
-            return 1;
-        }
-            
     }
 
-    // ---------------- GET ----------------------
-    if(argc == 3 && strcmp(argv[1],"get") == 0){
-        if(strcmp(argv[2], "status")==0){
-            memset(msg_response, 0, sizeof(char)*BUFS);
-            snprintf(msg_response, BUFS, "%d",mribg_status);
-            return 0;
-        }
-            
+    //TODO
+    // -----------------------------------
+    //               ABORT
+    // -----------------------------------
+    if(strcmp(argv[1],"abort")){
+        ;
     }
-    // ---------------- SET ----------------------
-    if( argc == 4 && strcmp(argv[1],"set") == 0){
-        if(strcmp(argv[2], "status")==0){
-
-            mribg_status = atoi(argv[3]);
-            return 1;
-        }
-            
-    }
+    // fin, reject for unkown reason if code gets here
     return -1;
-    */
 }
 
 /*
@@ -629,4 +582,38 @@ int mribg_status_check(int state){
             }
             break;
     }
+}
+/*
+ * Function: create_study_dir
+ * --------------------------
+ */
+
+void create_study_dir(struct gen_settings *gs, struct study *stud){
+
+    struct stat st = {0};
+    char path[LPATH*3] = {0};
+    snprintf(path, sizeof(path), "%s/%s",gs->studies_dir, stud->id);
+    if(stat(gs->studies_dir, &st) == -1){
+        mkdir(gs->studies_dir, 0700);
+    }
+    if(stat(path, &st) == -1){
+        mkdir(path, 0700);
+    }
+
+}
+
+/*
+ * Function: create_sequence_dir
+ * -----------------------------
+ */
+void create_sequence_dir(struct gen_settings *gs, struct study *stud){
+
+    struct stat st = {0};
+    char path[LPATH*3] = {0};
+    snprintf(path, sizeof(path), "%s/%s/%s",
+            gs->studies_dir,stud->id, stud->sequence[stud->seqnum]);
+    if(stat(path, &st) == -1){
+        mkdir(path, 0700);
+    }
+
 }
