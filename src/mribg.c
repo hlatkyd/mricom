@@ -191,6 +191,7 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
     char **argv;
     char **cmdargv;
     int i, ret;
+    char event[128];
     pid_t pid;
 
     argv = calloc(MAXARG,sizeof(char*));
@@ -217,8 +218,8 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             // status check
             if(mribg_status_check(0) == 0){
                 // fork ttlctrl from here
-                fork_ttlctrl(NULL);
                 mribg_status = STATUS_AUTO_RUNNING;
+                fork_ttlctrl(NULL);
             } else {
                 return -1;
             }
@@ -241,13 +242,18 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             fprintf(stderr,"start can only be called from here\n");
             return -1;
         }
-        // if checks passed start stim or daq process
+
+
+        // call for event (blockstim, analogdaq, eventstim) if specified
         // ------------------------------------------
+        //
         if(strcmp(argv[2], "blockstim")==0){
             for(i=0;i<argc;i++){
                 // blockstim doesnt need the first 2 argument
                 strcpy(cmdargv[i],argv[i+2]);
             }
+            snprintf(event,sizeof(event),"%s,%s",argv[2],argv[3]);
+            strcpy(study->events[study->seqnum-1],event);
             fork_blockstim(cmdargv);
         }
         else if(strcmp(argv[2], "analogdaq")==0){
@@ -588,9 +594,21 @@ int mribg_status_check(int state){
 /*
  * Function: datahandler
  * ---------------------
+ * Copies recorded data and logs to approprate directories
+ *
  */
 int datahandler(struct gen_settings *gs, struct study *st, char *action){
 
+    int i;
+    int n = study->seqnum;
+    // data management on mribg 'stop' request, usually from ttlctrl
+    if(strcmp(action, "stop")==0){
+        // create directory of most recent sequence, copy data dir contents
+        create_sequence_dir(gs, study);
+
+        
+    }
+    
     return 0;
 }
 

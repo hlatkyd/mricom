@@ -15,6 +15,12 @@
  * sends TTL back. Pulse sequence is started when TTL response is received
  *
  * TODO use the 3bit usr input for error handling?
+ *
+ * Timing information is saved in ttlctrl.meta
+ *  start time is program launch time (almost)
+ *  action time is the time of sequence start TTL signal
+ *  stop time is sequence finish time
+ *
  */
 
 
@@ -43,6 +49,15 @@ int main(int argc, char **argv){
     int waitbits; // console start confir signal int between 0-2**N_USER_BITS
     int ttl_w = 30; // width of TTL signal
     int wait_for_handshake;
+
+    // metafile,saving timings and whatnot
+    char metafile[LPATH] = {0};
+    char metaf_name[] = "ttlctrl.meta";
+    FILE *fp;
+    struct times *t;
+    struct timeval tv; // use gettimeofday
+    // struct timespec tvs;
+    struct header *h;
 
     // check env
     if(getenv("MRICOMDIR") == NULL){
@@ -75,9 +90,13 @@ int main(int argc, char **argv){
     gs = malloc(sizeof(struct gen_settings));
     ds = malloc(sizeof(struct dev_settings));
     mp = malloc(sizeof(struct mpid));
+    t = malloc(sizeof(struct times));
+    h = malloc(sizeof(struct header));
     memset(gs, 0, sizeof(struct gen_settings));
     memset(ds, 0, sizeof(struct dev_settings));
     memset(mp, 0, sizeof(struct mpid));
+    memset(t, 0, sizeof(struct times));
+    memset(h, 0, sizeof(struct header));
 
     parse_gen_settings(gs);
     parse_dev_settings(ds);
@@ -89,6 +108,23 @@ int main(int argc, char **argv){
     outchan = ds->ttlctrl_out_chan; 
     outchan2 = ds->ttlctrl_usr_chan[2];
 
+    // start timestamp
+    gettimeofday(&tv, NULL);
+    t->start = tv;
+
+    // prepare header
+    snprintf(metafile, sizeof(metafile),"%s/%s%s",
+            mricomdir,DATA_DIR,metaf_name);
+    h->timestamp = tv;
+    strcpy(h->proc, argv[0]);
+    fp = fopen(metafile, "w");
+    if(fp == NULL){
+        fprintf(stderr, "ttlctrl: cannot open %s\n",metafile);
+        exit(1);
+    }
+    fprintf_common_header(fp, h, argc, argv);
+    fclose(fp);
+    fprintf_meta_times(metafile, t, "start");
     /*
     for(i=0;i<N_USER_BITS;i++){
         usrchan[i] = ds->ttlctrl_usr_chan[i];
@@ -150,6 +186,9 @@ int main(int argc, char **argv){
         usleep(ttl_w);
         comedi_dio_write(dev, subdev, outchan , 0);
         comedi_dio_write(dev, subdev, outchan2 , 0);
+        gettimeofday(&tv,NULL);
+        t->action = tv;
+        fprintf_meta_times(metafile, t, "action");
 
     } else if(ret == -1){
         fprintf(stderr, "ttlctrl: console timeout error\n");
@@ -164,10 +203,16 @@ int main(int argc, char **argv){
     ret = wait_console_end_signal(dev, subdev, inchan);
     ret = send_console_end_signal(dev, subdev, outchan);
     
-    // send message to mribg
+    // finish up metafile
+    gettimeofday(&tv, NULL);
+    t->stop = tv;
+    fprintf_meta_times(metafile, t, "stop");
     // mribg starts handling sequence specific data files
-    send_mribg("ttlctrl,stop");
-
+    // send message to mribg
+    ret = send_mribg("ttlctrl,stop");
+    if(ret < 0){
+        fprintf(stderr, "'ttlctrl,stop' rejected by mribg\n");
+    }
     processctrl_add(gs->mpid_file, mp, "STOP");
     free(gs);
     free(ds);
@@ -226,7 +271,7 @@ int wait_console_end_signal(comedi_t *dev, int subdev, int inchan){
 int send_console_end_signal(comedi_t *dev, int subdev, int outchan){
 
     comedi_dio_write(dev, subdev, outchan, 1);
-    usleep(5);
+    usleep(10);
     comedi_dio_write(dev, subdev, outchan, 0);
     return 0;
 }
@@ -269,7 +314,7 @@ int wait_console_ttl(comedi_t *dev, int subdev, int chan){
 int wait_console_handshake(comedi_t *dev, int subdev, int inchan, int outchan){
 
     int ret, bit;
-    int usec = 2; // sent TTL width in microsec
+    int usec = 5; // sent TTL width in microsec
     int usec_wait = 10;
     struct timeval tv1, tv2, tv3;
     gettimeofday(&tv1, NULL);

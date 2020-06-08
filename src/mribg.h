@@ -26,4 +26,4 @@ int fork_mriarch(char **args);
 int datahandler(struct gen_settings *gs, struct study *st, char *action);
 // util
 void create_study_dir(struct gen_settings *gs, struct study *stud);
-void create_sequnce_dir(struct gen_settings *gs, struct study *stud);
+void create_sequence_dir(struct gen_settings *gs, struct study *stud);

@@ -260,21 +260,29 @@ void sighandler(int signum){
         if(strcmp(mp->name,"blockstim")==0){
             snprintf(metaf, sizeof(metaf),
                     "%s/%sblockstim.meta",getenv("MRICOMDIR"),DATA_DIR);
-            printf("metaf %s\n",metaf);
             fprintf_meta_intrpt(metaf);
         }
         // blockstim additional interrupt handling
-        if(strcmp(mp->name,"eventstim")==0){
+        else if(strcmp(mp->name,"eventstim")==0){
             ;
             //TODO
         }
         // blockstim additional interrupt handling
-        if(strcmp(mp->name,"analogdaq")==0){
+        else if(strcmp(mp->name,"analogdaq")==0){
             snprintf(metaf, sizeof(metaf),
                     "%s/%sanalogdaq.meta",getenv("MRICOMDIR"),DATA_DIR);
-            printf("metaf %s\n",metaf);
             fprintf_meta_intrpt(metaf);
             
+        }
+        // ttlctrl
+        else if(strcmp(mp->name,"ttlctrl")==0){
+            snprintf(metaf, sizeof(metaf),
+                    "%s/%sttlctrl.meta",getenv("MRICOMDIR"),DATA_DIR);
+            fprintf_meta_intrpt(metaf);
+            
+        }
+        else {
+            ;
         }
         processctrl_add(path, mp, "INTRPT");
         fprintf(stderr,"%s exiting...\n",mp->name);
@@ -998,4 +1006,41 @@ void remove_spaces(char* s) {
     } while (*s++ = *d++);
 }
 
+/*
+ * Function: fcpy
+ * --------------
+ *  Copy the contents of source file to dest file. Return copied char count.
+ */
 
+int fcpy(char *sourcefile, char *destfile){
+
+    FILE *sourceFile;
+    FILE *destFile;
+    int  count = 0;
+    char ch;
+    if(access(destfile, F_OK) != -1){
+        fprintf(stderr, "fcpy: warning: destination file already exists.\n");
+    }
+    sourceFile = fopen(sourcefile,"r");
+    if(sourceFile == NULL){
+        fprintf(stderr, "cannot open source file\n");
+        return -1;
+    }
+    destFile = fopen(destfile,"w");
+    if(destFile == NULL){
+        fprintf(stderr, "cannot open dest file\n");
+        return -1;
+    }
+
+    /* Copy file contents character by character. */
+    while ((ch = fgetc(sourceFile)) != EOF)
+    {
+        fputc(ch, destFile);
+
+        /* Increment character copied count */
+        count++;
+    }
+    fclose(sourceFile);
+    fclose(destFile);
+    return count;
+}

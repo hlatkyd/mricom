@@ -228,8 +228,8 @@ double clocksecdiff(struct timespec tv1, struct timespec tv2);
 void fprintf_meta_times(char *p, struct times *t, char *element);
 void fprintf_meta_intrpt(char *p);
 int fprintf_common_header(FILE *fp, struct header *h, int argc, char **args);
-
 int compare_common_header(char *file1, char *file2);
+int fcpy(char *source_file, char *dest_file);
 
 
 /* archiving and finishing up experiment session*/
