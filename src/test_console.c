@@ -3,6 +3,8 @@
  *
  * Subprogram only for testing. Simulates console user output to test ttlctrl.
  *
+ * INPUT
+ *  
  * 
  */
 

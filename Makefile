@@ -9,10 +9,11 @@ OBJ=./obj
 SRC=./src
 BIN=./bin
 DAT=./data
+TST=./test
 
 all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq \
 	test_proc test_console test_create test_usergo
-test: test_proc test_console test_create test_usergo
+test: test_proc test_console test_create test_usergo test_run
 
 dir: 
 	mkdir -p $(OBJ)
@@ -45,17 +46,26 @@ vnmrclient: $(OBJ)/vnmrclient.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 ttlctrl: $(OBJ)/ttlctrl.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 	$(CC) -o $(BIN)/ttlctrl $(OBJ)/ttlctrl.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)
 
+# test subprograms
+#-----------------------------------------------
+
 test_proc: $(OBJ)/test_proc.o $(OBJ)/common.o
-	$(CC) -o $(BIN)/test_proc $(OBJ)/test_proc.o $(OBJ)/common.o $(LIBS)
+	$(CC) -o $(TST)/test_proc $(OBJ)/test_proc.o $(OBJ)/common.o $(LIBS)
 
 test_console: $(OBJ)/test_console.o $(OBJ)/common.o $(OBJ)/socketcomm.o
-	$(CC) -o $(BIN)/test_console $(OBJ)/test_console.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)
+	$(CC) -o $(TST)/test_console $(OBJ)/test_console.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)
 
 test_create: $(OBJ)/test_create.o $(OBJ)/common.o
-	$(CC) -o $(BIN)/test_create $(OBJ)/test_create.o $(OBJ)/common.o $(LIBS)
+	$(CC) -o $(TST)/test_create $(OBJ)/test_create.o $(OBJ)/common.o $(LIBS)
 
 test_usergo: $(OBJ)/test_usergo.o $(OBJ)/common.o
-	$(CC) -o $(BIN)/test_usergo $(OBJ)/test_usergo.o $(OBJ)/common.o
+	$(CC) -o $(TST)/test_usergo $(OBJ)/test_usergo.o $(OBJ)/common.o
+
+test_run: $(OBJ)/test_run.o $(OBJ)/common.o
+	$(CC) -o $(TST)/test_run $(OBJ)/test_run.o $(OBJ)/common.o
+
+# util
+# ------------------------------------------------
 
 clean:
 	rm -f $(OBJ)/*

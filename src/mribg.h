@@ -27,3 +27,7 @@ int datahandler(struct gen_settings *gs, struct study *st, char *action);
 // util
 void create_study_dir(struct gen_settings *gs, struct study *stud);
 void create_sequence_dir(struct gen_settings *gs, struct study *stud);
+
+// create study log in data dir
+int init_study_log(char *path, struct gen_settings *gs, struct study *st);
+int update_study_log(char *path, struct study *st);

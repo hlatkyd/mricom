@@ -7,6 +7,11 @@
  *
  * Managing a study
  *
+ * The global struct study holds the study id i.e: s_202005040101,
+ * sequence names and related events. The struct element seqnum
+ * represents the number of completed sequences, and is updated 
+ * when ttlctrl signals 'stop' while in automated mode.
+ *
  */
 
 #include "mribg.h"
@@ -142,6 +147,7 @@ int main(int argc, char **argv){
 
     // shutdown
     processctrl_add(gs->mpid_file, mp, "STOP");
+    free(gs); free(mp); free(study);
     return 0;
 
 }
@@ -192,7 +198,11 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
     char **cmdargv;
     int i, ret;
     char event[128];
+    char studytsv[LPATH*2]={0};
     pid_t pid;
+
+    // set study log file path 
+    snprintf(studytsv, sizeof(studytsv), "%s/%sstudy.tsv",gs->workdir,DATA_DIR);
 
     argv = calloc(MAXARG,sizeof(char*));
     for(i=0; i< MAXARG; i++){
@@ -252,8 +262,8 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
                 // blockstim doesnt need the first 2 argument
                 strcpy(cmdargv[i],argv[i+2]);
             }
-            snprintf(event,sizeof(event),"%s,%s",argv[2],argv[3]);
-            strcpy(study->events[study->seqnum-1],event);
+            snprintf(event,sizeof(event),"%s,%s",argv[2],argv[3],argv[4]);
+            strcpy(study->event[study->seqnum],event);
             fork_blockstim(cmdargv);
         }
         else if(strcmp(argv[2], "analogdaq")==0){
@@ -289,7 +299,9 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             }
             // TODO data handling
             mribg_status = STATUS_AUTO_WAITING;
+            update_study_log(studytsv, study);
             datahandler(gs, study, "stop");
+            (study->seqnum)++;
             return 1;
         }   
         // stop from mricom
@@ -340,12 +352,12 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
                 //TODO create new dir
                 strcpy(study->id, argv[3]);
                 create_study_dir(gs, study);
+                init_study_log(studytsv,gs,study);
                 return 1;
             }
             // sequence fid directory name, eg: epip_hd
             else if(strcmp(argv[2],"study_sequence")==0){
                 strcpy(study->sequence[study->seqnum], argv[3]);
-                (study->seqnum)++;
                 return 1;
             }
         }
@@ -647,4 +659,55 @@ void create_sequence_dir(struct gen_settings *gs, struct study *stud){
 
 }
 
+/*
+ * Function: init_study_log
+ * ------------------------
+ *  Create logfile with headers and timing for study struct
+ */
 
+int init_study_log(char *path, struct gen_settings *gs, struct study *st){
+
+    struct header *h;
+    struct timeval tv;
+    char proc[LPATH*2]={0};
+    FILE *fp;
+    gettimeofday(&tv, NULL);
+    h = malloc(sizeof(struct header));
+    h->timestamp = tv;
+    snprintf(proc, sizeof(proc),"%s/mribg",getenv("MRICOMDIR"));
+    strcpy(h->proc,proc);
+    fp = fopen(path, "w");
+    if(fp == NULL){
+        fprintf(stderr, "cannot open file %s\n",path);
+        return -1;
+    }
+    fprintf_common_header(fp, h, 1, NULL);
+    // add id as standalone line
+    fprintf(fp, "\nid=%s\n",study->id);
+    // add column names
+    fprintf(fp, "seqnum\tsequence\tevent\n");
+    fclose(fp);
+    free(h);
+    return 0;
+}
+
+/*
+ * Function: update_study_log
+ * --------------------------
+ *  Append completed sequence and related times, events to study log
+ */
+
+int update_study_log(char *path, struct study *st){
+
+    FILE *fp;
+    int n;
+    n = study->seqnum;
+    fp = fopen(path, "a");
+    if(fp == NULL){
+        fprintf(stderr, "cannot open file %s\n", path);
+        return -1;
+    }
+    fprintf(fp,"%d\t%s\t%s\n",n, study->sequence[n], study->event[n]);
+    fclose(fp);
+    return 0;
+}
