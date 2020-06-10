@@ -12,6 +12,9 @@
  * represents the number of completed sequences, and is updated 
  * when ttlctrl signals 'stop' while in automated mode.
  *
+ * The currently running sequence parameters are save in the file 'curpar'
+ * the study id is saved in file 'curstudy' in the working data directory.
+ * The contents of these files are updated whenever the parameters are updated.
  */
 
 #include "mribg.h"
@@ -229,7 +232,15 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             if(mribg_status_check(0) == 0){
                 // fork ttlctrl from here
                 mribg_status = STATUS_AUTO_RUNNING;
-                fork_ttlctrl(NULL);
+                // if no stimulation given, return
+                if(argc == 2){
+                    fork_ttlctrl(NULL);
+                    return 1;
+                } else{
+                //TODO
+                // in case of more arguments, just call ttlctr, return yet
+                    fork_ttlctrl(NULL);
+                }
             } else {
                 return -1;
             }
@@ -262,8 +273,9 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
                 // blockstim doesnt need the first 2 argument
                 strcpy(cmdargv[i],argv[i+2]);
             }
-            snprintf(event,sizeof(event),"%s,%s",argv[2],argv[3],argv[4]);
+            snprintf(event,sizeof(event),"%s,%s,%s",argv[2],argv[3],argv[4]);
             strcpy(study->event[study->seqnum],event);
+            update_curpar(gs, study);
             fork_blockstim(cmdargv);
         }
         else if(strcmp(argv[2], "analogdaq")==0){
@@ -335,12 +347,14 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             // study id, eg: s_2020050401
             else if(strcmp(argv[2],"study_id")==0){
                 strcpy(study->id, argv[3]);
+                update_curstudy(gs, study);
                 return 1;
             }
             // sequence fid directory name, eg: epip_hd
             else if(strcmp(argv[2],"study_sequence")==0){
                 strcpy(study->sequence[study->seqnum], argv[3]);
                 (study->seqnum)++;
+                update_curpar(gs, study);
                 return 1;
             }
         }
@@ -353,11 +367,13 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
                 strcpy(study->id, argv[3]);
                 create_study_dir(gs, study);
                 init_study_log(studytsv,gs,study);
+                update_curstudy(gs, study);
                 return 1;
             }
             // sequence fid directory name, eg: epip_hd
             else if(strcmp(argv[2],"study_sequence")==0){
                 strcpy(study->sequence[study->seqnum], argv[3]);
+                update_curpar(gs, study);
                 return 1;
             }
         }

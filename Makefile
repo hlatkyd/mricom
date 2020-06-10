@@ -12,7 +12,9 @@ DAT=./data
 TST=./test
 
 all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq \
+	managedio \
 	test_proc test_console test_create test_usergo
+
 test: test_proc test_console test_create test_usergo test_run
 
 dir: 
@@ -46,6 +48,9 @@ vnmrclient: $(OBJ)/vnmrclient.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 ttlctrl: $(OBJ)/ttlctrl.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 	$(CC) -o $(BIN)/ttlctrl $(OBJ)/ttlctrl.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)
 
+managedio: $(OBJ)/managedio.o
+	$(CC) -o $(BIN)/managedio $(OBJ)/managedio.o $(LIBS)
+
 # test subprograms
 #-----------------------------------------------
 
@@ -62,7 +67,7 @@ test_usergo: $(OBJ)/test_usergo.o $(OBJ)/common.o
 	$(CC) -o $(TST)/test_usergo $(OBJ)/test_usergo.o $(OBJ)/common.o
 
 test_run: $(OBJ)/test_run.o $(OBJ)/common.o
-	$(CC) -o $(TST)/test_run $(OBJ)/test_run.o $(OBJ)/common.o
+	$(CC) -o $(TST)/test_run $(OBJ)/test_run.o $(OBJ)/common.o $(LIBS)
 
 # util
 # ------------------------------------------------

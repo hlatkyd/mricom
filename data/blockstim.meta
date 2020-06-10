@@ -1,5 +1,5 @@
 # cmd=/home/david/dev/mricom/bin/blockstim args=design,trig Mricom v0.1
-# timestamp=2020-06-09 21:36:30.272393
+# timestamp=2020-06-10 21:31:14.270304
 
 % BLOCKSTIM SETTINGS
 start_delay=0.000000
@@ -10,6 +10,6 @@ ttl_freq=10.000000
 n_blocks=1
 
 % TIMING
-start=2020-06-09 21:36:30.272393
-action=2020-06-09 21:36:30.273101
-stop=2020-06-09 21:36:40.173254
+start=2020-06-10 21:31:14.270304
+action=2020-06-10 21:31:15.844379
+stop=2020-06-10 21:31:25.744514

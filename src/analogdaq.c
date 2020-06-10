@@ -1,6 +1,8 @@
 /*
  * Analog acquisition test with a comedi command
  *
+ * Arguments
+ *  argv_1 : char study_id
  */
 
 #include "analogdaq.h"

@@ -293,6 +293,7 @@ void sighandler(int signum){
     if(signum == SIGUSR1 && strcmp(mp->name, "mribg")==0){
         mribg_status = 1;
     }
+    free(mp);
 }   
 
 
@@ -1007,6 +1008,26 @@ void remove_spaces(char* s) {
 }
 
 /*
+ * Function: is_number
+ * -------------------
+ *  Return True if character array represents a number
+ */
+bool is_number(char number[]){
+    int i = 0;
+
+    //checking for negative numbers
+    if (number[0] == '-')
+        i = 1;
+    for (; number[i] != 0; i++)
+    {
+        //if (number[i] > '9' || number[i] < '0')
+        if (!isdigit(number[i]))
+            return false;
+    }
+    return true;
+}
+
+/*
  * Function: fcpy
  * --------------
  *  Copy the contents of source file to dest file. Return copied char count.
@@ -1043,4 +1064,49 @@ int fcpy(char *sourcefile, char *destfile){
     fclose(sourceFile);
     fclose(destFile);
     return count;
+}
+
+/*
+ * Function: update_curstudy
+ * -------------------------
+ *  Update study_id in curstudy file
+ */
+int update_curstudy(struct gen_settings *gs, struct study *st){
+
+    FILE *fp;
+    char path[LPATH*2] = {0};
+    snprintf(path, sizeof(path),"%s/%s%s",gs->workdir,DATA_DIR,CURSTUDY);
+    fp = fopen(path, "w+");
+    if(fp == NULL){
+        perror("fopen");
+        exit(1);
+    }
+    fprintf(fp,"# current study id\n");
+    fprintf(fp, "%s\n",st->id);
+
+    fclose(fp);
+    return 0;
+}
+
+/*
+ * Function: update_curpar
+ * -----------------------
+ *  Update sequence parameters in curpar file
+ */
+int update_curpar(struct gen_settings *gs, struct study *st){
+
+    FILE *fp;
+    char path[LPATH*2] = {0};
+    int n = st->seqnum;
+    snprintf(path, sizeof(path),"%s/%s%s",gs->workdir,DATA_DIR,CURPAR);
+    fp = fopen(path, "w+");
+    if(fp == NULL){
+        perror("fopen");
+        exit(1);
+    }
+    fprintf(fp,"# Study params: seqnum, sequence, events\n");
+    fprintf(fp, "%d\n%s\n%s\n",n, st->sequence[n], st->event[n]);
+
+    fclose(fp);
+    return 0;
 }

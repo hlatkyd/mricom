@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <time.h>
 #include <ctype.h>
 #include <math.h>
@@ -47,6 +48,11 @@
 #define BIN_DIR "bin/"
 #define CONF_DIR "conf/"
 #define DATA_DIR "data/"
+
+/* currently running study and sequence parameter files for data management*/
+#define CURPAR "curparbg"
+#define CURSTUDY "curstudybg"
+
 // max path length
 #define LPATH 128
 
@@ -213,6 +219,8 @@ void sighandler(int signum);
 
 /* util common func*/
 void remove_spaces(char *);
+bool is_number(char number[]);
+
 void getppname(char *name);
 void getname(char *name, int pid);
 void getcmdline(char *cmd);
@@ -230,6 +238,9 @@ void fprintf_meta_intrpt(char *p);
 int fprintf_common_header(FILE *fp, struct header *h, int argc, char **args);
 int compare_common_header(char *file1, char *file2);
 int fcpy(char *source_file, char *dest_file);
+
+int update_curpar(struct gen_settings *gs, struct study *st);
+int update_curstudy(struct gen_settings *gs, struct study *st);
 
 
 /* archiving and finishing up experiment session*/
