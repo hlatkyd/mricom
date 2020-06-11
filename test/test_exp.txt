@@ -1,13 +1,13 @@
 # Text file containing study id, sequence names and stimulation for test_run
 # subprogram. Format is fixed: # are comment lines, blanks are ignored.
-# 1st line is the study id each additional line is space separated as follows:
-# [sequence name] [length] [stim] [stim parameter]
+# 1st line is the study id each additional line is comma separated as follows:
+# [sequence name],[length],[stim],[stim parameter]
 # where [length] is the simulated length of the sequence in seconds and 
 # [stim] and [stim paramaeter] are optional
 
-s_2020060101
+s_2020060102
 
-fsems
-epip_whisker 10 blockstim trig
-epip_resting 10
-epip_whisker 10 blockstim trig
+fsems,10
+epip_whisker,10,blockstim,trig
+epip_resting,10
+epip_whisker,10,blockstim,trig

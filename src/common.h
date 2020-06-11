@@ -50,8 +50,8 @@
 #define DATA_DIR "data/"
 
 /* currently running study and sequence parameter files for data management*/
-#define CURPAR "curparbg"
-#define CURSTUDY "curstudybg"
+#define CURPAR "curpar"
+#define CURSTUDY "curstudy"
 
 // max path length
 #define LPATH 128

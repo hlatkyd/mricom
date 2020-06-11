@@ -13,7 +13,7 @@ TST=./test
 
 all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq \
 	managedio \
-	test_proc test_console test_create test_usergo
+	test_proc test_console test_create test_usergo test_run
 
 test: test_proc test_console test_create test_usergo test_run
 

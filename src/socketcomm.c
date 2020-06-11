@@ -6,6 +6,7 @@
 #include "common.h"
 #include "socketcomm.h"
 
+#define SEND_VERBOSE 0
 /*
  * Function: make_msg
  * ------------------
@@ -65,7 +66,6 @@ int parse_msg(char *msg, char **argv, char *delim){
  *
  */
 
-#define SEND_VERBOSE 1
 int send_mribg(char *msg){
 
     // note: almost same code as vnmrclient
@@ -131,7 +131,8 @@ int send_mribg(char *msg){
         return -1;
     // responseto query
     } else{
-        printf("[mribg]: %s\n",buffer);
+        if(SEND_VERBOSE > 0)
+            printf("[mribg]: %s\n",buffer);
         return 0;
     }
 }

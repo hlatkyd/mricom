@@ -116,7 +116,7 @@ int main(int argc, char **argv){
         }
         nread = read(newsockfd, buffer, BUFS-1);
         if(VERBOSE > 0){
-            fprintf(stderr, "[mribg]: incoming request: '%s'\n",buffer);
+            fprintf(stderr, "[mribg]: incoming: '%s'...",buffer);
         }
 
         // do processing, start subprograms, etc
@@ -125,20 +125,20 @@ int main(int argc, char **argv){
         // signal back if accepted
         if(ret < 0){
             if(VERBOSE > 0){
-                fprintf(stderr, "[mribg]: request denied\n");
+                fprintf(stderr, "denied\n");
             }
             write(newsockfd, msg_reject, sizeof(msg_reject));
         // signal back if rejected
         } else if(ret > 0){
             if(VERBOSE > 0){
-                fprintf(stderr, "[mribg]: request accepted\n");
+                fprintf(stderr, "accepted\n");
             }
             write(newsockfd, msg_accept, sizeof(msg_accept));
 
         // write direct message if message was a query
         } else if(ret == 0){
             if(VERBOSE > 0){
-                fprintf(stderr, "[mribg]: %s\n",msg_back);
+                fprintf(stderr, "\n[mribg]: %s\n",msg_back);
             }
             write(newsockfd, msg_back, sizeof(msg_back));
         }
@@ -312,7 +312,7 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             // TODO data handling
             mribg_status = STATUS_AUTO_WAITING;
             update_study_log(studytsv, study);
-            datahandler(gs, study, "stop");
+            datahandler(gs, study, "sequence_stop");
             (study->seqnum)++;
             return 1;
         }   
@@ -539,6 +539,7 @@ int fork_ttlctrl(char **args){
     // parent process
     } else if(p > 0) {
 
+        signal(SIGCHLD,SIG_IGN);
         return p;
 
     // child process
@@ -550,7 +551,7 @@ int fork_ttlctrl(char **args){
         cmdargs[1] = NULL;
         ret = execvp(path,cmdargs);
         if(ret < 0){
-            perror("fork_analogdaq: execvp");
+            perror("fork_ttlctrl: execvp");
             exit(1);
         }
         return 0;
@@ -624,15 +625,30 @@ int mribg_status_check(int state){
  * ---------------------
  * Copies recorded data and logs to approprate directories
  *
+ * Files to manage, then clean on sequence end
+ *  - blockstim.meta
+ *  - blockstim.tsv
+ *  - ttlctrl.meta
+ *  - eventstim.meta
+ *  - eventstim.tsv
+ *  - curpar
+ *
+ * File to manage then clean on study end
+ *  - analogdaq.meta
+ *  - analogdaq.tsv
+ *  - curstudy
+ *  
  */
 int datahandler(struct gen_settings *gs, struct study *st, char *action){
 
     int i;
     int n = study->seqnum;
     // data management on mribg 'stop' request, usually from ttlctrl
-    if(strcmp(action, "stop")==0){
+    if(strcmp(action, "sequence_stop")==0){
         // create directory of most recent sequence, copy data dir contents
         create_sequence_dir(gs, study);
+
+        // copy blockstim, ttlctrl data and meta files
 
         
     }
