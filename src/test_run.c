@@ -73,7 +73,6 @@ int main(int argc, char **argv){
     for(i=0; i < st->seqnum; i++){
         // redo malloc args
         
-        printf("HELLO\n");
         args = malloc(sizeof(char*) * N_ARGS);
         for(j=0; j<N_ARGS; j++ ){
             args[j] = malloc(sizeof(char) * PL);

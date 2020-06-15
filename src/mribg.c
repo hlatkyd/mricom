@@ -324,6 +324,9 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
                 //TODO simply interrupt blockstim??
                 return 1;
             }
+            //TODO only testing del this later
+            datahandler(gs, study, "sequence_stop");
+            return 1;
         }
     }
 
@@ -651,22 +654,47 @@ int mribg_status_check(int state){
  */
 int datahandler(struct gen_settings *gs, struct study *st, char *action){
 
-    int i;
-    int n = study->seqnum;
-    char *seqdir[LPATH*2];
-    char *datadir[LPATH*2];
-    char *src[LPATH*2];
-    char *dst[LPATH*2];
+    //int n = study->seqnum;
+    int i, ret, num;
+    struct stat s = {0};
+    char studydir[LPATH*2] = {0};
+    char seqdir[LPATH*2] = {0};
+    char datadir[LPATH*2] = {0};
+    char src[LPATH*2] = {0};
+    char dst[LPATH*2] = {0};
+
+    char seq[64];
+    char id[64];
+    char event[64];
+    char *filetocpy[] = {"blockstim.meta", "blockstim.tsv", "eventstim.tsv",
+                            "ttlctrl.meta", "curpar", "eventstim.meta", NULL};
+    read_curstudy(gs, id);
+    read_curpar(gs, &num ,seq, event);
+
+    snprintf(studydir, sizeof(studydir),"%s/%s",gs->studies_dir, id);
+    snprintf(seqdir, sizeof(seqdir),"%s/%s/%s",gs->studies_dir, id, seq);
+    snprintf(datadir, sizeof(datadir),"%s/%s",gs->workdir, DATA_DIR);
     // data management on mribg 'stop' request, usually from ttlctrl
     if(strcmp(action, "sequence_stop")==0){
-        // create directory of most recent sequence, copy data dir contents
-        create_sequence_dir(gs, study);
-
+        //create_sequence_dir(gs, study); TODO fix this???
+        // make seqdir, to be sure
+        if(stat(studydir, &s) == -1){
+            mkdir(studydir, 0700);
+        } 
+        if(stat(seqdir, &s) == -1){
+            mkdir(seqdir, 0700);
+        } 
         // copy blockstim, ttlctrl data and meta files
-        //fcpy();
-
-
-        
+        while(filetocpy[i] != NULL){
+            snprintf(src, sizeof(src), "%s%s",datadir,filetocpy[i]);
+            snprintf(dst, sizeof(dst), "%s/%s", seqdir, filetocpy[i]);
+            fprintf(stderr, "\ndest %s\n",dst);
+            fprintf(stderr, "\ndest %s\n",src);
+            if(access(src, F_OK) != -1){
+                fcpy(src, dst);
+            }
+            i++;
+        }
     }
     
     return 0;

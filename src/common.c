@@ -1134,15 +1134,19 @@ int read_curpar(struct gen_settings *gs, int *num, char *seq, char *event){
     }
     while((read = getline(&line, &len, fp)) != -1){
         if(line[0] == '#'){
-            // leave out the commnets
+            // leave out the comments
             continue;
         } else {
+            strtok(line, "\n");
             switch(count){
                 case 0:
+                    (*num) = atoi(line);
                     break;
                 case 1:
+                    strcpy(seq, line);
                     break;
                 case 2:
+                    strcpy(event, line);
                     break;
 
             }
