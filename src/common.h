@@ -241,6 +241,8 @@ int fcpy(char *source_file, char *dest_file);
 
 int update_curpar(struct gen_settings *gs, struct study *st);
 int update_curstudy(struct gen_settings *gs, struct study *st);
+int read_curpar(struct gen_settings *gs, int *seqnum, char *sequence, char *event);
+int read_curstudy(struct gen_settings *gs, char *study);
 
 
 /* archiving and finishing up experiment session*/

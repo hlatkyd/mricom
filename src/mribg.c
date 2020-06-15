@@ -420,9 +420,19 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
     //               ABORT
     // -----------------------------------
     if(strcmp(argv[1],"abort")){
-        ;
+        // coming from vnmrclient on sequence stop
+        if(strcmp(argv[0],"vnmrclient")==0){
+            ;
+        }
+        else if (strcmp(argv[0],"mricom")==0){
+            ;
+        } else {
+            fprintf(stderr, "Abort only accepted from vnmrclient or mricom\n");
+            return -1;
+        }
     }
     // fin, reject for unkown reason if code gets here
+    fprintf(stderr, "Rejected for uh, reasons...\n");
     return -1;
 }
 
@@ -643,12 +653,18 @@ int datahandler(struct gen_settings *gs, struct study *st, char *action){
 
     int i;
     int n = study->seqnum;
+    char *seqdir[LPATH*2];
+    char *datadir[LPATH*2];
+    char *src[LPATH*2];
+    char *dst[LPATH*2];
     // data management on mribg 'stop' request, usually from ttlctrl
     if(strcmp(action, "sequence_stop")==0){
         // create directory of most recent sequence, copy data dir contents
         create_sequence_dir(gs, study);
 
         // copy blockstim, ttlctrl data and meta files
+        //fcpy();
+
 
         
     }

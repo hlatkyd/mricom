@@ -1110,3 +1110,77 @@ int update_curpar(struct gen_settings *gs, struct study *st){
     fclose(fp);
     return 0;
 }
+
+/*
+ * Function: read_curpar
+ * ---------------------
+ *  Read the curpar file and fill the input args with the contents.
+ *  Return 0 on success, -1 otherwise
+ */
+ 
+int read_curpar(struct gen_settings *gs, int *num, char *seq, char *event){
+
+    FILE *fp;
+    int count = 0;
+    char path[LPATH * 2] = {0};
+    size_t len = 0;
+    ssize_t read;
+    char *line = NULL;
+    snprintf(path, sizeof(path), "%s/%s%s",gs->workdir, DATA_DIR, CURPAR);
+    fp = fopen(path, "r");
+    if(fp == NULL){
+        perror("fopen");
+        exit(1);
+    }
+    while((read = getline(&line, &len, fp)) != -1){
+        if(line[0] == '#'){
+            // leave out the commnets
+            continue;
+        } else {
+            switch(count){
+                case 0:
+                    break;
+                case 1:
+                    break;
+                case 2:
+                    break;
+
+            }
+            count++;
+        }
+    }
+    return 0;
+}
+
+/*
+ * Function: read_curstudy
+ * ---------------------
+ *  Read the curstudy file for the ID of the running study
+ *  Return 0 on success, -1 otherwise
+ */
+int read_curstudy(struct gen_settings *gs, char *id){
+
+    FILE *fp;
+    char path[LPATH*2] = {0};
+    size_t len = 0;
+    ssize_t read;
+    char *line = NULL;
+    snprintf(path, sizeof(path), "%s/%s%s",gs->workdir, DATA_DIR, CURSTUDY);
+    fp = fopen(path, "r");
+    if(fp == NULL){
+        perror("fopen");
+        exit(1);
+    }
+    while((read = getline(&line, &len, fp)) != -1){
+        if(line[0] == '#'){
+            // leave out the commnets
+            continue;
+        } else {
+            strtok(line, "\n"); // remove newline
+            strcpy(id, line);
+        }
+    }
+
+    fclose(fp);
+    return 0;
+}
