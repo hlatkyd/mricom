@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv){
 
-    // sequence end
+    // sequence end on automation
 
     // study end
 

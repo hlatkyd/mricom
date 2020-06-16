@@ -230,6 +230,7 @@ int getusecdelay(struct timeval tv1);
 int clockusecdelay(struct timespec tv1);
 double getsecdiff(struct timeval tv1, struct timeval tv2);
 double clocksecdiff(struct timespec tv1, struct timespec tv2);
+struct timeval hr2timeval(char *hrtimestr);
 
 /* data file management */
 
@@ -243,6 +244,11 @@ int update_curpar(struct gen_settings *gs, struct study *st);
 int update_curstudy(struct gen_settings *gs, struct study *st);
 int read_curpar(struct gen_settings *gs, int *seqnum, char *sequence, char *event);
 int read_curstudy(struct gen_settings *gs, char *study);
+int read_meta_times(struct times *t, char *metafile);
+
+int datahandler(struct gen_settings *gs, char *action);
+int extract_analogdaq(char *analogdaq, char *ttlctrlmeta, char *dest);
+int combine_all();
 
 
 /* archiving and finishing up experiment session*/

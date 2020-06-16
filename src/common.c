@@ -1040,7 +1040,7 @@ int fcpy(char *sourcefile, char *destfile){
     int  count = 0;
     char ch;
     if(access(destfile, F_OK) != -1){
-        fprintf(stderr, "fcpy: warning: destination file already exists.\n");
+        fprintf(stderr, "fcpy: warning: %s already exists.\n",destfile);
     }
     sourceFile = fopen(sourcefile,"r");
     if(sourceFile == NULL){
@@ -1188,3 +1188,215 @@ int read_curstudy(struct gen_settings *gs, char *id){
     fclose(fp);
     return 0;
 }
+
+/*
+ * Function: datahandler
+ * ---------------------
+ * Copies recorded data and logs to approprate directories
+ *
+ * Files to manage, then clean on sequence end
+ *  - blockstim.meta
+ *  - blockstim.tsv
+ *  - ttlctrl.meta
+ *  - eventstim.meta
+ *  - eventstim.tsv
+ *  - curpar
+ *
+ * File to manage then clean on study end
+ *  - analogdaq.meta
+ *  - analogdaq.tsv
+ *  - curstudy
+ *  
+ */
+int datahandler(struct gen_settings *gs, char *action){
+
+    //int n = study->seqnum;
+    int i, ret, num;
+    size_t l;
+    struct stat s = {0};
+    char studydir[LPATH*2] = {0};
+    char seqdir[LPATH*2] = {0};
+    char datadir[LPATH*2] = {0};
+    char src[LPATH*2] = {0};
+    char dst[LPATH*2] = {0};
+    char seq[64];
+    char id[64];
+    char event[64];
+    char *filetocpy[] = {"blockstim.meta", "blockstim.tsv", "eventstim.tsv",
+                            "ttlctrl.meta", "curpar", "eventstim.meta"};
+    // relative paths
+    char adaqtsvrel[] = "analogdaq.tsv";
+    char ttlctrlmrel[] = "ttlctrl.meta";
+    char phystsvrel[] = "phys.tsv";
+    // for slicing analog acquisition data
+    char ttlctrlm[LPATH*2] = {0};
+    char adaqtsv[LPATH*2] = {0};
+    char phystsv[LPATH*2] = {0};
+
+    read_curstudy(gs, id);
+    read_curpar(gs, &num ,seq, event);
+
+    snprintf(studydir, sizeof(studydir),"%s/%s",gs->studies_dir, id);
+    snprintf(seqdir, sizeof(seqdir),"%s/%s/%s",gs->studies_dir, id, seq);
+    snprintf(datadir, sizeof(datadir),"%s/%s",gs->workdir, DATA_DIR);
+    snprintf(adaqtsv, sizeof(adaqtsv),"%s/%s",datadir, adaqtsvrel);
+    snprintf(ttlctrlm, sizeof(ttlctrlm),"%s/%s",seqdir, ttlctrlmrel);
+    snprintf(phystsv, sizeof(phystsv),"%s/%s",seqdir, phystsvrel);
+    // data management on mribg 'stop' request, usually from ttlctrl
+    if(strcmp(action, "sequence_stop")==0){
+        //create_sequence_dir(gs, study); TODO fix this???
+        // make seqdir, to be sure
+        if(stat(studydir, &s) == -1){
+            mkdir(studydir, 0700);
+        }
+        if(stat(seqdir, &s) == -1){
+            mkdir(seqdir, 0700);
+        }
+        // copy blockstim, ttlctrl data and meta files
+        for(l=0; l< sizeof(filetocpy) / sizeof(filetocpy[0]); l++){
+            snprintf(src, sizeof(src), "%s%s",datadir,filetocpy[i]);
+            snprintf(dst, sizeof(dst), "%s/%s", seqdir, filetocpy[i]);
+            if(access(src, F_OK) != -1){
+                fcpy(src, dst);
+            }
+            i++;
+        }
+        // create sequence specific analog data
+        extract_analogdaq(adaqtsv, ttlctrlm, phystsv);
+        combine_all();
+
+        // clean data dir, delete copied instances
+        for(l=0; l< sizeof(filetocpy) / sizeof(filetocpy[0]); l++){
+            snprintf(src, sizeof(src), "%s%s",datadir,filetocpy[i]);
+        }
+
+    }
+    //TODO
+    else if(strcmp(action, "study_stop") == 0){
+        ;
+    } else {
+        fprintf(stderr, "datahandler: unknown action\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+/*
+ * Function: extract_analogdaq
+ * ---------------------------
+ *  Extract sequence specfic data from full study data of the analog daq.
+ *  Make new file with similar layout to analogdaq.tsv, but only keep relevant
+ *  data. The appropriate times are taken from ttlctrl.meta.
+ *  Return 0 on success.
+ */
+int extract_analogdaq(char *analogdaq, char *ttlctrlmeta, char *dest){
+
+    struct times *t;
+    t = malloc(sizeof(struct times));
+    memset(t, 0, sizeof(struct times));
+
+    read_meta_times(t, ttlctrlmeta);
+    free(t);
+    return 0;
+} 
+
+/*
+ * Function: read_meta_times
+ * -------------------------
+ *  Parse timing information from meta files, and fill times struct. 
+ *  Return 0 on success.
+ */
+int read_meta_times(struct times *t, char *filename){
+
+    FILE *fp;
+    size_t len = 0;
+    ssize_t read;
+    char *line = NULL;
+    int count = -1;
+    char *tok;
+    struct timeval tv;
+    fp = fopen(filename ,"r");
+    if(fp == NULL){
+        perror("fopen");
+        return -1;
+    }
+    while((read = getline(&line, &len, fp)) != -1){
+        if(strstr(line, "TIMING") != NULL) {
+            fprintf(stderr, "FOUNDIT!\n");
+            count = 0; // found it
+        } else if(count > -1) {
+            tok = strtok(line, "=");
+            tok = strtok(NULL, "=");
+            tv = hr2timeval(tok);
+            switch(count){
+                case 0:
+                    t->start = tv;
+                    break;
+                case 1:
+                    t->action = tv;
+                    break;
+                case 2:
+                    t->stop = tv;
+                    break;
+
+            }
+            count++;
+        } else {
+            continue;
+        }
+    }
+    fclose(fp);
+    
+    return 0;
+}
+/*
+ * Function: hr2timeval
+ * -----------------
+ *  Convert human readable timestring to timeval and return it.
+ *
+ *  example format of input: 2020-06-16 20:13:28.974153
+ */
+struct timeval hr2timeval(char *hrtimestr){
+
+    struct tm tmvar;;
+    struct timeval tv;
+    time_t timevar;
+    char buf[64] = {0};
+    char *tok;
+    fprintf(stderr, "timestr %s\n",hrtimestr);
+    // year-month-day
+    strcpy(buf, hrtimestr);
+    tok = strtok(buf, "-");
+    tmvar.tm_year = atoi(tok);
+    tmvar.tm_year -= 1900; // correct to epoch
+    strtok(NULL, "-");
+    tmvar.tm_mon = atoi(tok);
+    tmvar.tm_mon--; // correct to epoch
+    strtok(NULL, "-");
+    tmvar.tm_mday = atoi(tok);
+    // hour:min:sec
+    strcpy(buf, hrtimestr);
+    tok = strtok(buf, " ");
+    tok = strtok(NULL, " ");
+    tok = strtok(NULL, ".");
+    tok = strtok(NULL, ":");
+    tmvar.tm_hour = atoi(tok);
+    tok = strtok(NULL, ":");
+    tmvar.tm_min = atoi(tok);
+    tok = strtok(NULL, ":");
+    tmvar.tm_sec = atoi(tok);
+    strcpy(buf, hrtimestr);
+    tok = strtok(buf, ".");
+    tok = strtok(buf, ".");
+    tv.tv_usec = atoi(tok);
+    timevar = mktime(&tmvar);
+    tv.tv_sec = timevar;
+    return tv;
+}
+
+
+int combine_all(){
+    return 0;
+}
+
