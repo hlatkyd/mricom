@@ -772,9 +772,9 @@ void fprintf_meta_intrpt(char *p){
     gettimeofday(&tv,NULL);
     //clock_gettime(CLOKC_REALTIME, &ts);
     gethrtime(buf, tv);
-    printf("buf: %s\n",buf);
+    //printf("buf: %s\n",buf);
     ret = fprintf(fp, "intrpt=%s\n",buf);
-    printf("ret: %d\n",ret);
+    //printf("ret: %d\n",ret);
     free(buf);
     fclose(fp);
 }
@@ -984,10 +984,24 @@ int clockusecdelay(struct timespec tv1){
 /*
  * Function: getsecdiff
  * ----------------------
- * Calculate difference in seconds (double) between two timepoints
+ * Calculate difference in seconds (double) between two timepoints.
  */
 double getsecdiff(struct timeval tv1, struct timeval tv2){
 
+    double diff;
+    diff = tv2.tv_sec - tv1.tv_sec;
+    diff += (double) (tv2.tv_usec - tv1.tv_usec) / 1000000.0;
+    return diff;
+}
+
+/*
+ * Function: getusecdiff
+ * ----------------------
+ * Calculate difference in microseconds between two timepoints.
+ */
+long int getusecdiff(struct timeval tv1, struct timeval tv2){
+
+    //TODO
     double diff;
     diff = tv2.tv_sec - tv1.tv_sec;
     diff += (double) (tv2.tv_usec - tv1.tv_usec) / 1000000.0;
@@ -1028,11 +1042,32 @@ bool is_number(char number[]){
 }
 
 /*
+ * Function: mkpath
+ * ----------------
+ *  Recursively create directories. Return -1 on error, 0 on success.
+ */
+int mkpath(char *file_path, mode_t mode){
+
+    assert(file_path && *file_path);
+    for (char* p = strchr(file_path + 1, '/'); p; p = strchr(p + 1, '/')) {
+        *p = '\0';
+        if (mkdir(file_path, mode) == -1) {
+            if (errno != EEXIST) {
+                *p = '/';
+                return -1;
+            }
+        }
+        *p = '/';
+    }
+    return 0;
+}
+
+/*
  * Function: fcpy
  * --------------
  *  Copy the contents of source file to dest file. Return copied char count.
  */
-
+#define FCPY_VERBOSE 0
 int fcpy(char *sourcefile, char *destfile){
 
     FILE *sourceFile;
@@ -1040,7 +1075,8 @@ int fcpy(char *sourcefile, char *destfile){
     int  count = 0;
     char ch;
     if(access(destfile, F_OK) != -1){
-        fprintf(stderr, "fcpy: warning: %s already exists.\n",destfile);
+        if(FCPY_VERBOSE > 0)
+            fprintf(stderr, "fcpy: warning: %s already exists.\n",destfile);
     }
     sourceFile = fopen(sourcefile,"r");
     if(sourceFile == NULL){
@@ -1057,7 +1093,6 @@ int fcpy(char *sourcefile, char *destfile){
     while ((ch = fgetc(sourceFile)) != EOF)
     {
         fputc(ch, destFile);
-
         /* Increment character copied count */
         count++;
     }
@@ -1129,8 +1164,8 @@ int read_curpar(struct gen_settings *gs, int *num, char *seq, char *event){
     snprintf(path, sizeof(path), "%s/%s%s",gs->workdir, DATA_DIR, CURPAR);
     fp = fopen(path, "r");
     if(fp == NULL){
-        perror("fopen");
-        exit(1);
+        fprintf(stderr, "fcpy: cannot open file %s\n",path);
+        return -1;
     }
     while((read = getline(&line, &len, fp)) != -1){
         if(line[0] == '#'){
@@ -1172,8 +1207,8 @@ int read_curstudy(struct gen_settings *gs, char *id){
     snprintf(path, sizeof(path), "%s/%s%s",gs->workdir, DATA_DIR, CURSTUDY);
     fp = fopen(path, "r");
     if(fp == NULL){
-        perror("fopen");
-        exit(1);
+        fprintf(stderr, "fcpy: cannot open file %s\n",path);
+        return -1;
     }
     while((read = getline(&line, &len, fp)) != -1){
         if(line[0] == '#'){
@@ -1192,7 +1227,8 @@ int read_curstudy(struct gen_settings *gs, char *id){
 /*
  * Function: datahandler
  * ---------------------
- * Copies recorded data and logs to approprate directories
+ * Copies recorded data and logs to approprate directories.
+ * Return -1 on error, 0 on success
  *
  * Files to manage, then clean on sequence end
  *  - blockstim.meta
@@ -1226,49 +1262,81 @@ int datahandler(struct gen_settings *gs, char *action){
                             "ttlctrl.meta", "curpar", "eventstim.meta"};
     // relative paths
     char adaqtsvrel[] = "analogdaq.tsv";
+    char adaqmetarel[] = "analogdaq.meta";
     char ttlctrlmrel[] = "ttlctrl.meta";
     char phystsvrel[] = "phys.tsv";
     // for slicing analog acquisition data
     char ttlctrlm[LPATH*2] = {0};
     char adaqtsv[LPATH*2] = {0};
+    char adaqmeta[LPATH*2] = {0};
     char phystsv[LPATH*2] = {0};
 
-    read_curstudy(gs, id);
-    read_curpar(gs, &num ,seq, event);
+    ret = read_curstudy(gs, id);
+    if(ret < 0){
+        return -1;
+    }
+    ret = read_curpar(gs, &num ,seq, event);
+    if(ret < 0){
+        return -1;
+    }
 
     snprintf(studydir, sizeof(studydir),"%s/%s",gs->studies_dir, id);
     snprintf(seqdir, sizeof(seqdir),"%s/%s/%s",gs->studies_dir, id, seq);
     snprintf(datadir, sizeof(datadir),"%s/%s",gs->workdir, DATA_DIR);
+    datadir[strlen(datadir)-1] = '\0';  // correction for consistency
     snprintf(adaqtsv, sizeof(adaqtsv),"%s/%s",datadir, adaqtsvrel);
+    snprintf(adaqmeta, sizeof(adaqmeta),"%s/%s",datadir, adaqmetarel);
     snprintf(ttlctrlm, sizeof(ttlctrlm),"%s/%s",seqdir, ttlctrlmrel);
     snprintf(phystsv, sizeof(phystsv),"%s/%s",seqdir, phystsvrel);
+    
+    /*
+    fprintf(stderr, "\n");
+    fprintf(stderr, "study, %s seq %s\n",id, seq);
+    fprintf(stderr, "%s\n",studydir);
+    fprintf(stderr, "%s\n",datadir);
+    fprintf(stderr, "%s\n",adaqtsv);
+    fprintf(stderr, "%s\n",ttlctrlm);
+    fprintf(stderr, "%s\n",phystsv);
+    */
     // data management on mribg 'stop' request, usually from ttlctrl
     if(strcmp(action, "sequence_stop")==0){
         //create_sequence_dir(gs, study); TODO fix this???
         // make seqdir, to be sure
+        
+        memset(&s, 0, sizeof(s)); 
         if(stat(studydir, &s) == -1){
-            mkdir(studydir, 0700);
+            mkdir(studydir, 0755);
         }
+        memset(&s, 0, sizeof(s)); 
         if(stat(seqdir, &s) == -1){
-            mkdir(seqdir, 0700);
+            mkdir(seqdir, 0755);
         }
+        
+        //mkpath(seqdir, 0755);
         // copy blockstim, ttlctrl data and meta files
         for(l=0; l< sizeof(filetocpy) / sizeof(filetocpy[0]); l++){
-            snprintf(src, sizeof(src), "%s%s",datadir,filetocpy[i]);
-            snprintf(dst, sizeof(dst), "%s/%s", seqdir, filetocpy[i]);
+            snprintf(src, sizeof(src), "%s/%s",datadir,filetocpy[l]);
+            snprintf(dst, sizeof(dst), "%s/%s", seqdir, filetocpy[l]);
+            //fprintf(stderr, "src %s\n",src);
+            //fprintf(stderr, "dst %s\n",dst);
             if(access(src, F_OK) != -1){
                 fcpy(src, dst);
             }
-            i++;
         }
         // create sequence specific analog data
-        extract_analogdaq(adaqtsv, ttlctrlm, phystsv);
+        extract_analogdaq(adaqtsv, adaqmeta, ttlctrlm, phystsv);
         combine_all();
 
         // clean data dir, delete copied instances
         for(l=0; l< sizeof(filetocpy) / sizeof(filetocpy[0]); l++){
-            snprintf(src, sizeof(src), "%s%s",datadir,filetocpy[i]);
+            snprintf(src, sizeof(src), "%s/%s",datadir,filetocpy[l]);
+            //fprintf(stderr, "src %s\n",src);
+            if(access(src, F_OK) != -1){
+                remove(src);
+            }
         }
+        
+        return 0;
 
     }
     //TODO
@@ -1287,17 +1355,25 @@ int datahandler(struct gen_settings *gs, char *action){
  * ---------------------------
  *  Extract sequence specfic data from full study data of the analog daq.
  *  Make new file with similar layout to analogdaq.tsv, but only keep relevant
- *  data. The appropriate times are taken from ttlctrl.meta.
+ *  data. The appropriate times are taken from ttlctrl.meta and analogdaq.meta.
  *  Return 0 on success.
  */
-int extract_analogdaq(char *analogdaq, char *ttlctrlmeta, char *dest){
+int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
 
-    struct times *t;
-    t = malloc(sizeof(struct times));
-    memset(t, 0, sizeof(struct times));
+    struct times *tt;
+    struct times *at;
+    int secdiff;
+    tt = malloc(sizeof(struct times));
+    at = malloc(sizeof(struct times));
+    memset(tt, 0, sizeof(struct times));
+    memset(at, 0, sizeof(struct times));
 
-    read_meta_times(t, ttlctrlmeta);
-    free(t);
+    read_meta_times(tt, ttlctrlmeta);
+    read_meta_times(at, adaqmeta);
+    secdiff = getsecdiff(at->action, tt->action);
+    //fprintf(stderr, "secdiff : %d\n",secdiff);
+    free(tt);
+    free(at);
     return 0;
 } 
 
@@ -1316,6 +1392,7 @@ int read_meta_times(struct times *t, char *filename){
     int count = -1;
     char *tok;
     struct timeval tv;
+    memset(&tv, 0, sizeof(struct timeval));
     fp = fopen(filename ,"r");
     if(fp == NULL){
         perror("fopen");
@@ -1323,12 +1400,11 @@ int read_meta_times(struct times *t, char *filename){
     }
     while((read = getline(&line, &len, fp)) != -1){
         if(strstr(line, "TIMING") != NULL) {
-            fprintf(stderr, "FOUNDIT!\n");
             count = 0; // found it
         } else if(count > -1) {
             tok = strtok(line, "=");
             tok = strtok(NULL, "=");
-            tv = hr2timeval(tok);
+            hr2timeval(&tv, tok);
             switch(count){
                 case 0:
                     t->start = tv;
@@ -1353,46 +1429,53 @@ int read_meta_times(struct times *t, char *filename){
 /*
  * Function: hr2timeval
  * -----------------
- *  Convert human readable timestring to timeval and return it.
+ *  Convert human readable timestring to timeval, return 0 on success.
  *
- *  example format of input: 2020-06-16 20:13:28.974153
+ *  example format of input string: 2020-06-16 20:13:28.974153
  */
-struct timeval hr2timeval(char *hrtimestr){
+int hr2timeval(struct timeval *tv, char *hrtimestr){
 
     struct tm tmvar;;
-    struct timeval tv;
     time_t timevar;
     char buf[64] = {0};
     char *tok;
-    fprintf(stderr, "timestr %s\n",hrtimestr);
-    // year-month-day
+    char day[16];
+    char date[16];
+    char usec[16];
+
+    memset(tv, 0, sizeof(struct timeval));
+    //fprintf(stderr, "timestr %s\n",hrtimestr);
     strcpy(buf, hrtimestr);
-    tok = strtok(buf, "-");
-    tmvar.tm_year = atoi(tok);
-    tmvar.tm_year -= 1900; // correct to epoch
-    strtok(NULL, "-");
-    tmvar.tm_mon = atoi(tok);
-    tmvar.tm_mon--; // correct to epoch
-    strtok(NULL, "-");
-    tmvar.tm_mday = atoi(tok);
-    // hour:min:sec
-    strcpy(buf, hrtimestr);
+    // cut date-day-usec
     tok = strtok(buf, " ");
+    strcpy(date, tok);
     tok = strtok(NULL, " ");
+    strcpy(buf, tok);
+    tok = strtok(buf, ".");
+    strcpy(day, tok);
     tok = strtok(NULL, ".");
-    tok = strtok(NULL, ":");
+    strcpy(usec, tok);
+    // cut date
+    tok = strtok(date, "-");
+    tmvar.tm_year = atoi(tok);
+    tmvar.tm_year -= 1900;
+    tok = strtok(NULL, "-");
+    tmvar.tm_mon = atoi(tok);
+    tmvar.tm_mon--;
+    tok = strtok(NULL, "-");
+    tmvar.tm_mday = atoi(tok);
+    // cut day
+    tok = strtok(day, ":");
     tmvar.tm_hour = atoi(tok);
     tok = strtok(NULL, ":");
     tmvar.tm_min = atoi(tok);
     tok = strtok(NULL, ":");
     tmvar.tm_sec = atoi(tok);
-    strcpy(buf, hrtimestr);
-    tok = strtok(buf, ".");
-    tok = strtok(buf, ".");
-    tv.tv_usec = atoi(tok);
     timevar = mktime(&tmvar);
-    tv.tv_sec = timevar;
-    return tv;
+    tv->tv_usec = atoi(usec);
+    tv->tv_sec = timevar;
+    return 0;
+
 }
 
 

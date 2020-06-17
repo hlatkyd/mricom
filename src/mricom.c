@@ -182,7 +182,7 @@ int sh_start(int argc, char **args){
         send_mribg("mricom,set,status,1");
     }
     if(argc == 2 && strcmp(args[1],"analogdaq") == 0){
-        send_mribg("mricom,start,analogdaq");
+        send_mribg("mricom,launch,analogdaq");
     }
 
     return 1;
@@ -205,6 +205,10 @@ int sh_stop(int argc, char **args){
     // stop mribg automated mode
     if(argc == 2 && strcmp(args[1],"auto")==0){
         send_mribg("mricom,set,status,0");
+    }
+    // stop analog acquisition
+    if(argc == 2 && strcmp(args[1],"analogdaq") == 0){
+        send_mribg("mricom,abort,analogdaq");
     }
     return 1;
 }

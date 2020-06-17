@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <stdbool.h>
 #include <time.h>
 #include <ctype.h>
@@ -229,8 +230,9 @@ void getclockhrtime(char *buffer, struct timespec tv);
 int getusecdelay(struct timeval tv1);
 int clockusecdelay(struct timespec tv1);
 double getsecdiff(struct timeval tv1, struct timeval tv2);
+long int getusecdiff(struct timeval tv1, struct timeval tv2);
 double clocksecdiff(struct timespec tv1, struct timespec tv2);
-struct timeval hr2timeval(char *hrtimestr);
+int hr2timeval(struct timeval *tv, char *hrtimestr);
 
 /* data file management */
 
@@ -239,6 +241,7 @@ void fprintf_meta_intrpt(char *p);
 int fprintf_common_header(FILE *fp, struct header *h, int argc, char **args);
 int compare_common_header(char *file1, char *file2);
 int fcpy(char *source_file, char *dest_file);
+int mkpath(char *file_path, mode_t mode);
 
 int update_curpar(struct gen_settings *gs, struct study *st);
 int update_curstudy(struct gen_settings *gs, struct study *st);
@@ -247,7 +250,7 @@ int read_curstudy(struct gen_settings *gs, char *study);
 int read_meta_times(struct times *t, char *metafile);
 
 int datahandler(struct gen_settings *gs, char *action);
-int extract_analogdaq(char *analogdaq, char *ttlctrlmeta, char *dest);
+int extract_analogdaq(char *adaq, char *adaqmeta,char *ttlctrlmeta,char *dest);
 int combine_all();
 
 

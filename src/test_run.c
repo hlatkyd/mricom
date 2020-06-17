@@ -77,7 +77,7 @@ int main(int argc, char **argv){
         for(j=0; j<N_ARGS; j++ ){
             args[j] = malloc(sizeof(char) * PL);
         }
-        
+        usleep(10);    
         // setup args for vnmrclient
         // set study id first
         strcpy(args[0],vpath);

@@ -13,9 +13,9 @@ TST=./test
 
 all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq \
 	managedio \
-	test_proc test_console test_create test_usergo test_run
+	test_proc test_console test_create test_usergo test_run test_unit
 
-test: test_proc test_console test_create test_usergo test_run
+test: test_proc test_console test_create test_usergo test_run test_unit
 
 dir: 
 	mkdir -p $(OBJ)
@@ -68,6 +68,9 @@ test_usergo: $(OBJ)/test_usergo.o $(OBJ)/common.o
 
 test_run: $(OBJ)/test_run.o $(OBJ)/common.o
 	$(CC) -o $(TST)/test_run $(OBJ)/test_run.o $(OBJ)/common.o $(LIBS)
+
+test_unit: $(OBJ)/test_unit.o $(OBJ)/common.o
+	$(CC) -o $(TST)/test_unit $(OBJ)/test_unit.o $(OBJ)/common.o $(LIBS)
 
 # util
 # ------------------------------------------------

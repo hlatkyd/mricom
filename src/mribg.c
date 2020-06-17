@@ -27,7 +27,7 @@
 #define STATUS_AUTO_RUNNING 2
 /* status controls mribg accept/reject behaviour*/
 int mribg_status = 0;
-int is_analogdaq_on = 0;
+int analogdaq_pid = 0;
 struct study *study;
 
 int main(int argc, char **argv){
@@ -166,6 +166,8 @@ int main(int argc, char **argv){
  *      stop
  *      get
  *      set
+ *      launch
+ *      abort
  *
  *  Return 1 if request is accepted, -1 if denied
  *  Return 0 if request was a query, and fill response
@@ -180,6 +182,8 @@ int main(int argc, char **argv){
  *      vnmrclient,set,study,s_2020052701
  *      vnmrclient,set,seqname,epip_01
  *      ttlctrl,stop
+ *      mricom,launch,analogdaq
+ *      mricom,abort,analogdaq
  *
  *
  * General rules
@@ -192,6 +196,7 @@ int main(int argc, char **argv){
  * - 'stop' is mainly sent by ttlctrl when sequence finishes OK
  *   TODO:
  * - 'abort' can be sent by vnmrclient on sequence abort 
+ * - 'launch' used for general non-timed start of background subprograms
  */
 
 int process_request(struct gen_settings *gs,char *msg, char *msg_response){
@@ -277,15 +282,6 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             strcpy(study->event[study->seqnum],event);
             update_curpar(gs, study);
             fork_blockstim(cmdargv);
-        }
-        else if(strcmp(argv[2], "analogdaq")==0){
-            if(is_analogdaq_on == 0){
-                ret = fork_analogdaq(cmdargv);
-                is_analogdaq_on = ret; // child pid is returned
-            } else{
-                fprintf(stderr, "analodag already running\n");
-                return -1;
-            }
         }
         else {
             fprintf(stderr,"action not supported\n");
@@ -418,12 +414,34 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             }
         }
     }
+    // -----------------------------------
+    //               LAUNCH
+    // -----------------------------------
+    if(strcmp(argv[1],"launch") == 0){
+        if(strcmp(argv[0],"vnmrclient")==0){
+            ;
+        }
+        else if (strcmp(argv[0],"mricom")==0){
+            ;
+        } else {
+            fprintf(stderr, "Abort only accepted from vnmrclient or mricom\n");
+            return -1;
+        }
+        if(strcmp(argv[2], "analogdaq")==0){
+            if(analogdaq_pid == 0){
+                analogdaq_pid = fork_analogdaq(cmdargv);
+                return 1;
+            } else{
+                fprintf(stderr, "analodag already running\n");
+                return -1;
+            }
+        }
+    }
 
-    //TODO
     // -----------------------------------
     //               ABORT
     // -----------------------------------
-    if(strcmp(argv[1],"abort")){
+    if(strcmp(argv[1],"abort")==0){
         // coming from vnmrclient on sequence stop
         if(strcmp(argv[0],"vnmrclient")==0){
             ;
@@ -433,6 +451,17 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
         } else {
             fprintf(stderr, "Abort only accepted from vnmrclient or mricom\n");
             return -1;
+        }
+        // check arguments
+        if(strcmp(argv[2],"analogdaq")==0){
+            if(analogdaq_pid == 0){
+                fprintf(stderr, "analogdaq not running, cannot abort\n");
+                return -1;
+            } else {
+                kill(analogdaq_pid, SIGINT);
+                analogdaq_pid = 0;
+                return 1;
+            }
         }
     }
     // fin, reject for unkown reason if code gets here
@@ -497,9 +526,7 @@ int fork_analogdaq(char **args){
     int ret;
     pid_t p;
     snprintf(path, sizeof(path),"%s/%sanalogdaq",mricomdir,BIN_DIR);
-    printf("path: %s\n",path);
 
-    //fprintf(stderr, "path %s\n",path);
     p = fork();
 
     if(p < 0){
@@ -648,7 +675,7 @@ void create_study_dir(struct gen_settings *gs, struct study *stud){
         mkdir(gs->studies_dir, 0700);
     }
     if(stat(path, &st) == -1){
-        mkdir(path, 0700);
+        mkdir(path, 0755);
     }
 
 }
@@ -664,7 +691,7 @@ void create_sequence_dir(struct gen_settings *gs, struct study *stud){
     snprintf(path, sizeof(path), "%s/%s/%s",
             gs->studies_dir,stud->id, stud->sequence[stud->seqnum]);
     if(stat(path, &st) == -1){
-        mkdir(path, 0700);
+        mkdir(path, 0755);
     }
 
 }

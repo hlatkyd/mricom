@@ -91,6 +91,7 @@ int main(int argc, char **argv) {
         if(VERBOSE > 0){
             printf("%s\n",buffer);
         }
+        close(sockfd);
         return 0;
     } else if(strncmp(buffer, MSG_REJECT, strlen(MSG_REJECT)) == 0){
         if(VERBOSE > 0){
@@ -98,10 +99,11 @@ int main(int argc, char **argv) {
         }
 
         fprintf(stderr, "vnmrclient: message was rejected by server\n");
+        close(sockfd);
         return 1;
 
     } else{
-
+        close(sockfd);
         return -1;
     }
 
