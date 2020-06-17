@@ -34,7 +34,9 @@ char *builtin_str[] = {
     "list",
     "clean",
     "update",
-    "send"
+    "send",
+    "set",
+    "get"
 };
 /* functions for builtin commands*/
 /* should be same oreder as builtin_str list names*/
@@ -48,7 +50,9 @@ int (*builtin_func[]) (int, char **) = {
     &sh_list,
     &sh_clean,
     &sh_update,
-    &sh_send
+    &sh_send,
+    &sh_set,
+    &sh_get
 
 };
 int sh_num_builtins(){
@@ -73,16 +77,29 @@ int sh_exit(int argc, char **args){
  */
 
 int sh_help(int argc, char **args){
-    int i, n;
+    int i, j, n;
     char *cmdname;
+    int l = 3;
+    int num, r;
+    num = sh_num_builtins();
+    r = sh_num_builtins() % l;
     cmdname = NULL;
+    // print commands
     if(args[1] == NULL){
         printf("--- mricom v%d.%d ---\n\n",VERSION_MAJOR,VERSION_MINOR);
         printf("Available commands:\n");
         printf("===================\n");
-        for(i = 0; i<sh_num_builtins(); i++){
-            printf("  %s\n",builtin_str[i]);
+        for(i = 0; i<sh_num_builtins(); i+l){
+            for(j=0;j<l;j++){
+                printf("  %s\t",builtin_str[i]);
+            }
+            printf("\n");
         }
+        // print remaining
+        for(j=0;j<r;j++){
+            printf("  %s\t",builtin_str[num-r+j]);
+        }
+        printf("\n");
     }
     else{
         for(i=0; i<sh_num_builtins(); i++){
@@ -128,6 +145,12 @@ int sh_help(int argc, char **args){
                 break;
             case 9: // send
                 printf_help_send();
+                break;
+            case 10: // set
+                printf_help_set();
+                break;
+            case 11: // get
+                printf_help_get();
                 break;
         }
         printf("\n");
@@ -277,6 +300,26 @@ int sh_send(int argc, char **args){
     
     strcpy(buf, args[1]);
     send_mribg(buf);
+    return 1;
+}
+
+/*
+ * Function: sh_set
+ * ----------------
+ *  Set some parameters. Uses the mribg 'set' command for most operations.
+ */
+int sh_set(int argc, char **args){
+
+    return 1;
+}
+
+/*
+ * Function: sh_get
+ * ----------------
+ *  Send query to mribg
+ */ 
+int sh_get(int argc, char **args){
+
     return 1;
 }
 

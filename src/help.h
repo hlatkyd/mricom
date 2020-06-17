@@ -16,4 +16,6 @@ void printf_help_list();
 void printf_help_clean();
 void printf_help_update();
 void printf_help_send();
+void printf_help_set();
+void printf_help_get();
 

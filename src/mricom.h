@@ -49,4 +49,6 @@ int sh_list(int argc, char **args);
 int sh_clean(int argc, char **args);
 int sh_update(int argc, char **args);
 int sh_send(int argc, char **args);
+int sh_set(int argc, char **args);
+int sh_get(int argc, char **args);
 

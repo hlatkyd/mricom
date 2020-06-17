@@ -50,4 +50,10 @@ void printf_help_send(){
             "");
 }
 
+void printf_help_set(){
 
+}
+
+void printf_help_get(){
+
+}
