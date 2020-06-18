@@ -165,6 +165,48 @@ void listsettings(struct gen_settings *settings){
     printf("\n");
 }
 
+void liststudy(struct gen_settings *gs){
+
+    FILE *fp;
+    char path[LPATH*2];
+    size_t len = 0;
+    ssize_t read;
+    char *line = NULL;
+    int count = -1;
+    char *tok;
+    char id[16];
+
+    snprintf(path, sizeof(path), "%s/%sstudy.tsv",gs->workdir,DATA_DIR);
+    fp = fopen(path, "r");
+    if(fp == NULL){
+        fprintf(stderr, "cannot  open file %s\n",path);
+        return;
+    }
+    while((read = getline(&line, &len, fp)) != -1){
+        // find study id line
+        if(strncmp(line, "id=",3)==0 && count == -1){
+            count = 0;
+            tok = strtok(line, "=");
+            tok = strtok(NULL, "=");
+            printf("\nStudy ID: %s", tok);
+            printf("----------------------------------------------------\n");
+        // print rest
+        } else if (count > 0){
+            printf("%s",line);
+            count++;
+        // column lines
+        } else if(strncmp(line, "seqnum",6)==0){
+            printf("Num\tSequence\tEvent\n");
+            printf("====================================================\n");
+            count++;
+        } else {
+            continue;
+        }
+    }
+    fclose(fp);
+
+}
+
 /*
  * Function: listprocesses
  * -----------------------

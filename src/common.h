@@ -193,7 +193,10 @@ struct study{
     int seqnum;                               // current number of sequences
     char id[MAX_NAME_LEN];                    //name of study, eg:s_2020052701
     char sequence[MAX_SEQ_NUM][MAX_NAME_LEN]; //name of sequences, eg: epip_hd_02
-    char event[MAX_SEQ_NUM][MAX_NAME_LEN];   // stimulation, args as comma separated
+    char event[MAX_SEQ_NUM][MAX_NAME_LEN];    // stimulation, args as comma separated
+
+    char anesth[64];                          // type of anesthesia
+    double iso;                               // current isoflurane in %. i.e: 0.5
 
 };
 
@@ -220,7 +223,9 @@ void sighandler(int signum);
 
 /* util common func*/
 void remove_spaces(char *);
+long int count_lines(char *path);
 bool is_number(char number[]);
+bool is_posdouble(char number[]);
 
 void getppname(char *name);
 void getname(char *name, int pid);

@@ -12,6 +12,7 @@ int is_nicard_accessible(struct gen_settings *);
 void listsettings(struct gen_settings *);
 void listdevsettings(struct dev_settings *);
 void listprocesses(struct processes *p);
+void liststudy(struct gen_settings *gs);
 
 /*util user interface funcs*/
 void list();

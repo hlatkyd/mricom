@@ -20,7 +20,7 @@
 #include "mribg.h"
 
 #define VERBOSE 1
-
+#define MESSAGE_LOG "msg.log"  // 'stderr' or filename in mricomdir
 
 #define STATUS_MANUAL 0
 #define STATUS_AUTO_WAITING 1
@@ -32,6 +32,9 @@ struct study *study;
 
 int main(int argc, char **argv){
 
+    // message output
+    FILE *fp_msg;
+    char msg_log[LPATH*2];
     // pid setup
     struct mpid *mp;
     struct gen_settings *gs;
@@ -61,7 +64,16 @@ int main(int argc, char **argv){
     signal(SIGUSR1, sighandler);
 
     strcpy(mricomdir, getenv("MRICOMDIR"));
-
+    if(strcmp(MESSAGE_LOG, "stderr") == 0){
+        fp_msg = stderr;
+    } else {
+        snprintf(msg_log, sizeof(msg_log), "%s/%s",mricomdir, MESSAGE_LOG);
+        fp_msg = fopen(msg_log, "w");
+        if(fp_msg == NULL){
+            fprintf(stderr, "cannot open log file %s\n",msg_log);
+            exit(1);
+        }
+    }
     // init
     gs = malloc(sizeof(struct gen_settings));
     mp = malloc(sizeof(struct mpid));
@@ -76,6 +88,7 @@ int main(int argc, char **argv){
     study = malloc(sizeof(struct study));
     memset(study,0,sizeof(struct study));
     study->seqnum = 0;
+    study->iso = 0.0;
     strcpy(study->id,"NONE");
 
     // socket setup
@@ -116,7 +129,7 @@ int main(int argc, char **argv){
         }
         nread = read(newsockfd, buffer, BUFS-1);
         if(VERBOSE > 0){
-            fprintf(stderr, "[mribg]: incoming: '%s'...",buffer);
+            fprintf(fp_msg, "[mribg]: incoming: '%s'...",buffer);
         }
 
         // do processing, start subprograms, etc
@@ -125,32 +138,34 @@ int main(int argc, char **argv){
         // signal back if accepted
         if(ret < 0){
             if(VERBOSE > 0){
-                fprintf(stderr, "denied\n");
+                fprintf(fp_msg, "denied\n");
             }
             write(newsockfd, msg_reject, sizeof(msg_reject));
         // signal back if rejected
         } else if(ret > 0){
             if(VERBOSE > 0){
-                fprintf(stderr, "accepted\n");
+                fprintf(fp_msg, "accepted\n");
             }
             write(newsockfd, msg_accept, sizeof(msg_accept));
 
         // write direct message if message was a query
         } else if(ret == 0){
             if(VERBOSE > 0){
-                fprintf(stderr, "\n[mribg]: %s\n",msg_back);
+                fprintf(fp_msg, "\n[mribg]: %s\n",msg_back);
             }
             write(newsockfd, msg_back, sizeof(msg_back));
         }
         close(newsockfd);
 
         memset(buffer, 0, BUFS);
+        fflush(fp_msg);
     }
 
 
     // shutdown
     processctrl_add(gs->mpid_file, mp, "STOP");
     free(gs); free(mp); free(study);
+    fclose(fp_msg);
     return 0;
 
 }
@@ -346,8 +361,22 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             // setting study struct, usually from vnmrclient
             // study id, eg: s_2020050401
             else if(strcmp(argv[2],"study_id")==0){
+                char c;
                 strcpy(study->id, argv[3]);
-                update_curstudy(gs, study);
+                printf("\nRestart study? [y/n]\n");
+                c = getchar();
+                printf("%c [Press Enter]",c);
+                getchar();
+                if(c == 'y'){
+                    study->seqnum = 0;
+                    study->seqnum = 0;
+                    create_study_dir(gs, study);
+                    init_study_log(studytsv,gs,study);
+                    init_anesth_log(gs, study);
+                    update_curstudy(gs, study);
+                } else {
+                    printf("Omitting changes\n");
+                }
                 return 1;
             }
             // sequence fid directory name, eg: epip_hd
@@ -363,10 +392,11 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             // setting study struct, usually from vnmrclient
             // study id, eg: s_2020050401
             if(strcmp(argv[2],"study_id")==0){
-                //TODO create new dir
                 strcpy(study->id, argv[3]);
+                study->seqnum = 0;
                 create_study_dir(gs, study);
                 init_study_log(studytsv,gs,study);
+                init_anesth_log(gs, study);
                 update_curstudy(gs, study);
                 return 1;
             }
@@ -380,6 +410,16 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
         // request anywhere else are rejected TODO mayzbe ttlctrl?
         else {
             return -1;
+        }
+
+        // general, non-sender-specific request 
+        // Isoflurane
+        if(strcmp(argv[2], "iso") == 0){
+            double isoval;
+            sscanf(argv[3], "%lf", &isoval);
+            study->iso = isoval;
+            update_anesth_log(gs, study);
+            return 1;
         }
             
     }
@@ -412,6 +452,11 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
                 fprintf(stderr, "There was no sequence started yet\n");
                 return -1;
             }
+        }
+        else if(strcmp(argv[2], "study_iso")==0){
+            memset(msg_response, 0, sizeof(char)*BUFS);
+            snprintf(msg_response, BUFS, "%lf",study->iso);
+            return 0;
         }
     }
     // -----------------------------------
@@ -746,5 +791,57 @@ int update_study_log(char *path, struct study *st){
     }
     fprintf(fp,"%d\t%s\t%s\n",n, study->sequence[n], study->event[n]);
     fclose(fp);
+    return 0;
+}
+
+int init_anesth_log(struct gen_settings *gs, struct study *st){
+
+    struct header *h;
+    struct timeval tv;
+    char proc[LPATH*2]={0};
+    char path[LPATH*2] = {0};
+    char timestr[64];
+    FILE *fp;
+    gettimeofday(&tv, NULL);
+    gethrtime(timestr, tv);
+    h = malloc(sizeof(struct header));
+    h->timestamp = tv;
+    snprintf(proc, sizeof(proc),"%s/mribg",getenv("MRICOMDIR"));
+    snprintf(path, sizeof(path), "%s/%sanesth.log",gs->workdir,DATA_DIR);
+    strcpy(h->proc,proc);
+    fp = fopen(path, "w");
+    if(fp == NULL){
+        fprintf(stderr, "cannot open file %s\n",path);
+        return -1;
+    }
+    fprintf_common_header(fp, h, 1, NULL);
+    // add id as standalone line
+    fprintf(fp, "\nid=%s\n",st->id);
+    fprintf(fp, "# Anesthesia events with timestamp\n");
+    fprintf(fp, "# ----------------------------------\n");
+    fprintf(fp, "iso=%lf\t%s\n",study->iso, timestr);
+    fclose(fp);
+    free(h);
+    return 0;
+
+}
+
+int update_anesth_log(struct gen_settings *gs, struct study *st){
+    
+    struct timeval tv;
+    char path[LPATH*2];
+    char timestr[64];
+    FILE *fp;
+    gettimeofday(&tv, NULL);
+    gethrtime(timestr, tv);
+    snprintf(path, sizeof(path), "%s/%sanesth.log",gs->workdir,DATA_DIR);
+    fp = fopen(path, "a");
+    if(fp == NULL){
+        fprintf(stderr, "cannot open file %s\n",path);
+        return -1;
+    }
+    fprintf(fp, "iso=%lf\t%s\n",study->iso, timestr);
+    fclose(fp);
+
     return 0;
 }

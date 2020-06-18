@@ -1008,6 +1008,28 @@ long int getusecdiff(struct timeval tv1, struct timeval tv2){
     return diff;
 }
 
+/*
+ * Function: count_lines
+ * ---------------------
+ * Return the number of lines in file by counting the newline character. 
+ */
+#define COUNT_BUFSIZE 1024
+long int count_lines(char *path){
+
+  int newlines = 0;
+  char buf[COUNT_BUFSIZE];
+  FILE* file;
+
+  file = fopen(path, "r");
+  while (fgets(buf, COUNT_BUFSIZE, file))
+  {
+    if (!(strlen(buf) == COUNT_BUFSIZE-1 && buf[COUNT_BUFSIZE-2] != '\n'))
+      newlines++;
+  }
+  fclose(file);
+  return newlines;
+}
+
 /* Function: remove_spaces
  * -----------------------
  * remove whitespace from a line in config file
@@ -1036,6 +1058,32 @@ bool is_number(char number[]){
     {
         //if (number[i] > '9' || number[i] < '0')
         if (!isdigit(number[i]))
+            return false;
+    }
+    return true;
+}
+
+/*
+ * Function: is_number
+ * -------------------
+ *  Return True if character array represents a positive double
+ */
+bool is_posdouble(char number[]){
+
+    char c;
+    int i;
+    int count=0;
+    bool ret;
+    // check if contains decimal
+    for(i=0; i<strlen(number);i++){
+        if(count > 1)
+            return false;
+        // only one decinal dot allowed
+        if(number[i] == '.'){
+            count++;
+            continue;
+        }
+        if(!isdigit(number[i]))
             return false;
     }
     return true;
@@ -1258,9 +1306,13 @@ int datahandler(struct gen_settings *gs, char *action){
     char seq[64];
     char id[64];
     char event[64];
+    // sequence specific files
     char *filetocpy[] = {"blockstim.meta", "blockstim.tsv", "eventstim.tsv",
                             "ttlctrl.meta", "curpar", "eventstim.meta"};
-    // relative paths
+    // study specific files, copy these to study dir as well
+    char *sfiletocpy[] = {"analogdaq.meta", "analogdaq.tsv", "curstudy",
+                            "study.tsv", "anesth.log"};
+    // names for analog data slicing 
     char adaqtsvrel[] = "analogdaq.tsv";
     char adaqmetarel[] = "analogdaq.meta";
     char ttlctrlmrel[] = "ttlctrl.meta";
@@ -1284,8 +1336,9 @@ int datahandler(struct gen_settings *gs, char *action){
     snprintf(seqdir, sizeof(seqdir),"%s/%s/%s",gs->studies_dir, id, seq);
     snprintf(datadir, sizeof(datadir),"%s/%s",gs->workdir, DATA_DIR);
     datadir[strlen(datadir)-1] = '\0';  // correction for consistency
-    snprintf(adaqtsv, sizeof(adaqtsv),"%s/%s",datadir, adaqtsvrel);
-    snprintf(adaqmeta, sizeof(adaqmeta),"%s/%s",datadir, adaqmetarel);
+    // these files are not ready, need to copy here first
+    snprintf(adaqtsv, sizeof(adaqtsv),"%s/%s",studydir, adaqtsvrel);
+    snprintf(adaqmeta, sizeof(adaqmeta),"%s/%s",studydir, adaqmetarel);
     snprintf(ttlctrlm, sizeof(ttlctrlm),"%s/%s",seqdir, ttlctrlmrel);
     snprintf(phystsv, sizeof(phystsv),"%s/%s",seqdir, phystsvrel);
     
@@ -1298,9 +1351,11 @@ int datahandler(struct gen_settings *gs, char *action){
     fprintf(stderr, "%s\n",ttlctrlm);
     fprintf(stderr, "%s\n",phystsv);
     */
+
+    //--------------------------------------------------------------
     // data management on mribg 'stop' request, usually from ttlctrl
+    //--------------------------------------------------------------
     if(strcmp(action, "sequence_stop")==0){
-        //create_sequence_dir(gs, study); TODO fix this???
         // make seqdir, to be sure
         
         memset(&s, 0, sizeof(s)); 
@@ -1317,8 +1372,14 @@ int datahandler(struct gen_settings *gs, char *action){
         for(l=0; l< sizeof(filetocpy) / sizeof(filetocpy[0]); l++){
             snprintf(src, sizeof(src), "%s/%s",datadir,filetocpy[l]);
             snprintf(dst, sizeof(dst), "%s/%s", seqdir, filetocpy[l]);
-            //fprintf(stderr, "src %s\n",src);
-            //fprintf(stderr, "dst %s\n",dst);
+            if(access(src, F_OK) != -1){
+                fcpy(src, dst);
+            }
+        }
+        // copy study specific stuff
+        for(l = 0; l < sizeof(sfiletocpy) / sizeof(sfiletocpy[0]); l++){
+            snprintf(src, sizeof(src), "%s/%s",datadir,sfiletocpy[l]);
+            snprintf(dst, sizeof(dst), "%s/%s", studydir, sfiletocpy[l]);
             if(access(src, F_OK) != -1){
                 fcpy(src, dst);
             }
@@ -1340,6 +1401,9 @@ int datahandler(struct gen_settings *gs, char *action){
 
     }
     //TODO
+    //--------------------------------------------------------------
+    // data management on mribg study 'stop' request
+    //--------------------------------------------------------------
     else if(strcmp(action, "study_stop") == 0){
         ;
     } else {
@@ -1363,6 +1427,7 @@ int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
     struct times *tt;
     struct times *at;
     int secdiff;
+    int linecount;
     tt = malloc(sizeof(struct times));
     at = malloc(sizeof(struct times));
     memset(tt, 0, sizeof(struct times));

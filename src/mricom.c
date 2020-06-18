@@ -236,7 +236,6 @@ int sh_stop(int argc, char **args){
     return 1;
 }
 int sh_list(int argc, char **args){
-    //TODO maybe arguments here as well such as list [args, eg set]??
     if(argc > 1){
         if(strcmp(args[1],"settings")==0){
             printf("\n");
@@ -247,6 +246,12 @@ int sh_list(int argc, char **args){
         } else if (strcmp(args[1],"proc")==0){
             processctrl_get(gs->mpid_file, pr);
             listprocesses(pr);
+            return 1;
+        } else if(strcmp(args[1], "study")==0){
+            liststudy(gs);
+            return 1;
+        } else if(strcmp(args[1],"anesth")==0){
+            //TODO list anesthisea log
             return 1;
         } else {
             printf("unknown argument %s\n",args[1]);
@@ -310,6 +315,33 @@ int sh_send(int argc, char **args){
  */
 int sh_set(int argc, char **args){
 
+    char buf[64];
+    if(strcmp(args[1], "iso")==0){
+        // check if number
+        if(argc == 3 && is_posdouble(args[2])){
+            snprintf(buf, sizeof(buf),"mricom,set,iso,%s",args[2]);
+            send_mribg(buf);
+            return 1;
+        } else {
+            printf("Wrong args: %s\n",args[2]);
+            return 1;
+        }
+    }
+    else if(strcmp(args[1], "id")==0){
+
+        if(argc == 3){
+            snprintf(buf, sizeof(buf),"mricom,set,study_id,%s",args[2]);
+            send_mribg(buf);
+            return 1;
+        } else {
+            printf("Wrong args: %s\n",args[2]);
+            return 1;
+        }
+
+    }
+    else{
+        printf("Unknown argument '%s'\n",args[1]);
+    }
     return 1;
 }
 

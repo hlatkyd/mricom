@@ -44,5 +44,9 @@ int main(int argc, char **argv){
         printf("retrieved: %s\n", buf);
         return 0;
     }
+    // extract_analogdaq
+    else if(argc == 2 && strcmp(arv[1],"extract_analogdaq")==0){
+
+    }
 
 }

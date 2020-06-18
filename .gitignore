@@ -10,4 +10,4 @@ mproc.log
 # no bin
 mricom
 mribg
-bin/
+bin/*
