@@ -45,8 +45,8 @@ int main(int argc, char **argv){
         return 0;
     }
     // extract_analogdaq
-    else if(argc == 2 && strcmp(arv[1],"extract_analogdaq")==0){
-
+    else if(argc == 2 && strcmp(argv[1],"extract_analogdaq")==0){
+        ;
     }
 
 }

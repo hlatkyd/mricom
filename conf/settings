@@ -18,7 +18,7 @@ DATA_DIR=/home/david/dev/mricom/data
 STUDIES_DIR=/home/david/dev/mricom/studies
 # also use define for this
 PID_FILE=mproc.log
-# real time data collection file
+# real time data collection file TODO del this??
 DAQ_FILE=/mnt/ramdisk/mricomrt.dat 
 # vnmrj procpar file of next/current acquisition
 # procpar file includes the parameter "mricompar" to relay commands
@@ -27,9 +27,9 @@ PROCPAR=/mnt/vnmrserver/procpar
 RAMDISK=/mnt/ramdisk
 #TODO make delim and precision constant
 # data file delimiter
-DELIMITER=\t
+DELIMITER=\t #TODO is this used???
 # precision - how many decimals saved in data file
-PRECISION=3
+PRECISION=3 #TODO is this used???
 # stimulation event file dir
 EVENT_DIR=events
 # initial status of mribg / 0 for manual or 1 for auto/
@@ -38,8 +38,8 @@ MRIBG_INIT_STATUS=1
 # kst2 settings
 #------------------------------
 
-# kst2 layout settings file
-KST_SETTINGS=mricom.kst
+# kst2 layout settings file, works only with relative path, should be in conf dir
+KST_SETTINGS=kst_test1.kst
 # data file, but only window data for kst
 KST_FILE=/mnt/ramdisk/mricomkst.dat
 # kst channel count

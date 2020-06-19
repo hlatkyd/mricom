@@ -193,25 +193,25 @@ int sh_killp(int argc, char **args){
     return 1;
 }
 int sh_start(int argc, char **args){
-    //TODO make arguments useful, eg kst start
-    //
 
-    // 'start kst' - start kst2 with default settings
-    if(argc == 2 && strcmp(args[1],"kst")==0){
-        ; 
-    }
     // 'start auto' - set mribg to automated mode
     if(argc == 2 && strcmp(args[1],"auto") == 0){
         send_mribg("mricom,set,status,1");
     }
+    // start analog data acquisition in background
     if(argc == 2 && strcmp(args[1],"analogdaq") == 0){
         send_mribg("mricom,launch,analogdaq");
+    }
+    // start kst
+    if(argc == 2 && strcmp(args[1],"kst") == 0){
+        char buf[LPATH*2];
+        snprintf(buf, sizeof(buf), "mricom,launch,kst,%s",gs->kst_settings);
+        send_mribg(buf);
     }
 
     return 1;
 }
 int sh_stop(int argc, char **args){
-    // TODO make arguments as well, eg kst stop
     
     int ret;
     // stop mribg
@@ -232,6 +232,10 @@ int sh_stop(int argc, char **args){
     // stop analog acquisition
     if(argc == 2 && strcmp(args[1],"analogdaq") == 0){
         send_mribg("mricom,abort,analogdaq");
+    }
+    // stop kst
+    if(argc == 2 && strcmp(args[1],"kst") == 0){
+        send_mribg("mricom,abort,kst");
     }
     return 1;
 }
@@ -288,7 +292,7 @@ int sh_update(int argc, char **args){
  * Function: sh_send
  * -------------------
  *  Send direct message to mribg. This is mainly for test purposes, this level
- *  of manual control should be avoided in production.
+ *  of manual control should be avoided in general use.
  *
  *  example: >>> send mricom,start,blockstim,design,test
  */
@@ -301,8 +305,6 @@ int sh_send(int argc, char **args){
         fprintf(stderr, " Incorrect number of arguments. Usage: send [string msg]");
         return 1;
     }
-    // TODO allow multiple args, and concat them to proper form
-    
     strcpy(buf, args[1]);
     send_mribg(buf);
     return 1;
@@ -337,7 +339,6 @@ int sh_set(int argc, char **args){
             printf("Wrong args: %s\n",args[2]);
             return 1;
         }
-
     }
     else{
         printf("Unknown argument '%s'\n",args[1]);
@@ -352,6 +353,19 @@ int sh_set(int argc, char **args){
  */ 
 int sh_get(int argc, char **args){
 
+    char buf[64];
+    if(strcmp(args[1], "id")==0){
+        send_mribg("mricom,get,study_id");
+    }
+    else if(strcmp(args[1], "status")==0){
+        send_mribg("mricom,get,status");
+    }
+    else if(strcmp(args[1], "sequence")==0){
+        send_mribg("mricom,get,study_sequence");
+    }
+    else if(strcmp(args[1], "iso")==0){
+        send_mribg("mricom,get,study_iso");
+    }
     return 1;
 }
 

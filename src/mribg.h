@@ -20,6 +20,7 @@ int mribg_status_check(int state);
 int fork_blockstim(char **args);
 int fork_analogdaq(char **args);
 int fork_ttlctrl(char **args);
+int fork_kst(char **args);
 int fork_mriarch(char **args);
 
 // main data util

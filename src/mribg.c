@@ -28,6 +28,7 @@
 /* status controls mribg accept/reject behaviour*/
 int mribg_status = 0;
 int analogdaq_pid = 0;
+int kst_pid = 0;
 struct study *study;
 
 int main(int argc, char **argv){
@@ -151,7 +152,7 @@ int main(int argc, char **argv){
         // write direct message if message was a query
         } else if(ret == 0){
             if(VERBOSE > 0){
-                fprintf(fp_msg, "\n[mribg]: %s\n",msg_back);
+                fprintf(stderr, "\n[mribg]: %s\n",msg_back);
             }
             write(newsockfd, msg_back, sizeof(msg_back));
         }
@@ -443,6 +444,11 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             snprintf(msg_response, BUFS, "%d",study->seqnum);
             return 0;
         }
+        else if(strcmp(argv[2], "study_iso")==0){
+            memset(msg_response, 0, sizeof(char)*BUFS);
+            snprintf(msg_response, BUFS, "%lf",study->iso);
+            return 0;
+        }
         else if(strcmp(argv[2], "study_sequence")==0){
             if(study->seqnum > 0){
                 memset(msg_response, 0, sizeof(char)*BUFS);
@@ -463,6 +469,7 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
     //               LAUNCH
     // -----------------------------------
     if(strcmp(argv[1],"launch") == 0){
+        // make distinction between launcing from vnmrclient or mricom, if any
         if(strcmp(argv[0],"vnmrclient")==0){
             ;
         }
@@ -472,12 +479,22 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             fprintf(stderr, "Abort only accepted from vnmrclient or mricom\n");
             return -1;
         }
+        // lauch application specific parts
         if(strcmp(argv[2], "analogdaq")==0){
             if(analogdaq_pid == 0){
                 analogdaq_pid = fork_analogdaq(cmdargv);
                 return 1;
             } else{
                 fprintf(stderr, "analodag already running\n");
+                return -1;
+            }
+        }
+        else if(strcmp(argv[2], "kst")==0){
+            if(kst_pid == 0){
+                kst_pid = fork_kst(&argv[3]);
+                return 1;
+            } else {
+                fprintf(stderr, "kst already running\n");
                 return -1;
             }
         }
@@ -505,6 +522,16 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             } else {
                 kill(analogdaq_pid, SIGINT);
                 analogdaq_pid = 0;
+                return 1;
+            }
+        }
+        if(strcmp(argv[2],"kst")==0){
+            if(kst_pid == 0){
+                fprintf(stderr, "kst not running, cannot abort\n");
+                return -1;
+            } else {
+                kill(kst_pid, SIGTERM);
+                kst_pid = 0;
                 return 1;
             }
         }
@@ -644,6 +671,54 @@ int fork_ttlctrl(char **args){
     }
 }
 
+/*
+ * Function: fork_kst
+ * ----------------------
+ *  Launch kst2 in the background. Settings file path is given as argument.
+ */ 
+//TODO pid control
+int fork_kst(char **args){
+
+    char path[] = "kst2"; // else give absolute path
+    char settings_f[64];
+    char mricomdir[LPATH] = {0};
+    int ret;
+
+    snprintf(settings_f, sizeof(settings_f), "%s%s",CONF_DIR, args[0]);
+    if( access( settings_f, F_OK ) == -1 ) {
+        fprintf(stderr, "Cannot find kst settings file\n");
+        return 0;
+    }
+
+    pid_t p;
+
+    p = fork();
+
+    if(p < 0){
+        fprintf(stderr, "mribg_launch: fork failed");
+        exit(1);
+    // parent process
+    } else if(p > 0) {
+
+        signal(SIGCHLD,SIG_IGN);
+        return p;
+
+    // child process
+    } else {
+
+        // launch
+        char *cmdargs[3];
+        cmdargs[0] = path;
+        cmdargs[1] = settings_f;
+        cmdargs[2] = NULL;
+        ret = execvp(path,cmdargs);
+        if(ret < 0){
+            perror("fork_kst: execvp");
+            exit(1);
+        }
+        return 0;
+    }
+}
 /*
  * Function: fork_mriarch
  * ----------------------

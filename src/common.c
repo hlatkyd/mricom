@@ -482,6 +482,11 @@ int parse_gen_settings(struct gen_settings *settings){
             strcpy(settings->kst_file, token);
             continue;
         }
+        if(strcmp(token, "KST_SETTINGS") == 0){
+            token = strtok(NULL,"=");
+            strcpy(settings->kst_settings, token);
+            continue;
+        }
         if(strcmp(token, "PRECISION") == 0){
             token = strtok(NULL,"=");
             settings->precision = atoi(token);

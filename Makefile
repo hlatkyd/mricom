@@ -12,7 +12,7 @@ DAT=./data
 TST=./test
 
 all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq \
-	managedio \
+	managedio mrimon\
 	test_proc test_console test_create test_usergo test_run test_unit
 
 test: test_proc test_console test_create test_usergo test_run test_unit
@@ -32,6 +32,9 @@ mricom: $(OBJ)/mricom.o $(OBJ)/common.o $(OBJ)/func.o $(OBJ)/socketcomm.o $(OBJ)
 
 mribg: $(OBJ)/mribg.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 	$(CC) -o mribg $(OBJ)/mribg.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)
+
+mrimon: $(OBJ)/mrimon.o $(OBJ)/common.o $(OBJ)/func.o
+	$(CC) -o mrimon $(OBJ)/mrimon.o $(OBJ)/common.o $(OBJ)/func.o $(LIBS)
 
 mrikst: $(OBJ)/mrikst.o $(OBJ)/common.o
 	$(CC) -o $(BIN)/mrikst $(OBJ)/mrikst.o $(OBJ)/common.o $(LIBS)
