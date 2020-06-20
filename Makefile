@@ -34,7 +34,7 @@ mribg: $(OBJ)/mribg.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 	$(CC) -o mribg $(OBJ)/mribg.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)
 
 mrimon: $(OBJ)/mrimon.o $(OBJ)/common.o $(OBJ)/func.o
-	$(CC) -o mrimon $(OBJ)/mrimon.o $(OBJ)/common.o $(OBJ)/func.o $(LIBS)
+	$(CC) -o $(BIN)/mrimon $(OBJ)/mrimon.o $(OBJ)/common.o $(OBJ)/func.o $(LIBS)
 
 mrikst: $(OBJ)/mrikst.o $(OBJ)/common.o
 	$(CC) -o $(BIN)/mrikst $(OBJ)/mrikst.o $(OBJ)/common.o $(LIBS)

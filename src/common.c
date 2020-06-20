@@ -1496,6 +1496,75 @@ int read_meta_times(struct times *t, char *filename){
     
     return 0;
 }
+
+/*
+ * Function: read_study_tsv
+ * ------------------------
+ * Parse study.tsv file in study directory, and fill study struct.
+ * Return 0 on success, -1 otherwise.
+ */
+//TODO already similar in func.c
+int read_study_tsv(struct gen_settings *gs, char *id, struct study *st){
+
+    char path[LPATH*2];
+    size_t len = 0;
+    ssize_t read;
+    char *line = NULL;
+    int count = -1;
+    char *tok;
+    struct timeval tv; // ?? 
+    FILE *fp;
+
+    snprintf(path, sizeof(path), "%s/%s/study.tsv",gs->studies_dir,id);
+    fp = fopen(path, "r");
+    if(fp == NULL){
+        fprintf(stderr, "Cannot open file  %s\n",path);
+        return -1;
+    }
+    while((read = getline(&line, &len, fp)) != -1){
+        line = strtok(line, "\n");
+        if(strncmp(line, "id=", 3) == 0){
+            strtok(line, "=");
+            tok = strtok(NULL, "=");
+            strcpy(st->id,tok);
+            continue;
+        }
+        if(strncmp(line, "seqnum", 6) == 0){
+            ;
+        }
+    }
+     
+    fclose(fp);
+
+    return 0;
+}
+
+
+int extract_header_time(char *path, struct timeval *tv){
+
+    FILE *fp;
+    size_t len = 0;
+    ssize_t read;
+    char *line = NULL;
+    int count = -1;
+    char *tok;
+    fp = fopen(path, "r");
+    if(fp == NULL){
+        fprintf(stderr, "Cannot open file %s\n",path);
+        return -1;
+    }
+    while((read = getline(&line, &len, fp)) != -1){
+        line = strtok(line, "\n");
+        if(strncmp(line, "# timestamp=", 12) == 0){
+            strtok(NULL, "=");
+            tok = strtok(NULL, "=");
+            hr2timeval(tok, tv);
+        }
+    }
+    fclose(fp);
+    return 0
+}
+
 /*
  * Function: hr2timeval
  * -----------------

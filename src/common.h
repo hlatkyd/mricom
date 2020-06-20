@@ -253,7 +253,10 @@ int update_curstudy(struct gen_settings *gs, struct study *st);
 int read_curpar(struct gen_settings *gs, int *seqnum, char *sequence, char *event);
 int read_curstudy(struct gen_settings *gs, char *study);
 int read_meta_times(struct times *t, char *metafile);
+//TODO migh not be needed
+int read_studytsv(struct gen_settings *gs, char *id, struct study *st);
 
+int extract_header_time(char *path, struct timeval *tv);
 int datahandler(struct gen_settings *gs, char *action);
 int extract_analogdaq(char *adaq, char *adaqmeta,char *ttlctrlmeta,char *dest);
 int combine_all();
