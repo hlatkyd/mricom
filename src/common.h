@@ -54,6 +54,13 @@
 #define CURPAR "curpar"
 #define CURSTUDY "curstudy"
 
+// mribg status
+//  auto waiting means ready for sequence start
+//  auro running means sequence is being acquired
+#define STATUS_MANUAL 0
+#define STATUS_AUTO_WAITING 1
+#define STATUS_AUTO_RUNNING 2
+
 // max path length
 #define LPATH 128
 

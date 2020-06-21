@@ -1539,7 +1539,11 @@ int read_study_tsv(struct gen_settings *gs, char *id, struct study *st){
     return 0;
 }
 
-
+/*
+ * Function: extract_header_time
+ * -----------------------------
+ *  Read common heade timestamp and convert to timeval. Return -1 on error.
+ */
 int extract_header_time(char *path, struct timeval *tv){
 
     FILE *fp;
@@ -1548,21 +1552,23 @@ int extract_header_time(char *path, struct timeval *tv){
     char *line = NULL;
     int count = -1;
     char *tok;
+    char buf[64];
     fp = fopen(path, "r");
     if(fp == NULL){
-        fprintf(stderr, "Cannot open file %s\n",path);
+        fprintf(stderr, "Cannot open file: '%s'\n",path);
         return -1;
     }
     while((read = getline(&line, &len, fp)) != -1){
-        line = strtok(line, "\n");
-        if(strncmp(line, "# timestamp=", 12) == 0){
-            strtok(NULL, "=");
+        if(strstr(line, "timestamp") != NULL){
+            tok = strtok(line, "=");
             tok = strtok(NULL, "=");
-            hr2timeval(tok, tv);
+            strcpy(buf, tok);
+            hr2timeval(tv,buf);
+            break;
         }
     }
     fclose(fp);
-    return 0
+    return 0;
 }
 
 /*

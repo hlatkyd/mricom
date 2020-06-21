@@ -46,7 +46,11 @@ int main(int argc, char **argv){
     }
     // extract_analogdaq
     else if(argc == 2 && strcmp(argv[1],"extract_analogdaq")==0){
-        ;
+        snprintf(adaqtsv, sizeof(adaqtsv),"%s/%s",studydir, adaqtsvrel);
+        snprintf(adaqmeta, sizeof(adaqmeta),"%s/%s",studydir, adaqmetarel);
+        snprintf(ttlctrlm, sizeof(ttlctrlm),"%s/%s",seqdir, ttlctrlmrel);
+        snprintf(phystsv, sizeof(phystsv),"%s/%s",seqdir, phystsvrel);
+        extract_analogdaq(adaqtsv, adaqmeta, ttlctrlm, phystsv);
     }
 
 }

@@ -23,3 +23,4 @@ int make_msg(char *msg, int argc, char **argv);
 int parse_msg(char *msg, char **argv, char *delim);
 
 int send_mribg(char *msg);
+int query_mribg(char *msg, char *response);

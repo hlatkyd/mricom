@@ -12,7 +12,7 @@ DAT=./data
 TST=./test
 
 all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq \
-	managedio mrimon\
+	managedio mrimon mriw\
 	test_proc test_console test_create test_usergo test_run test_unit
 
 test: test_proc test_console test_create test_usergo test_run test_unit
@@ -33,8 +33,8 @@ mricom: $(OBJ)/mricom.o $(OBJ)/common.o $(OBJ)/func.o $(OBJ)/socketcomm.o $(OBJ)
 mribg: $(OBJ)/mribg.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 	$(CC) -o mribg $(OBJ)/mribg.o $(OBJ)/common.o $(OBJ)/socketcomm.o $(LIBS)
 
-mrimon: $(OBJ)/mrimon.o $(OBJ)/common.o $(OBJ)/func.o
-	$(CC) -o $(BIN)/mrimon $(OBJ)/mrimon.o $(OBJ)/common.o $(OBJ)/func.o $(LIBS)
+mrimon: $(OBJ)/mrimon.o $(OBJ)/common.o $(OBJ)/func.o $(OBJ)/socketcomm.o
+	$(CC) -o $(BIN)/mrimon $(OBJ)/mrimon.o $(OBJ)/common.o $(OBJ)/func.o $(OBJ)/socketcomm.o $(LIBS)
 
 mrikst: $(OBJ)/mrikst.o $(OBJ)/common.o
 	$(CC) -o $(BIN)/mrikst $(OBJ)/mrikst.o $(OBJ)/common.o $(LIBS)
@@ -53,6 +53,10 @@ ttlctrl: $(OBJ)/ttlctrl.o $(OBJ)/common.o $(OBJ)/socketcomm.o
 
 managedio: $(OBJ)/managedio.o
 	$(CC) -o $(BIN)/managedio $(OBJ)/managedio.o $(LIBS)
+
+mriw:
+	cp $(SRC)/mriw.sh $(BIN)/mriw
+	chmod 755 $(BIN)/mriw
 
 # test subprograms
 #-----------------------------------------------

@@ -115,11 +115,18 @@ int send_mribg(char *msg){
        perror("ERROR writing to socket");
        exit(1);
     }
+
+    n = read(sockfd, buffer, BUFS);
+    if (n < 0) {
+       perror("ERROR reading socket");
+       exit(1);
+    }
     // accepted
     if(strncmp(buffer, MSG_ACCEPT, strlen(MSG_ACCEPT)) == 0){
         if(SEND_VERBOSE > 0){
             printf("%s\n",buffer);
         }
+        close(sockfd);
         return 1;
     //rejected
     } else if(strncmp(buffer, MSG_REJECT, strlen(MSG_REJECT)) == 0){
@@ -128,12 +135,90 @@ int send_mribg(char *msg){
         }
 
         fprintf(stderr, "send_mribg: message was not processed by server\n");
+        close(sockfd);
         return -1;
     // responseto query
     } else{
         if(SEND_VERBOSE > 0)
             printf("[mribg]: %s\n",buffer);
+        close(sockfd);
         return 0;
     }
 }
 
+
+/*
+ * Function: query_mribg
+ * ---------------------
+ *  Same as send_mribg, but keep the response
+ */
+int query_mribg(char *msg, char *response){
+
+    // note: almost same code as vnmrclient
+    int sockfd, portno, n;
+    struct sockaddr_in serv_addr;
+    struct hostent *server;
+
+    char buffer[BUFS];
+    int ret;
+
+    portno = MRIBGPORT; // 8080
+
+    /* Create a socket point */
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (sockfd < 0) {
+       perror("ERROR opening socket");
+       exit(1);
+    }
+
+    server = gethostbyname(MRIBGHOST);
+    if (server == NULL) {
+       fprintf(stderr,"ERROR, no such host\n");
+       exit(0);
+    }
+
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    bcopy((char *)server->h_addr,
+            (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+    serv_addr.sin_port = htons(portno);
+
+    /* Now connect to the server */
+    ret = connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    if(ret < 0){
+       perror("ERROR connecting");
+       exit(1);
+    }
+
+    /* Send message to the server */
+
+    memset(buffer, 0, BUFS);
+    snprintf(buffer, sizeof(buffer), "%s",msg);
+    n = write(sockfd, buffer, strlen(buffer));
+
+    if (n < 0) {
+       perror("ERROR writing to socket");
+       exit(1);
+    }
+
+    n = read(sockfd, buffer, BUFS);
+    if (n < 0) {
+       perror("ERROR reading socket");
+       exit(1);
+    }
+    strcpy(response, buffer); // save mribg response to input string 
+    // accepted
+    if(strncmp(buffer, MSG_ACCEPT, strlen(MSG_ACCEPT)) == 0){
+        close(sockfd);
+        return 1;
+    //rejected
+    } else if(strncmp(buffer, MSG_REJECT, strlen(MSG_REJECT)) == 0){
+        close(sockfd);
+        return -1;
+    // responseto query
+    } else{
+        close(sockfd);
+        return 0;
+    }
+}

@@ -22,9 +22,6 @@
 #define VERBOSE 1
 #define MESSAGE_LOG "msg.log"  // 'stderr' or filename in mricomdir
 
-#define STATUS_MANUAL 0
-#define STATUS_AUTO_WAITING 1
-#define STATUS_AUTO_RUNNING 2
 /* status controls mribg accept/reject behaviour*/
 int mribg_status = 0;
 int analogdaq_pid = 0;
@@ -151,7 +148,7 @@ int main(int argc, char **argv){
 
         // write direct message if message was a query
         } else if(ret == 0){
-            if(VERBOSE > 0){
+            if(VERBOSE > 1){
                 fprintf(stderr, "\n[mribg]: %s\n",msg_back);
             }
             write(newsockfd, msg_back, sizeof(msg_back));
@@ -564,6 +561,7 @@ int fork_blockstim(char **args){
     // parent process
     } else if(p > 0) {
 
+        signal(SIGCHLD,SIG_IGN);
         return p;
 
     // child process
@@ -676,7 +674,6 @@ int fork_ttlctrl(char **args){
  * ----------------------
  *  Launch kst2 in the background. Settings file path is given as argument.
  */ 
-//TODO pid control
 int fork_kst(char **args){
 
     char path[] = "kst2"; // else give absolute path
