@@ -680,16 +680,32 @@ int parse_dev_settings(struct dev_settings *ds){
 int fprintf_common_header(FILE *fp, struct header *h, int argc, char **args){
 
     char line[64];
-    char buf[64];
+    char buf[64] = {0};
     int vmaj = VERSION_MAJOR;
     int vmin = VERSION_MINOR;
     int i;
+    // check header for null, fill it with defaults
     if(fp == NULL){
         printf("fprint_header_common: file not open\n");
         exit(1);
     }
-    gethrtime(buf, h->timestamp);
+    if(strcmp(h->proc, "")==0){
+        char name[16];
+        int pid = getpid();
+        char *tok;
+        getname(name, pid);
+        tok = strtok(name, "\n");
+        strcpy(h->proc,tok);
+    }
     fprintf(fp,"# cmd=%s args=",h->proc);
+
+    if(is_memzero(&(h->timestamp), sizeof(struct timeval))){
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        gethrtime(buf, tv);
+    } else {
+        gethrtime(buf, h->timestamp);
+    }
     if(argc==1){
         fprintf(fp,"NULL");
     } else {
@@ -782,6 +798,25 @@ void fprintf_meta_intrpt(char *p){
     //printf("ret: %d\n",ret);
     free(buf);
     fclose(fp);
+}
+
+/*
+ * Function: fprintf_times
+ * -----------------------
+ *  Print elements of time struct to open filestream in human readable format.
+ */
+void fprintf_times(FILE *fp, struct times *t){
+
+    char buf[64] = {0};
+    if(fp == NULL){
+        return;
+    }
+    gethrtime(buf, t->start);
+    fprintf(fp, "start: %s\n",buf);
+    gethrtime(buf, t->action);
+    fprintf(fp, "action: %s\n",buf);
+    gethrtime(buf, t->stop);
+    fprintf(fp, "stop: %s\n",buf);
 }
 
 /*
@@ -1092,6 +1127,20 @@ bool is_posdouble(char number[]){
             return false;
     }
     return true;
+}
+
+/*
+ * Function: is_memzero
+ * --------------------
+ *  Return true if input pointer memory space is zero.
+ */
+bool is_memzero(void *ptr, size_t n){
+
+    void *p;
+    p = malloc(n);
+    if(memcmp(p, ptr, n) == 0)
+        return true;
+    return false;
 }
 
 /*
@@ -1425,23 +1474,126 @@ int datahandler(struct gen_settings *gs, char *action){
  *  Extract sequence specfic data from full study data of the analog daq.
  *  Make new file with similar layout to analogdaq.tsv, but only keep relevant
  *  data. The appropriate times are taken from ttlctrl.meta and analogdaq.meta.
- *  Return 0 on success.
+ *  Return 0 on success, -1 on error.
+ *  
+ *  dest timastamp is the same as the ttlctrl timestamp
+ *
  */
+#define ZERO_INIT_TIME 1 // set 1 to make TIME start from zero in dest file
 int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
 
+    // for data extraction
     struct times *tt;
     struct times *at;
-    int secdiff;
-    int linecount;
+    double start_time, stop_time, diff_time;
+    long int n_lines;
+    double timestep;
+    int count = -1;
+    int first_count;
+    int max_count;
+    // dest file
+    struct header *h;
+    FILE *fp_dest;
+    struct timeval tv;
+    // for readline
+    size_t len = 0;
+    ssize_t read;
+    char *line = NULL;
+    char *tok;
+    FILE *fp_adaq;
+
+    // for zero_init_time
+    char timestr[16]; // for TIMEVAL string in file
+    char remstr[128]; // for the rest of the line
+    char *ltok;
+    double tval;
+
     tt = malloc(sizeof(struct times));
     at = malloc(sizeof(struct times));
+    h = malloc(sizeof(struct header));
     memset(tt, 0, sizeof(struct times));
     memset(at, 0, sizeof(struct times));
-
+    memset(h, 0, sizeof(struct header));
     read_meta_times(tt, ttlctrlmeta);
     read_meta_times(at, adaqmeta);
-    secdiff = getsecdiff(at->action, tt->action);
-    //fprintf(stderr, "secdiff : %d\n",secdiff);
+    /*
+    fprintf(stderr, "ttlctrl times\n");
+    fprintf_times(stderr, tt);
+    fprintf(stderr, "adaq times\n");
+    fprintf_times(stderr, at);
+    */
+    n_lines = count_lines(adaq);
+    start_time = getsecdiff(at->action, tt->action);
+    stop_time = getsecdiff(at->action, tt->stop);
+    diff_time = stop_time - start_time;
+    /*
+    fprintf(stderr, "start_time: %lf\n",start_time);
+    fprintf(stderr, "stop_time: %lf\n",stop_time);
+    fprintf(stderr, "lines: %ld\n",n_lines);
+    */
+
+    // prepare destination file
+    fp_dest = fopen(dest, "w");
+    if(fp_dest == NULL){
+        fprintf(stderr, "extract_analogdaq: cannot open dest file: %s\n",dest);
+        return -1;
+    }
+    extract_header_time(ttlctrlmeta, &tv);
+    h->timestamp = tv;
+    fprintf_common_header(fp_dest, h, 1, 0);
+    // extract from analogdaq.tsv
+    fp_adaq = fopen(adaq, "r");
+    if(fp_adaq == NULL){
+        fprintf(stderr, "Cannot open analogdaq.tsv file on path: %s\n",adaq);
+        return -1;
+    }
+    while((read = getline(&line, &len, fp_adaq)) != -1){
+        if(line[0] == '#')
+            continue;
+        // found column names
+        // TODO make this dynamic maybe to accomodate different schemes?
+        if((strstr(line,"TIME") != NULL) && strstr(line, "RESP") != NULL){
+            fprintf(fp_dest, "%s",line);
+        }
+        // first instance of TIME data is the same as the timestep
+        if(strncmp(line, "0.", 2) == 0 && count == -1){
+            tok = strtok(line, "\t");
+            if(is_posdouble(tok)){
+                sscanf(tok, "%lf",&timestep);
+                first_count = (int) (start_time / timestep);
+                max_count = (int) (stop_time / timestep);
+                count = 0;
+                /*
+                printf("max count: %d\n", max_count);
+                printf("first count: %d\n", first_count);
+                printf("timestep: %lf\n", timestep);
+                printf("diff time: %lf\n",diff_time);
+                */
+            } else {
+                fprintf(stderr, "extract_analogdaq: cannot find timestep\n");
+                return -1;
+            }
+        }
+        if(count < first_count && count != -1){
+            count++;
+        }
+        // thesea re the lines to extract
+        if(count >= first_count && count < max_count){
+            if(ZERO_INIT_TIME = 1){
+
+            } else (ZERO_INIT_TIME == 0){
+                fprintf(fp_dest, "%s", line);
+            }
+            count++;
+        }
+        if(count > max_count){
+            break;
+        }
+    }
+
+
+    fclose(fp_adaq);
+    fclose(fp_dest);
     free(tt);
     free(at);
     return 0;
@@ -1462,7 +1614,6 @@ int read_meta_times(struct times *t, char *filename){
     int count = -1;
     char *tok;
     struct timeval tv;
-    memset(&tv, 0, sizeof(struct timeval));
     fp = fopen(filename ,"r");
     if(fp == NULL){
         perror("fopen");
@@ -1474,6 +1625,7 @@ int read_meta_times(struct times *t, char *filename){
         } else if(count > -1) {
             tok = strtok(line, "=");
             tok = strtok(NULL, "=");
+            memset(&tv, 0, sizeof(struct timeval));
             hr2timeval(&tv, tok);
             switch(count){
                 case 0:

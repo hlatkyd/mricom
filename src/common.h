@@ -233,6 +233,7 @@ void remove_spaces(char *);
 long int count_lines(char *path);
 bool is_number(char number[]);
 bool is_posdouble(char number[]);
+bool is_memzero(void *memptr, size_t n);
 
 void getppname(char *name);
 void getname(char *name, int pid);
@@ -245,6 +246,9 @@ double getsecdiff(struct timeval tv1, struct timeval tv2);
 long int getusecdiff(struct timeval tv1, struct timeval tv2);
 double clocksecdiff(struct timespec tv1, struct timespec tv2);
 int hr2timeval(struct timeval *tv, char *hrtimestr);
+
+/* util */
+void fprintf_times(FILE *fp, struct times *t);
 
 /* data file management */
 
