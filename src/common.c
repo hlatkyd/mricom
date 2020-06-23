@@ -1144,6 +1144,37 @@ bool is_memzero(void *ptr, size_t n){
 }
 
 /*
+ * Function: count_chars
+ * ---------------------
+ *  Return the number of occurrences of char c in string.
+ */
+int count_chars(char *str, char c){
+
+    int count = 0;
+    int i;
+    for(i=0; i<strlen(str); i++){
+        if(str[i] == c)
+            count++;
+    }
+    return count;
+}
+
+/*
+ * Function: count_precision
+ * -------------------------
+ *  Return the number of digits after decimal separator. Return -1 on error.
+ */
+int count_precision(char *str){
+
+    char *tok;
+    if(is_posdouble(str) == false){
+        fprintf(stderr, "Count_precision: not a double!\n");
+        return -1;
+    }
+    tok = strtok(str, ".");
+    return strlen(tok);
+}
+/*
  * Function: mkpath
  * ----------------
  *  Recursively create directories. Return -1 on error, 0 on success.
@@ -1480,6 +1511,8 @@ int datahandler(struct gen_settings *gs, char *action){
  *
  */
 #define ZERO_INIT_TIME 1 // set 1 to make TIME start from zero in dest file
+#define MAX_L_VAL 16
+#define MAX_N_VAL 16
 int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
 
     // for data extraction
@@ -1503,10 +1536,13 @@ int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
     FILE *fp_adaq;
 
     // for zero_init_time
-    char timestr[16]; // for TIMEVAL string in file
-    char remstr[128]; // for the rest of the line
-    char *ltok;
-    double tval;
+    char valstr[MAX_N_VAL][MAX_L_VAL] = {0}; 
+    char *ltok;     // tokenizing
+    double tval;    // time
+    int n_val;      // number of columns
+    int i;
+    int precision; // decimal digits
+    char linebuf[128] = {0};
 
     tt = malloc(sizeof(struct times));
     at = malloc(sizeof(struct times));
@@ -1552,14 +1588,23 @@ int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
             continue;
         // found column names
         // TODO make this dynamic maybe to accomodate different schemes?
-        if((strstr(line,"TIME") != NULL) && strstr(line, "RESP") != NULL){
+        if((strstr(line,"TIME")!=NULL) && strstr(line,"RESP")!=NULL && count==-1){
             fprintf(fp_dest, "%s",line);
+            // count number of columns: tab delimiters+1
+            n_val = count_chars(line, '\t') + 1;
+            count = 0;
+        } else {
+            fprintf(stderr, "Cannot find column names\n");
+            return -1;
         }
+        fprintf(stderr, "%s",line);
         // first instance of TIME data is the same as the timestep
-        if(strncmp(line, "0.", 2) == 0 && count == -1){
-            tok = strtok(line, "\t");
+        if(strncmp(line, "0.", 2) == 0 && count == 0){
+            strcpy(linebuf, line);
+            tok = strtok(linebuf, "\t");
             if(is_posdouble(tok)){
                 sscanf(tok, "%lf",&timestep);
+                precision = count_precision(tok);
                 first_count = (int) (start_time / timestep);
                 max_count = (int) (stop_time / timestep);
                 count = 0;
@@ -1579,9 +1624,19 @@ int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
         }
         // thesea re the lines to extract
         if(count >= first_count && count < max_count){
-            if(ZERO_INIT_TIME = 1){
+            if(ZERO_INIT_TIME == 1){
+                ltok = strtok(line, "\t");
+                strcpy(valstr[0], ltok);
+                for(i=1; i<n_val; i++){
+                    ltok = strtok(NULL, "\t");
+                    strcpy(valstr[i], ltok);
+                }
+                printf("prec: %d\n", precision);
 
-            } else (ZERO_INIT_TIME == 0){
+
+
+
+            } else if(ZERO_INIT_TIME == 0){
                 fprintf(fp_dest, "%s", line);
             }
             count++;

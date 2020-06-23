@@ -234,6 +234,8 @@ long int count_lines(char *path);
 bool is_number(char number[]);
 bool is_posdouble(char number[]);
 bool is_memzero(void *memptr, size_t n);
+int count_chars(char *str, char c);
+int count_precision(char *str);
 
 void getppname(char *name);
 void getname(char *name, int pid);
