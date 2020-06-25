@@ -1583,66 +1583,76 @@ int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
         fprintf(stderr, "Cannot open analogdaq.tsv file on path: %s\n",adaq);
         return -1;
     }
+    int found_col_names=0; // set to 1 when the line TIME RESP etc is found
+    int trycount=0;
     while((read = getline(&line, &len, fp_adaq)) != -1){
-        if(line[0] == '#')
+        // ignore comments and blank lines
+        if(line[0] == '#' || line[0] == '\n' || line[0]==' ' || line[0]=='\t')
             continue;
-        // found column names
-        // TODO make this dynamic maybe to accomodate different schemes?
-        if((strstr(line,"TIME")!=NULL) && strstr(line,"RESP")!=NULL && count==-1){
-            fprintf(fp_dest, "%s",line);
-            // count number of columns: tab delimiters+1
-            n_val = count_chars(line, '\t') + 1;
-            count = 0;
-        } else {
-            fprintf(stderr, "Cannot find column names\n");
-            return -1;
-        }
-        fprintf(stderr, "%s",line);
-        // first instance of TIME data is the same as the timestep
-        if(strncmp(line, "0.", 2) == 0 && count == 0){
-            strcpy(linebuf, line);
-            tok = strtok(linebuf, "\t");
-            if(is_posdouble(tok)){
-                sscanf(tok, "%lf",&timestep);
-                precision = count_precision(tok);
-                first_count = (int) (start_time / timestep);
-                max_count = (int) (stop_time / timestep);
+        if(found_col_names == 0){
+            if((strstr(line,"TIME")!=NULL) && strstr(line,"RESP")!=NULL){
+                fprintf(fp_dest, "%s",line);
+                // count number of columns: tab delimiters+1
+                n_val = count_chars(line, '\t') + 1;
+                found_col_names = 1;
                 count = 0;
-                /*
-                printf("max count: %d\n", max_count);
-                printf("first count: %d\n", first_count);
-                printf("timestep: %lf\n", timestep);
-                printf("diff time: %lf\n",diff_time);
-                */
-            } else {
-                fprintf(stderr, "extract_analogdaq: cannot find timestep\n");
+            } else if (trycount > 20){
+                fprintf(stderr, "Cannot find column names\n");
                 return -1;
+            } else {
+                trycount++;
             }
-        }
-        if(count < first_count && count != -1){
-            count++;
-        }
-        // thesea re the lines to extract
-        if(count >= first_count && count < max_count){
-            if(ZERO_INIT_TIME == 1){
-                ltok = strtok(line, "\t");
-                strcpy(valstr[0], ltok);
-                for(i=1; i<n_val; i++){
-                    ltok = strtok(NULL, "\t");
-                    strcpy(valstr[i], ltok);
+
+        } else {
+            // found column names
+            // TODO make this dynamic maybe to accomodate different schemes?
+            fprintf(stderr, "%s",line);
+            // first instance of TIME data is the same as the timestep
+            if(strncmp(line, "0.", 2) == 0 && count == 0){
+                strcpy(linebuf, line);
+                tok = strtok(linebuf, "\t");
+                if(is_posdouble(tok)){
+                    sscanf(tok, "%lf",&timestep);
+                    precision = count_precision(tok);
+                    first_count = (int) (start_time / timestep);
+                    max_count = (int) (stop_time / timestep);
+                    count = 0;
+                    /*
+                    printf("max count: %d\n", max_count);
+                    printf("first count: %d\n", first_count);
+                    printf("timestep: %lf\n", timestep);
+                    printf("diff time: %lf\n",diff_time);
+                    */
+                } else {
+                    fprintf(stderr, "extract_analogdaq: cannot find timestep\n");
+                    return -1;
                 }
-                printf("prec: %d\n", precision);
-
-
-
-
-            } else if(ZERO_INIT_TIME == 0){
-                fprintf(fp_dest, "%s", line);
             }
-            count++;
-        }
-        if(count > max_count){
-            break;
+            if(count < first_count && count != -1){
+                count++;
+            }
+            // thesea re the lines to extract
+            if(count >= first_count && count < max_count){
+                if(ZERO_INIT_TIME == 1){
+                    ltok = strtok(line, "\t");
+                    strcpy(valstr[0], ltok);
+                    for(i=1; i<n_val; i++){
+                        ltok = strtok(NULL, "\t");
+                        strcpy(valstr[i], ltok);
+                    }
+                    printf("prec: %d\n", precision);
+
+
+
+
+                } else if(ZERO_INIT_TIME == 0){
+                    fprintf(fp_dest, "%s", line);
+                }
+                count++;
+            }
+            if(count > max_count){
+                break;
+            }
         }
     }
 
