@@ -1172,6 +1172,7 @@ int count_precision(char *str){
         return -1;
     }
     tok = strtok(str, ".");
+    tok = strtok(NULL,".");
     return strlen(tok);
 }
 /*
@@ -1538,7 +1539,7 @@ int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
     // for zero_init_time
     char valstr[MAX_N_VAL][MAX_L_VAL] = {0}; 
     char *ltok;     // tokenizing
-    double tval;    // time
+    double tval = 0;// time
     int n_val;      // number of columns
     int i;
     int precision; // decimal digits
@@ -1561,7 +1562,8 @@ int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
     n_lines = count_lines(adaq);
     start_time = getsecdiff(at->action, tt->action);
     stop_time = getsecdiff(at->action, tt->stop);
-    diff_time = stop_time - start_time;
+    //diff_time = stop_time - start_time;
+    diff_time = getsecdiff(tt->action, tt->stop);
     /*
     fprintf(stderr, "start_time: %lf\n",start_time);
     fprintf(stderr, "stop_time: %lf\n",stop_time);
@@ -1589,6 +1591,8 @@ int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
         // ignore comments and blank lines
         if(line[0] == '#' || line[0] == '\n' || line[0]==' ' || line[0]=='\t')
             continue;
+        if(count_chars(line, '\n') == 0) // skip incomplete last line
+            continue; 
         if(found_col_names == 0){
             if((strstr(line,"TIME")!=NULL) && strstr(line,"RESP")!=NULL){
                 fprintf(fp_dest, "%s",line);
@@ -1606,7 +1610,6 @@ int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
         } else {
             // found column names
             // TODO make this dynamic maybe to accomodate different schemes?
-            fprintf(stderr, "%s",line);
             // first instance of TIME data is the same as the timestep
             if(strncmp(line, "0.", 2) == 0 && count == 0){
                 strcpy(linebuf, line);
@@ -1615,14 +1618,9 @@ int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
                     sscanf(tok, "%lf",&timestep);
                     precision = count_precision(tok);
                     first_count = (int) (start_time / timestep);
-                    max_count = (int) (stop_time / timestep);
+                    //max_count = (int) (stop_time / timestep);
+                    max_count = (int) ((start_time + diff_time) / timestep);
                     count = 0;
-                    /*
-                    printf("max count: %d\n", max_count);
-                    printf("first count: %d\n", first_count);
-                    printf("timestep: %lf\n", timestep);
-                    printf("diff time: %lf\n",diff_time);
-                    */
                 } else {
                     fprintf(stderr, "extract_analogdaq: cannot find timestep\n");
                     return -1;
@@ -1635,15 +1633,18 @@ int extract_analogdaq(char *adaq,char *adaqmeta,char *ttlctrlmeta,char *dest){
             if(count >= first_count && count < max_count){
                 if(ZERO_INIT_TIME == 1){
                     ltok = strtok(line, "\t");
-                    strcpy(valstr[0], ltok);
+                    strcpy(valstr[0], ltok); // this is the time, ignore
                     for(i=1; i<n_val; i++){
                         ltok = strtok(NULL, "\t");
                         strcpy(valstr[i], ltok);
+                        // last one has \n at the end
                     }
-                    printf("prec: %d\n", precision);
-
-
-
+                    //calc new time based on timestep and line count
+                    tval = (double)(count-first_count) * timestep; 
+                    fprintf(fp_dest, "%.*lf",precision,tval);
+                    for(i=1; i<n_val; i++){
+                        fprintf(fp_dest, "\t%s",valstr[i]);
+                    }
 
                 } else if(ZERO_INIT_TIME == 0){
                     fprintf(fp_dest, "%s", line);
