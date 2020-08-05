@@ -11,3 +11,5 @@ mproc.log
 mricom
 mribg
 bin/*
+# no study test
+studies/*

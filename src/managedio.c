@@ -27,6 +27,15 @@ int main(int argc, char **argv){
     int i, ret;
     comedi_t *dev;
     dev = comedi_open(DEVPATH);
+    // print some help
+    if(argc == 1 || strcmp(argv[1],"--help")==0 || strcmp(argv[1],"-h")==0){
+        printf(" Set values to digital channels.\n"
+                "Usage:\n"
+                "$ managedio zero       Set 0 V on digital channels.\n"
+                "$ managedio calibrate  TODO\n"
+                );
+        return 0;
+    }
 
     
     if(argc != 2){

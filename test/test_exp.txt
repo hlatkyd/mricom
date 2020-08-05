@@ -5,7 +5,7 @@
 # where [length] is the simulated length of the sequence in seconds and 
 # [stim] and [stim paramaeter] are optional
 
-s_2020060104
+s_2020060204
 
 fsems,3
 epip_whisker_0,10,blockstim,trig

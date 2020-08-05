@@ -5,7 +5,7 @@
 #define MSG_MRIBG 1         // send socket msg to mribg about being ready
 
 #define BLOCKSTIM_TESTING 1
-#define VERBOSE_BLOCKSTIM 0
+#define VERBOSE_BLOCKSTIM 1
 #define LOG_TTL_LEADING 1   // log the rising edge of TTL
 #define LOG_SEC 1           // write log file in sec format
 #define USE_DEFAULT 1 // set 1 to use default design on wrong input, 0 to exit
@@ -136,6 +136,8 @@ int main(int argc, char *argv[]){
     }
 
     if(VERBOSE_BLOCKSTIM == 1){
+        printf("subdevice=%d\n",subdev);
+        printf("chan=%d\n",chan);
         printf_bs(bs);
     }
     usec_ttl1 = bs->ttl_usecw;
@@ -291,7 +293,7 @@ void fprintf_bstim_meta(char *p,
 void printf_bs(struct blockstim_settings *bs){
 
     printf("\n%% BLOCKSTIM SETTINGS\n");
-    printf("device=%s\n",bs->device);
+    printf("device=%p\n",bs->device);
     printf("start_delay=%lf\n",bs->start_delay);
     printf("on_time=%lf\n",bs->on_time);
     printf("off_time=%lf\n",bs->off_time);

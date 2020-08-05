@@ -61,7 +61,7 @@ ANALOG_IN_SUBDEV=0
 # analog input channels
 ANALOG_IN_CHAN=0,1,2,3
 # analog sampling rate ins samples/sec #TODO move this away
-ANALOG_SAMPLING_RATE=200 
+ANALOG_SAMPLING_RATE=100 
 # analog channel names
 ANALOG_CH_NAMES=RESP,PULSOX,ECG,TEMP
 # digital subdev for stimulus TTL

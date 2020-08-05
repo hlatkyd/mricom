@@ -79,27 +79,25 @@ int sh_exit(int argc, char **args){
 int sh_help(int argc, char **args){
     int i, j, n;
     char *cmdname;
-    int l = 3;
+    int l = 4;
     int num, r;
     num = sh_num_builtins();
     r = sh_num_builtins() % l;
     cmdname = NULL;
     // print commands
     if(args[1] == NULL){
-        printf("--- mricom v%d.%d ---\n\n",VERSION_MAJOR,VERSION_MINOR);
+    //if(argc == 1){
+        printf("\n--- mricom v%d.%d ---\n",VERSION_MAJOR,VERSION_MINOR);
         printf("Available commands:\n");
-        printf("===================\n");
-        for(i = 0; i<sh_num_builtins(); i+l){
-            for(j=0;j<l;j++){
-                printf("  %s\t",builtin_str[i]);
-            }
+        printf("===========================================================\n");
+        for(i=0; i<num; i++){
+            printf("%s\t\t",builtin_str[i]);
+            if((i+1) % l == 0)
+                printf("\n");
+        }
+        if(num % l != 0)
             printf("\n");
-        }
-        // print remaining
-        for(j=0;j<r;j++){
-            printf("  %s\t",builtin_str[num-r+j]);
-        }
-        printf("\n");
+        printf("\nType 'help [command]' for more information.\n\n");
     }
     else{
         for(i=0; i<sh_num_builtins(); i++){
