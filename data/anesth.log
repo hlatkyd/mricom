@@ -1,7 +1,7 @@
 # cmd=/home/david/dev/mricom/mribg args=NULL Mricom v0.1
-# timestamp=2020-08-05 20:33:43.735987
+# timestamp=2020-08-06 16:58:29.239963
 
-id=s_2020060204
+id=s_2020050101
 # Anesthesia events with timestamp
 # ----------------------------------
-iso=0.000000	2020-08-05 20:33:43.735987
+iso=0.000000	2020-08-06 16:58:29.239963

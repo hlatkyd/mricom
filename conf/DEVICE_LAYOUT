@@ -1,0 +1,28 @@
+Layout ob BNC connectors on CA-1000 box housing the NI PCI-6035E device.
+
+Front panel:
+___________________________________
+|                                  |
+| D0  D1  D2  D3  x  x  x  x  x    |
+|   D4  D5  D6  D7  x  x  x  x  x  |
+|__________________________________|
+
+Dn:      Digital IO on subdevice 2, channel n
+x:       available spaces
+
+Channels used:
+-------------------------------------------------
+D0 - blockstim stimulation out
+D1 - blockstim trigger in
+D2 - 
+D3 - test console input
+D4 - ttlctrl input from console
+D5 - ttlctrl output 
+D6 - 
+D7 - test console output
+
+Wiring for testing:
+-------------------------------------------------
+D0 - scope
+D1 - 
+     

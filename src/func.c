@@ -189,15 +189,17 @@ void liststudy(struct gen_settings *gs){
             tok = strtok(line, "=");
             tok = strtok(NULL, "=");
             printf("\nStudy ID: %s", tok);
-            printf("----------------------------------------------------\n");
+            printf("---------------------------------------"
+                   "---------------------------------------\n");
         // print rest
         } else if (count > 0){
             printf("%s",line);
             count++;
         // column lines
         } else if(strncmp(line, "seqnum",6)==0){
-            printf("Num\tSequence\tEvent\n");
-            printf("====================================================\n");
+            printf("Num\tSequence\t\tEvent\t\tTime\n");
+            printf("======================================="
+                   "=======================================\n");
             count++;
         } else {
             continue;
@@ -218,7 +220,8 @@ void listprocesses(struct processes *p){
     char *d = DELIMITER;
     printf("\nrunning processes: %d, mricom: %d, mribg: %d\n",
             p->nproc, p->mainpid, p->bgpid);
-    printf("--------------------------------------------------\n");
+    printf("---------------------------------------"
+           "---------------------------------------\n");
     //printf("mricom pid: %d\n",p->mainpid);
     printf("PROC%s%s%s%-8s%s%-8s%sTIMESTAMP\n",
             d,"PARENT",d,"NAME",d,"PNAME",d);

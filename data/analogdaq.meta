@@ -1,5 +1,5 @@
 # cmd=/home/david/dev/mricom/bin/analogdaq args=NULL Mricom v0.1
-# timestamp=2020-07-05 19:21:18.450485
+# timestamp=2020-08-06 17:01:58.823237
 
 % ANALOGDAQ_SETTINGS
 subdev=0
@@ -12,12 +12,12 @@ refresh_rate_usec=5000
 %ANALOGDAQ_CMD
 subdevice:      0
 start:      now      0
-scan_begin: timer    5000000
+scan_begin: timer    10000000
 convert:    timer    5000
 scan_end:   count    3
 stop:       none     0
 
 % TIMING
-start=2020-07-05 19:21:18.450485
-action=2020-07-05 19:21:18.451866
-intrpt=2020-07-05 19:22:00.296145
+start=2020-08-06 17:01:58.823237
+action=2020-08-06 17:01:58.824152
+intrpt=2020-08-06 17:02:03.534348
