@@ -182,7 +182,7 @@ int parse_expfile(char *expfile, struct study *st, int *seqtime,
     i = 0;
     fp = fopen(expfile,"r");
     if(fp == NULL){
-        perror("fopen");
+        fprintf(stderr,"Cannot open file on %s\n",expfile);
         exit(1);
     }
     while((read = getline(&line, &len, fp)) != -1){

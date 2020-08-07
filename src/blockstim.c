@@ -4,8 +4,7 @@
 
 #define MSG_MRIBG 1         // send socket msg to mribg about being ready
 
-#define BLOCKSTIM_TESTING 1
-#define VERBOSE_BLOCKSTIM 1
+#define VERBOSE_BLOCKSTIM 0
 #define LOG_TTL_LEADING 1   // log the rising edge of TTL
 #define LOG_SEC 1           // write log file in sec format
 #define USE_DEFAULT 1 // set 1 to use default design on wrong input, 0 to exit
