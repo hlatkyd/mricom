@@ -1,5 +1,5 @@
 # cmd=/home/david/dev/mricom/mribg args=NULL Mricom v0.1
-# timestamp=2020-08-07 18:08:04.205766
+# timestamp=2020-08-12 15:23:18.372467
 
 id=s_2020060204
 seqnum	sequence	event
@@ -7,3 +7,5 @@ seqnum	sequence	event
 1	epip_whisker_0	blockstim,design,trig
 2	epip_resting_0	
 3	epip_whisker_1	blockstim,design,trig
+4	epip_whisker_2	blockstim,design,trig
+5	epip_whisker_3	blockstim,design,trig

@@ -10,6 +10,7 @@ SRC=./src
 BIN=./bin
 DAT=./data
 TST=./test
+SCRIPT=./script
 
 all: dir mricom mribg mrikst ttlctrl blockstim vnmrclient analogdaq \
 	managedio mrimon mriw\
@@ -55,7 +56,7 @@ managedio: $(OBJ)/managedio.o
 	$(CC) -o $(BIN)/managedio $(OBJ)/managedio.o $(LIBS)
 
 mriw:
-	cp $(SRC)/mriw.sh $(BIN)/mriw
+	cp $(SCRIPT)/mriw.sh $(BIN)/mriw
 	chmod 755 $(BIN)/mriw
 
 # test subprograms

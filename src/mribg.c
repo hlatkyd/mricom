@@ -298,7 +298,6 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
         }
         else {
             fprintf(stderr,"action not supported\n");
-            return -1;
         }
         return 1;
     }

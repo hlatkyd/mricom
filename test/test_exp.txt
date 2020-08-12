@@ -11,3 +11,5 @@ fsems,3
 epip_whisker_0,10,blockstim,trig
 epip_resting_0,10
 epip_whisker_1,10,blockstim,trig
+epip_whisker_2,10,blockstim,trig
+epip_whisker_3,10,blockstim,trig

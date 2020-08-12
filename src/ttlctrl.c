@@ -4,17 +4,26 @@
  * Mricom subprogram to control timing between stimulus and sequence start.
  * 
  * OPTION 1:
- * ttlctrl waits for digital input directly from console. If the input is
- * correct ttlctrl sends TTL signal to both console (sequence waiting on 
- * xgate for example) and the blockstim subprogram.  
- * Input is a single integer between 0-7, which is challenged against the
- * 3 bit input coming from the console.
+ * ttlctrl does a handshake with the console. This consists of the following:
+ * 1.
+ * ttlctrl waits TTL high from console. This is accomplished by spX_on in
+ * pulse sequence.
+ * 2. after the TTL high is sent by the console, it waits for a TTL high from
+ * ttlctrl. This is accomplished by xgate(1) in the pulse sequence.
+ * 3. Console 
+ *                ____       ___
+ * ttlctrl:  ____|    |_____|   |____
+ *               _____
+ * console:  ___|
  * 
+ * TODO not implemented!
  * OPTION 2:
  * TTL handshake: ttlctrl waits for TTL input from console, if received
  * sends TTL back. Pulse sequence is started when TTL response is received
  *
  * TODO use the 3bit usr input for error handling?
+ * Input is a single integer between 0-7, which is challenged against the
+ * 3 bit input coming from the console.
  *
  * Timing information is saved in ttlctrl.meta
  *  start time is program launch time (almost)
@@ -104,9 +113,10 @@ int main(int argc, char **argv){
     processctrl_add(gs->mpid_file, mp, "START");
 
     subdev = ds->ttlctrl_subdev;
-    inchan  = ds->ttlctrl_in_chan;
+    inchan  = ds->ttlctrl_console_in_chan;
     outchan = ds->ttlctrl_out_chan; 
-    outchan2 = ds->ttlctrl_usr_chan[2];
+    outchan2 = ds->ttlctrl_console_out_chan; 
+    //outchan2 = ds->ttlctrl_usr_chan[0];
 
     // start timestamp
     gettimeofday(&tv, NULL);
@@ -136,6 +146,7 @@ int main(int argc, char **argv){
         fprintf(stderr, "subdev=%d\n",subdev);
         fprintf(stderr, "inchan=%d\n",inchan);
         fprintf(stderr, "outchan=%d\n",outchan);
+        fprintf(stderr, "outchan2=%d\n",outchan2);
         for(i=0; i < N_USER_BITS; i++){
             fprintf(stderr, "usrchan[%d]=%d\n",i,usrchan[i]);
         }
@@ -175,12 +186,15 @@ int main(int argc, char **argv){
     //ret = wait_user_bits(dev, subdev, usrchan, waitbits);
     //ret = wait_console_ttl(dev, subdev, inchan);
     if(OPTION == 1)
-        ret = wait_console_handshake(dev, subdev, inchan, outchan);
+        ret = wait_console_handshake(dev, subdev, inchan, outchan2);
 
     if(ret == 0){
         // send TTL signal both to console and blockstim
+        // These go on 2 different DIO channels
         if(VERBOSE > 0)
             fprintf(stderr, "sending launch TTL\n");
+        // wait for console TTL on
+        ret = wait_console_ready_signal(dev, subdev, inchan);
         comedi_dio_write(dev, subdev, outchan , 1);
         comedi_dio_write(dev, subdev, outchan2 , 1);
         usleep(ttl_w);
@@ -252,6 +266,19 @@ int wait_user_bits(comedi_t *dev, int subdev, int chan[N_USER_BITS], int num){
     return 0;
 }
 
+/*
+ * Function: wait_console_ready_signal
+ * ---------------------------------
+ *  Wait for TTL high from console input. Does not include timeout
+ */
+int wait_console_ready_signal(comedi_t *dev, int subdev, int inchan){
+
+    int bit = 0;
+    while(bit != 1){
+        comedi_dio_read(dev, subdev, inchan, &bit);
+    }
+    return 0;
+}
 /*
  * Function: wait_console_end_signal
  * ---------------------------------
@@ -335,6 +362,7 @@ int wait_console_handshake(comedi_t *dev, int subdev, int inchan, int outchan){
             comedi_dio_write(dev, subdev, outchan, 0);
             if(VERBOSE > 1)
                 fprintf(stderr, "TTL output on ch %d\n",outchan);
+            // wait till console reacts
             usleep(usec_wait);
             //wait for TTL response from console
             while(1){

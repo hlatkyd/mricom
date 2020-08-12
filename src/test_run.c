@@ -78,6 +78,8 @@ int main(int argc, char **argv){
             args[j] = malloc(sizeof(char) * PL);
         }
         usleep(10);    
+        // simulate additional delay
+        sleep(1);
         // setup args for vnmrclient
         // set study id first
         strcpy(args[0],vpath);

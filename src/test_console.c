@@ -15,6 +15,8 @@
 
 #define OPTION 1 // option 1 is handshake
 #define DEFAULT_LENGTH 10
+
+#define VERBOSE 1
 // pulsesequence mock functions 
 void xgate(comedi_t *dev, int subdev, int chan, int num);
 void spx_on(comedi_t *dev, int subdev, int chan);
@@ -76,7 +78,11 @@ int main(int argc, char **argv){
         spx_on(dev, subdev, outchan);
 
     }
-    // now wait for TTL
+    else if (OPTION == 2){
+        ;
+    }
+    // now wait for TTL from ttlctrl
+    // blockstim, eventstim TTL is sent on another channel in the same time
     xgate(dev, subdev, inchan,1);
     spx_off(dev, subdev, outchan);
 
@@ -97,12 +103,10 @@ void xgate(comedi_t *dev, int subdev, int chan, int num){
     int bit = 0;
     // check first
     comedi_dio_read(dev, subdev, chan, &bit);
-    /*
     if(bit == 1){
         fprintf(stderr, "xgate received TTL on at start\n");
         exit(1);
     }
-    */
     fprintf(stderr, "xgate: waiting for input\n");
     for(i=0; i<num; i++){
         while(bit != 1)

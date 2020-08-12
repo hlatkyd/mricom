@@ -73,15 +73,18 @@ STIM_TRIG_CHAN=1
 # subdev used by ttlctrl (usually the same digital io subdev)
 TTLCTRL_SUBDEV=2
 # ttlctrl input channel (communication with console)
-TTLCTRL_IN_CHAN=4
-# ttlctrl output channel, which triggers stimulation start, etc
+TTLCTRL_CONSOLE_IN_CHAN=4
+# ttlctrl output channel, which triggers blockstim, eventstim, etc
 TTLCTRL_OUT_CHAN=5
-# ttlctrl input from console user interface (3 bit) /CURRENTLY NOT USED/
-TTLCTRL_USR_CHAN=4,5,6
+# output to console  (xgate trigger)
+TTLCTRL_CONSOLE_OUT_CHAN=6
+# ttlctrl output to console user interface (3 bit) /CURRENTLY ONLY 1. IS USED/
+# 
+TTLCTRL_USR_CHAN=2,3,7
 
 # test_console
 # works in conjuction with ttlctrl in place of console for testing
 TEST_CONSOLE_SUBDEV=2
-TEST_CONSOLE_IN_CHAN=3
-TEST_CONSOLE_OUT_CHAN=7
+TEST_CONSOLE_IN_CHAN=3  #3
+TEST_CONSOLE_OUT_CHAN=7 #7
 

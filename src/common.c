@@ -629,9 +629,14 @@ int parse_dev_settings(struct dev_settings *ds){
             ds->ttlctrl_subdev = atoi(token);
             continue;
         }
-        if(strcmp(line, "TTLCTRL_IN_CHAN") == 0){
+        if(strcmp(line, "TTLCTRL_CONSOLE_IN_CHAN") == 0){
             token = strtok(NULL,"=");
-            ds->ttlctrl_in_chan = atoi(token);
+            ds->ttlctrl_console_in_chan = atoi(token);
+            continue;
+        }
+        if(strcmp(line, "TTLCTRL_CONSOLE_OUT_CHAN") == 0){
+            token = strtok(NULL,"=");
+            ds->ttlctrl_console_out_chan = atoi(token);
             continue;
         }
         if(strcmp(line, "TTLCTRL_OUT_CHAN") == 0){
