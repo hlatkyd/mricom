@@ -127,7 +127,11 @@ int main(int argc, char **argv){
         }
         nread = read(newsockfd, buffer, BUFS-1);
         if(VERBOSE > 0){
-            fprintf(fp_msg, "[mribg]: incoming: '%s'...",buffer);
+            // leave out 'get status', makes too much trash
+            if(strstr(buffer,"get,status") != 0)
+                ;
+            else
+                fprintf(fp_msg, "[mribg]: incoming: '%s'...",buffer);
         }
 
         // do processing, start subprograms, etc
@@ -282,7 +286,6 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             return -1;
         }
 
-
         // call for event (blockstim, analogdaq, eventstim) if specified
         // ------------------------------------------
         //
@@ -295,6 +298,7 @@ int process_request(struct gen_settings *gs,char *msg, char *msg_response){
             strcpy(study->event[study->seqnum],event);
             update_curpar(gs, study);
             fork_blockstim(cmdargv);
+            usleep(50);
         }
         else {
             fprintf(stderr,"action not supported\n");
